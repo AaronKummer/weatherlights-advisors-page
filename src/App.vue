@@ -20,7 +20,18 @@ export default {
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root { color-scheme: light only; }
-html { scroll-behavior: smooth; color-scheme: light; background: #ffffff; }
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+  background: #ffffff;
+  /* Auto-snap sections at any screen size. mandatory + scroll-padding-top
+     accounts for the fixed nav so snapped sections aren't tucked behind it. */
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: 70px;
+}
+@media (max-width: 768px) {
+  html { scroll-snap-type: y proximity; } /* gentler on phones with momentum scrolling */
+}
 html, body {
   background: #ffffff !important;
   color: #1a3a6e;

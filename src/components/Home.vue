@@ -1120,6 +1120,12 @@ export default {
   padding: 10rem 2rem 8rem;
   background: linear-gradient(180deg, #f0f7fd 0%, #d9eaf8 50%, #c4dcf0 100%);
   overflow: hidden;
+  scroll-snap-align: start;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .cloud {
@@ -1225,8 +1231,14 @@ export default {
 }
 
 .content-section {
-  padding: 6rem 2rem;
+  padding: 7rem 2rem 5rem;
   background: #ffffff;
+  scroll-snap-align: start;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .content-section-tint {
@@ -1300,9 +1312,15 @@ export default {
 
 /* ───────── Member portal ───────── */
 .portal-hero {
-  padding: 8rem 2rem 3rem;
+  padding: 8rem 2rem 4rem;
   background: linear-gradient(180deg, #ffffff 0%, #f0f7fd 100%);
   border-bottom: 1px solid #e0eaf5;
+  scroll-snap-align: start;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .portal-hero-inner {
   display: grid;
@@ -1350,7 +1368,15 @@ export default {
   letter-spacing: 0.06em;
   font-weight: 600;
 }
-.portal-section { padding: 4rem 2rem; }
+.portal-section {
+  padding: 7rem 2rem 5rem;
+  scroll-snap-align: start;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .member-card-wide { max-width: 100%; }
 
 .dashboard-grid {
@@ -1639,6 +1665,7 @@ export default {
   padding: 2.5rem 2rem;
   border-top: 1px solid #eef3f9;
   background: #ffffff;
+  scroll-snap-align: end;
 }
 
 .footer-row {
