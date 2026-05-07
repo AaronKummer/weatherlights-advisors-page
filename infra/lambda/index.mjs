@@ -1,10 +1,23 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import {
+  CognitoIdentityProviderClient,
+  ListUsersCommand,
+  AdminCreateUserCommand,
+  AdminDeleteUserCommand,
+  AdminSetUserPasswordCommand,
+  AdminAddUserToGroupCommand,
+  AdminRemoveUserFromGroupCommand,
+  AdminListGroupsForUserCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
 import { randomUUID, randomBytes } from "node:crypto";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const cognito = new CognitoIdentityProviderClient({});
 const USERS_TABLE = "weatherlight-users";
 const CONTACTS_TABLE = "weatherlight-contacts";
+const USER_POOL_ID = "us-east-1_tPZ876WGD";
+const VALID_GROUPS = ["Admins", "Clients", "Reps"];
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -100,6 +113,176 @@ const isAdminClaims = (claims) => {
   return email.startsWith("admin@") || username.startsWith("admin");
 };
 
+const requireAdmin = (event) => {
+  const claims = getClaims(event);
+  if (!claims) return { error: json(401, { error: "unauthorized" }) };
+  if (!isAdminClaims(claims)) return { error: json(403, { error: "forbidden" }) };
+  return { claims };
+};
+
+const cognitoAttr = (attrs, name) => attrs?.find((a) => a.Name === name)?.Value;
+
+const handleListUsers = async (event) => {
+  const guard = requireAdmin(event);
+  if (guard.error) return guard.error;
+
+  // Page through Cognito; small pools so we just collect everything.
+  let users = [];
+  let token;
+  do {
+    const r = await cognito.send(new ListUsersCommand({
+      UserPoolId: USER_POOL_ID,
+      PaginationToken: token,
+      Limit: 60,
+    }));
+    users = users.concat(r.Users || []);
+    token = r.PaginationToken;
+  } while (token);
+
+  // Look up groups per user (small N → fine).
+  const enriched = await Promise.all(users.map(async (u) => {
+    const sub = cognitoAttr(u.Attributes, "sub");
+    const email = cognitoAttr(u.Attributes, "email");
+    let groups = [];
+    try {
+      const g = await cognito.send(new AdminListGroupsForUserCommand({
+        UserPoolId: USER_POOL_ID, Username: u.Username,
+      }));
+      groups = (g.Groups || []).map((x) => x.GroupName);
+    } catch (_) {}
+    let displayName = "";
+    try {
+      const r = await ddb.send(new GetCommand({ TableName: USERS_TABLE, Key: { userId: sub } }));
+      displayName = r.Item?.displayName || r.Item?.handle || "";
+    } catch (_) {}
+    return {
+      userId: sub,
+      username: u.Username,
+      email,
+      displayName,
+      enabled: u.Enabled,
+      status: u.UserStatus,
+      createdAt: u.UserCreateDate,
+      lastModifiedAt: u.UserLastModifiedDate,
+      groups,
+      role: groups[0] || "",
+    };
+  }));
+
+  return json(200, { users: enriched });
+};
+
+const handleCreateUser = async (event) => {
+  const guard = requireAdmin(event);
+  if (guard.error) return guard.error;
+
+  const body = JSON.parse(event.body || "{}");
+  const email = (body.email || "").trim().toLowerCase();
+  const password = body.password || "";
+  const role = body.role || "Clients";
+  const displayName = body.displayName || (email ? email.split("@")[0] : "");
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return json(400, { error: "valid email required" });
+  if (!password || password.length < 8)
+    return json(400, { error: "password must be at least 8 characters" });
+  if (!VALID_GROUPS.includes(role))
+    return json(400, { error: `role must be one of ${VALID_GROUPS.join(", ")}` });
+
+  // Cognito create + permanent password (skip the temp-password email flow).
+  await cognito.send(new AdminCreateUserCommand({
+    UserPoolId: USER_POOL_ID,
+    Username: email,
+    UserAttributes: [
+      { Name: "email", Value: email },
+      { Name: "email_verified", Value: "true" },
+      ...(displayName ? [{ Name: "name", Value: displayName }] : []),
+    ],
+    MessageAction: "SUPPRESS",
+  }));
+  await cognito.send(new AdminSetUserPasswordCommand({
+    UserPoolId: USER_POOL_ID,
+    Username: email,
+    Password: password,
+    Permanent: true,
+  }));
+  await cognito.send(new AdminAddUserToGroupCommand({
+    UserPoolId: USER_POOL_ID,
+    Username: email,
+    GroupName: role,
+  }));
+
+  return json(200, { ok: true, email, role });
+};
+
+const handleUpdateUser = async (event) => {
+  const guard = requireAdmin(event);
+  if (guard.error) return guard.error;
+
+  const username = decodeURIComponent(event.rawPath.split("/").pop());
+  const body = JSON.parse(event.body || "{}");
+  const role = body.role;
+
+  if (role && !VALID_GROUPS.includes(role))
+    return json(400, { error: `role must be one of ${VALID_GROUPS.join(", ")}` });
+
+  if (role) {
+    // Remove from any existing groups, then add to the requested one.
+    const existing = await cognito.send(new AdminListGroupsForUserCommand({
+      UserPoolId: USER_POOL_ID, Username: username,
+    }));
+    for (const g of existing.Groups || []) {
+      if (g.GroupName !== role) {
+        await cognito.send(new AdminRemoveUserFromGroupCommand({
+          UserPoolId: USER_POOL_ID, Username: username, GroupName: g.GroupName,
+        }));
+      }
+    }
+    await cognito.send(new AdminAddUserToGroupCommand({
+      UserPoolId: USER_POOL_ID, Username: username, GroupName: role,
+    }));
+  }
+
+  if (body.password && body.password.length >= 8) {
+    await cognito.send(new AdminSetUserPasswordCommand({
+      UserPoolId: USER_POOL_ID, Username: username, Password: body.password, Permanent: true,
+    }));
+  }
+
+  return json(200, { ok: true });
+};
+
+const handleDeleteUser = async (event) => {
+  const guard = requireAdmin(event);
+  if (guard.error) return guard.error;
+
+  const username = decodeURIComponent(event.rawPath.split("/").pop());
+
+  // Don't let an admin delete themselves accidentally.
+  const callerEmail = (guard.claims.email || "").toLowerCase();
+  if (callerEmail && callerEmail === username.toLowerCase())
+    return json(400, { error: "cannot delete yourself" });
+
+  await cognito.send(new AdminDeleteUserCommand({
+    UserPoolId: USER_POOL_ID, Username: username,
+  }));
+
+  // Best-effort cleanup of the DynamoDB profile by email lookup.
+  try {
+    const scan = await ddb.send(new ScanCommand({
+      TableName: USERS_TABLE,
+      FilterExpression: "email = :e",
+      ExpressionAttributeValues: { ":e": username },
+      ProjectionExpression: "userId",
+    }));
+    for (const item of scan.Items || []) {
+      await ddb.send(new DeleteCommand({ TableName: USERS_TABLE, Key: { userId: item.userId } }));
+    }
+  } catch (_) {}
+
+  return json(200, { ok: true });
+};
+
 const handleAdminStats = async (event) => {
   const claims = getClaims(event);
   if (!claims) return json(401, { error: "unauthorized" });
@@ -141,6 +324,10 @@ export const handler = async (event) => {
     if (method === "POST" && path.endsWith("/contact")) return handleContact(event);
     if (method === "GET" && path.endsWith("/me")) return handleMe(event);
     if (method === "GET" && path.endsWith("/admin/stats")) return handleAdminStats(event);
+    if (method === "GET" && path.endsWith("/admin/users")) return handleListUsers(event);
+    if (method === "POST" && path.endsWith("/admin/users")) return handleCreateUser(event);
+    if (method === "PATCH" && /\/admin\/users\/[^/]+$/.test(path)) return handleUpdateUser(event);
+    if (method === "DELETE" && /\/admin\/users\/[^/]+$/.test(path)) return handleDeleteUser(event);
 
     return json(404, { error: "not found" });
   } catch (err) {

@@ -153,6 +153,25 @@ html.dark-fallback .view-pick.active { background: rgba(0, 212, 170, 0.15) !impo
 html.dark-fallback .user-menu-signout { border-top-color: rgba(255, 255, 255, 0.06) !important; color: #ff7b6b !important; }
 html.dark-fallback .view-banner { background: rgba(255, 170, 68, 0.15) !important; color: #ffaa44 !important; }
 
+/* User management table — dark variant */
+html.dark-fallback .users-panel { border-top-color: rgba(255, 255, 255, 0.06) !important; }
+html.dark-fallback .users-table {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .users-table th { background: rgba(255, 255, 255, 0.04) !important; color: #8b949e !important; border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
+html.dark-fallback .users-table td { color: #c9d1d9 !important; border-bottom-color: rgba(255, 255, 255, 0.04) !important; }
+html.dark-fallback .users-empty { color: #8b949e !important; }
+html.dark-fallback .btn-link { color: #00d4aa !important; }
+html.dark-fallback .btn-link:hover { background: rgba(0, 212, 170, 0.08) !important; }
+html.dark-fallback .btn-link.btn-danger { color: #ff7b6b !important; }
+html.dark-fallback .btn-link.btn-danger:hover { background: rgba(255, 123, 107, 0.08) !important; }
+html.dark-fallback .role-admins  { background: rgba(91, 155, 213, 0.18) !important; color: #9ec8ed !important; }
+html.dark-fallback .role-clients { background: rgba(40, 200, 120, 0.18) !important; color: #4cdb8c !important; }
+html.dark-fallback .role-reps    { background: rgba(255, 170, 68, 0.18) !important; color: #ffaa44 !important; }
+html.dark-fallback .status-text { color: #8b949e !important; }
+html.dark-fallback .status-text.disabled { color: #ff7b6b !important; }
+
 /* Sections + tints */
 html.dark-fallback .content-section { background: #0a0a0f !important; }
 html.dark-fallback .content-section-tint {

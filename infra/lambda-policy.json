@@ -12,6 +12,7 @@
         "dynamodb:GetItem",
         "dynamodb:PutItem",
         "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
         "dynamodb:Query",
         "dynamodb:Scan"
       ],
@@ -20,6 +21,22 @@
         "arn:aws:dynamodb:us-east-1:646719104453:table/weatherlight-users/index/*",
         "arn:aws:dynamodb:us-east-1:646719104453:table/weatherlight-contacts"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:ListUsers",
+        "cognito-idp:AdminGetUser",
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminDeleteUser",
+        "cognito-idp:AdminSetUserPassword",
+        "cognito-idp:AdminAddUserToGroup",
+        "cognito-idp:AdminRemoveUserFromGroup",
+        "cognito-idp:AdminListGroupsForUser",
+        "cognito-idp:AdminUpdateUserAttributes",
+        "cognito-idp:ListGroups"
+      ],
+      "Resource": "arn:aws:cognito-idp:us-east-1:646719104453:userpool/us-east-1_tPZ876WGD"
     }
   ]
 }

@@ -396,6 +396,47 @@
               <div class="ops-meta">most recent submission</div>
             </div>
           </div>
+
+          <div class="users-panel">
+            <div class="users-panel-head">
+              <h3 class="finance-card-title" style="margin: 0;">User management</h3>
+              <div class="users-panel-actions">
+                <button class="btn-secondary btn-sm" @click="loadUsers" :disabled="userListLoading">
+                  {{ userListLoading ? "Loading…" : "Refresh" }}
+                </button>
+                <button class="btn-primary btn-sm" @click="openCreateUser">+ New user</button>
+              </div>
+            </div>
+            <p v-if="userListError" class="auth-error" style="margin-bottom: 1rem;">{{ userListError }}</p>
+            <p v-if="!userList.length && !userListLoading" class="users-empty">
+              No users loaded yet — click <em>Refresh</em> to fetch from Cognito.
+            </p>
+            <table v-if="userList.length" class="users-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Display name</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th class="users-table-actions"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in userList" :key="u.username">
+                  <td>{{ u.email }}</td>
+                  <td>{{ u.displayName || '—' }}</td>
+                  <td>
+                    <span class="role-pill" :class="'role-' + (u.role || '').toLowerCase()">{{ u.role || '—' }}</span>
+                  </td>
+                  <td><span class="status-text" :class="{ disabled: !u.enabled }">{{ u.enabled ? u.status : 'DISABLED' }}</span></td>
+                  <td class="users-table-actions">
+                    <button class="btn-link" @click="openEditUser(u)">Edit</button>
+                    <button class="btn-link btn-danger" @click="deleteUser(u)">Delete</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
       </template>
@@ -572,6 +613,36 @@
       </v-card>
     </v-dialog>
 
+
+    <!-- ───────── User create / edit modal ───────── -->
+    <v-dialog v-model="userModalOpen" max-width="480px" persistent>
+      <v-card class="modal-card auth-card">
+        <v-card-title class="modal-title">{{ userModalMode === 'create' ? 'New user' : 'Edit user' }}</v-card-title>
+        <v-card-text class="modal-body">
+          <form @submit.prevent="submitUser" class="auth-form">
+            <label class="auth-label">Email</label>
+            <input class="auth-input" type="email" v-model.trim="userForm.email" :disabled="userModalMode === 'edit'" />
+            <label class="auth-label">Display name</label>
+            <input class="auth-input" type="text" v-model.trim="userForm.displayName" placeholder="Optional" />
+            <label class="auth-label">{{ userModalMode === 'create' ? 'Password' : 'New password (leave blank to keep)' }}</label>
+            <input class="auth-input" type="password" v-model="userForm.password" autocomplete="new-password" />
+            <label class="auth-label">Role</label>
+            <select class="auth-input" v-model="userForm.role">
+              <option value="Admins">Admins (internal staff)</option>
+              <option value="Clients">Clients (customers)</option>
+              <option value="Reps">Reps (AWS partner reps)</option>
+            </select>
+            <p v-if="userFormError" class="auth-error">{{ userFormError }}</p>
+            <button class="auth-submit" type="submit" :disabled="userBusy">
+              {{ userBusy ? "Saving…" : (userModalMode === 'create' ? 'Create user' : 'Save changes') }}
+            </button>
+          </form>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-btn variant="text" @click="userModalOpen = false">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- ───────── Login ───────── -->
     <v-dialog v-model="loginOpen" max-width="440px" persistent>
@@ -774,6 +845,16 @@ export default {
       },
       ops: { contacts: "—", users: "—", lastContact: "" },
 
+      // User management
+      userList: [],
+      userListLoading: false,
+      userListError: "",
+      userModalOpen: false,
+      userModalMode: "create", // 'create' | 'edit'
+      userForm: { username: "", email: "", password: "", role: "Clients", displayName: "" },
+      userBusy: false,
+      userFormError: "",
+
       // Dummy consultancy KPIs + clients (replace with real data later)
       kpis: [
         { label: "Active clients",        value: "8",       sub: "+2 this quarter" },
@@ -898,6 +979,7 @@ export default {
       // If a tool is open, leaving via a tab click should close it.
       if (this.embedOpen) this.closeTool();
       this.activeTab = id;
+      if (id === "ops" && this.isAdmin && !this.userList.length) this.loadUsers();
     },
     setViewAs(id) {
       this.viewAs = id;
@@ -1176,6 +1258,96 @@ export default {
         };
       } catch (err) { console.warn("loadOps failed", err); }
     },
+
+    // ─────────── User management ───────────
+    async loadUsers() {
+      if (!this.isAdmin) return;
+      this.userListLoading = true;
+      this.userListError = "";
+      try {
+        const tokens = getTokens();
+        const res = await fetch(`${config.apiBase}/admin/users`, {
+          headers: { Authorization: `Bearer ${tokens.id_token}` },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        this.userList = data.users || [];
+      } catch (err) {
+        this.userListError = err.message || "Failed to load users";
+      } finally {
+        this.userListLoading = false;
+      }
+    },
+    openCreateUser() {
+      this.userModalMode = "create";
+      this.userForm = { username: "", email: "", password: "", role: "Clients", displayName: "" };
+      this.userFormError = "";
+      this.userModalOpen = true;
+    },
+    openEditUser(u) {
+      this.userModalMode = "edit";
+      this.userForm = {
+        username: u.username,
+        email: u.email,
+        password: "",
+        role: u.role || "Clients",
+        displayName: u.displayName || "",
+      };
+      this.userFormError = "";
+      this.userModalOpen = true;
+    },
+    async submitUser() {
+      this.userFormError = "";
+      this.userBusy = true;
+      try {
+        const tokens = getTokens();
+        const headers = {
+          Authorization: `Bearer ${tokens.id_token}`,
+          "Content-Type": "application/json",
+        };
+        if (this.userModalMode === "create") {
+          if (!this.userForm.email || !this.userForm.password) {
+            this.userFormError = "Email and password are required.";
+            return;
+          }
+          const res = await fetch(`${config.apiBase}/admin/users`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(this.userForm),
+          });
+          if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+        } else {
+          const body = { role: this.userForm.role };
+          if (this.userForm.password) body.password = this.userForm.password;
+          const res = await fetch(`${config.apiBase}/admin/users/${encodeURIComponent(this.userForm.username)}`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+        }
+        this.userModalOpen = false;
+        await this.loadUsers();
+      } catch (err) {
+        this.userFormError = err.message || "Something went wrong.";
+      } finally {
+        this.userBusy = false;
+      }
+    },
+    async deleteUser(u) {
+      if (!confirm(`Delete user ${u.email}? This cannot be undone.`)) return;
+      try {
+        const tokens = getTokens();
+        const res = await fetch(`${config.apiBase}/admin/users/${encodeURIComponent(u.username)}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${tokens.id_token}` },
+        });
+        if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+        await this.loadUsers();
+      } catch (err) {
+        alert(err.message || "Delete failed");
+      }
+    },
     validateEmail() {
       this.emailErrors = [];
       const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1392,6 +1564,83 @@ export default {
   color: #b3261e !important;
   font-weight: 500;
 }
+
+/* User management table */
+.users-panel {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e0eaf5;
+}
+.users-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+.users-panel-actions { display: flex; gap: 0.5rem; }
+.btn-sm { padding: 0.5rem 0.95rem !important; font-size: 0.85rem !important; }
+.users-empty { color: #6b7c93; font-style: italic; padding: 1rem 0; }
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.users-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: #f7fbff;
+  border-bottom: 1px solid #e0eaf5;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4a5e7e;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.users-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f0f4f9;
+  color: #1a3a6e;
+  font-size: 0.92rem;
+}
+.users-table tr:last-child td { border-bottom: none; }
+.users-table-actions { text-align: right; }
+.btn-link {
+  background: transparent;
+  border: none;
+  color: #2c5aa0;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+}
+.btn-link:hover { background: #f0f7fd; }
+.btn-link.btn-danger { color: #b3261e; }
+.btn-link.btn-danger:hover { background: rgba(179, 38, 30, 0.08); }
+
+.role-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 100px;
+}
+.role-admins   { background: rgba(91, 155, 213, 0.15); color: #2c5aa0; }
+.role-clients  { background: rgba(40, 200, 120, 0.12); color: #1a8a4f; }
+.role-reps     { background: rgba(255, 153, 0, 0.14);  color: #b86a00; }
+
+.status-text {
+  font-size: 0.78rem;
+  font-family: 'SF Mono', monospace;
+  color: #4a5e7e;
+}
+.status-text.disabled { color: #b3261e; }
 
 .view-banner {
   display: inline-block;
