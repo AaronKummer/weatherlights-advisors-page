@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Practice Quiz</title>
+    <title>WeatherLight — AWS Practice Quiz</title>
     <meta name="robots" content="noindex, nofollow">
-    <meta name="theme-color" content="#bb44ff">
+    <meta name="theme-color" content="#5b9bd5">
     <meta name="color-scheme" content="dark">
     <link rel="stylesheet" href="style.css">
     <style>
         :root {
-            --accent: #bb44ff;
-            --accent-dim: #bb44ff44;
-            --accent-bright: #dd77ff;
-            --secondary: #00ffee;
-            --secondary-dim: #00ffee44;
+            --accent: #5b9bd5;
+            --accent-dim: #5b9bd544;
+            --accent-bright: #9ec8ed;
+            --secondary: #1a3a6e;
+            --secondary-dim: #1a3a6e44;
             --bg: #0a0a0f;
             --bg-panel: #08080e;
             --bg-card: #111118;
@@ -25,12 +25,12 @@
             --warn: #ffaa00;
             --border: #ffffff12;
             --glow: var(--accent);
-            --accent-bg-subtle: rgba(187,68,255,0.03);
-            --accent-bg-hover: rgba(187,68,255,0.05);
-            --accent-bg-active: rgba(187,68,255,0.1);
-            --accent-border: rgba(187,68,255,0.3);
-            --secondary-bg-hover: rgba(0,255,238,0.06);
-            --secondary-bg-active: rgba(0,255,238,0.1);
+            --accent-bg-subtle: rgba(91,155,213,0.03);
+            --accent-bg-hover: rgba(91,155,213,0.05);
+            --accent-bg-active: rgba(91,155,213,0.1);
+            --accent-border: rgba(91,155,213,0.3);
+            --secondary-bg-hover: rgba(26,58,110,0.06);
+            --secondary-bg-active: rgba(26,58,110,0.1);
             --success-border: #00ff88;
             --success-bg: rgba(0,255,136,0.08);
             --success-border-dim: rgba(0,255,136,0.4);
@@ -300,7 +300,7 @@
             for (var k in overrides) root.style.setProperty(k, overrides[k]);
         }
         // Update meta theme-color
-        var metaThemeColors = { violet: '#bb44ff', sapphire: '#00b4d8', weatherlight: '#1a3a5c' };
+        var metaThemeColors = { violet: '#5b9bd5', sapphire: '#00b4d8', weatherlight: '#1a3a5c' };
         var metaEl = document.querySelector('meta[name="theme-color"]');
         if (metaEl && metaThemeColors[theme]) metaEl.setAttribute('content', metaThemeColors[theme]);
         // Update color-scheme meta for light theme

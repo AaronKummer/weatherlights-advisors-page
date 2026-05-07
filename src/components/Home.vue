@@ -64,6 +64,31 @@
       </svg>
     </section>
 
+    <section v-if="currentUser" id="members" class="content-section members-section">
+      <div class="container">
+        <div class="eyebrow">Members</div>
+        <h2 class="section-title">Welcome aboard, {{ currentUser.handle || currentUser.email }}.</h2>
+        <p class="section-lede">
+          Your training range is open. Practice exam banks for AWS certifications, plus a hands-on
+          wargame to sharpen your CLI and security chops.
+        </p>
+        <div class="member-grid">
+          <a href="/quiz/index.html?bank=saa-c03" class="member-card">
+            <div class="member-card-tag">Practice Exams</div>
+            <div class="member-card-title">AWS Certification Quizzes</div>
+            <p>Full question banks for SAA-C03 (Solutions Architect Associate) and DOP-C02 (DevOps Pro). Timed mode, explanations, domain breakdown.</p>
+            <div class="member-card-cta">Open Quiz <span aria-hidden>→</span></div>
+          </a>
+          <a href="/wargame/index.html" class="member-card">
+            <div class="member-card-tag">CTF Range</div>
+            <div class="member-card-title">WeatherLight Wargame</div>
+            <p>25 hands-on terminal challenges across 5 chapters — Linux fundamentals, text processing, recon, crypto, lateral movement. XP, ranks, achievements.</p>
+            <div class="member-card-cta">Launch Range <span aria-hidden>→</span></div>
+          </a>
+        </div>
+      </div>
+    </section>
+
     <section id="services" class="content-section">
       <div class="container">
         <div class="eyebrow">Services</div>
@@ -542,6 +567,73 @@ export default {
   background: #f7fbff;
   border-top: 1px solid #eef3f9;
   border-bottom: 1px solid #eef3f9;
+}
+
+.members-section {
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7fd 100%);
+  border-bottom: 1px solid #eef3f9;
+}
+
+.member-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.member-card {
+  display: block;
+  padding: 2rem;
+  background: #ffffff;
+  border: 1px solid #d8e6f3;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.18s ease, border-color 0.18s, box-shadow 0.18s;
+}
+.member-card:hover {
+  transform: translateY(-3px);
+  border-color: #5b9bd5;
+  box-shadow: 0 12px 32px rgba(26, 58, 110, 0.10);
+}
+.member-card-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  background: rgba(91, 155, 213, 0.12);
+  border-radius: 100px;
+  padding: 0.3rem 0.7rem;
+  margin-bottom: 1rem;
+}
+.member-card-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.01em;
+}
+.member-card p {
+  color: #4a5e7e;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+.member-card-cta {
+  color: #1a3a6e;
+  font-weight: 600;
+  font-size: 0.92rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.member-card-cta span { transition: transform 0.18s; }
+.member-card:hover .member-card-cta span { transform: translateX(4px); }
+
+@media (max-width: 700px) {
+  .member-grid { grid-template-columns: 1fr; }
 }
 
 .container { max-width: 1100px; margin: 0 auto; }

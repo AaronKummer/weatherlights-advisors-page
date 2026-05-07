@@ -72,6 +72,8 @@ export async function exchangeCodeForTokens(code) {
   const tokens = await res.json();
   tokens.expiresAt = Date.now() + tokens.expires_in * 1000;
   localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+  // Bridge to vv-quiz / vv-wargame, which gate on this key
+  localStorage.setItem("vv-token", tokens.id_token);
   sessionStorage.removeItem(PKCE_KEY);
   return tokens;
 }
@@ -90,6 +92,7 @@ export function getTokens() {
 
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem("vv-token");
   const params = new URLSearchParams({
     client_id: config.cognito.clientId,
     logout_uri: config.logoutUri,
