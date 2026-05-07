@@ -36,7 +36,15 @@
               <span class="user-handle">{{ displayHandle }}</span>
               <div v-if="userMenuOpen" class="user-menu">
                 <div class="user-menu-email">{{ currentUser.email }}</div>
-                <button @click="onLogout">Sign out</button>
+                <div v-if="isAdmin" class="user-menu-section">
+                  <div class="user-menu-label">View as</div>
+                  <button v-for="v in viewOptions" :key="v.id"
+                          :class="['view-pick', { active: viewAs === v.id }]"
+                          @click="setViewAs(v.id)">
+                    {{ v.label }}
+                  </button>
+                </div>
+                <button @click="onLogout" class="user-menu-signout">Sign out</button>
               </div>
             </div>
           </template>
@@ -226,6 +234,8 @@
       <!-- When a tool is open, it takes over the portal-page area inline.
            Nav + tabs stay visible above; the iframe lives in a window
            contained within the page. -->
+      <!-- ===== Internal (admin) view ===== -->
+      <template v-if="viewAs === 'internal'">
       <section v-if="embedOpen" class="portal-page embed-page">
         <div class="embed-window">
           <div class="embed-bar">
@@ -388,6 +398,124 @@
           </div>
         </div>
       </section>
+      </template>
+
+      <!-- ===== Client view (admin can preview as a customer would see it) ===== -->
+      <template v-if="viewAs === 'client'">
+        <section v-show="activeTab === 'overview'" class="portal-page">
+          <div class="container">
+            <div class="view-banner">You are viewing the site as a <strong>client</strong>.</div>
+            <h1 class="portal-title">Welcome back, Helix Robotics.</h1>
+            <p class="portal-sub">Your engagement is on track. Here's where things stand.</p>
+            <div class="kpi-grid">
+              <div class="kpi-card"><div class="kpi-label">Engagement</div><div class="kpi-num">Active</div><div class="kpi-sub">Cert track · Q2 2026</div></div>
+              <div class="kpi-card"><div class="kpi-label">Engineers enrolled</div><div class="kpi-num">12</div><div class="kpi-sub">SAA-C03 cohort</div></div>
+              <div class="kpi-card"><div class="kpi-label">Avg practice score</div><div class="kpi-num">81%</div><div class="kpi-sub">+6% over last 30d</div></div>
+              <div class="kpi-card"><div class="kpi-label">Next milestone</div><div class="kpi-num small">May 28</div><div class="kpi-sub">Mock exam — full team</div></div>
+            </div>
+            <div class="overview-feed">
+              <div class="finance-card-title">Recent activity</div>
+              <ul class="feed-list">
+                <li class="feed-item"><span class="feed-tag">Cohort Update</span><span class="feed-text">3 engineers passed SAA-C03 (avg 87%)</span><span class="feed-when">2h ago</span></li>
+                <li class="feed-item"><span class="feed-tag">Module Released</span><span class="feed-text">VPC Architecture · Module 7 now available</span><span class="feed-when">yesterday</span></li>
+                <li class="feed-item"><span class="feed-tag">Office Hours</span><span class="feed-text">Next session: Thursday 1pm PT — Aaron K.</span><span class="feed-when">2d ago</span></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        <section v-show="activeTab === 'training'" class="portal-page">
+          <div class="container">
+            <h2 class="section-title">Your training</h2>
+            <p class="section-lede">Practice exams + hands-on labs assigned to your team.</p>
+            <h3 class="finance-card-title training-h3">Practice Exams</h3>
+            <div class="cert-picker-grid">
+              <a v-for="b in quizBanks" :key="b.code" @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#" class="cert-pill">
+                <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
+                <div class="cert-pill-name">{{ b.name }}</div>
+                <div class="cert-pill-meta">{{ b.questions }} questions</div>
+              </a>
+            </div>
+          </div>
+        </section>
+        <section v-show="activeTab === 'deliverables'" class="portal-page">
+          <div class="container">
+            <h2 class="section-title">Deliverables</h2>
+            <p class="section-lede">Artifacts shipped to your team.</p>
+            <ul class="feed-list">
+              <li class="feed-item"><span class="feed-tag">Architecture Doc</span><span class="feed-text">VPC + multi-account landing zone (v2)</span><span class="feed-when">Apr 12</span></li>
+              <li class="feed-item"><span class="feed-tag">Runbook</span><span class="feed-text">Incident response: IAM credential leak</span><span class="feed-when">Apr 03</span></li>
+              <li class="feed-item"><span class="feed-tag">Cohort Report</span><span class="feed-text">Q1 cert progress · 12 engineers</span><span class="feed-when">Mar 31</span></li>
+              <li class="feed-item"><span class="feed-tag">Cost Review</span><span class="feed-text">RI rightsizing — projected $14k/mo savings</span><span class="feed-when">Mar 18</span></li>
+            </ul>
+          </div>
+        </section>
+        <section v-show="activeTab === 'contact'" class="portal-page">
+          <div class="container container-narrow">
+            <h2 class="section-title">Get in touch</h2>
+            <p class="section-lede">Your engagement lead is <strong>Aaron Kummer</strong>. Drop a note and we'll respond within one business day.</p>
+            <button class="btn-primary" @click="dialog = true">Send a message</button>
+          </div>
+        </section>
+      </template>
+
+      <!-- ===== AWS Partner Rep view ===== -->
+      <template v-if="viewAs === 'rep'">
+        <section v-show="activeTab === 'overview'" class="portal-page">
+          <div class="container">
+            <div class="view-banner">You are viewing the site as an <strong>AWS Partner Rep</strong>.</div>
+            <h1 class="portal-title">Pipeline status, WeatherLight Advisors.</h1>
+            <p class="portal-sub">Opportunities your team has sent us — sourced via ACE.</p>
+            <div class="kpi-grid">
+              <div class="kpi-card"><div class="kpi-label">Open opportunities</div><div class="kpi-num">7</div><div class="kpi-sub">3 in active discovery</div></div>
+              <div class="kpi-card"><div class="kpi-label">Closed-won (YTD)</div><div class="kpi-num">5</div><div class="kpi-sub">$840k AWS-influenced</div></div>
+              <div class="kpi-card"><div class="kpi-label">Avg time to first call</div><div class="kpi-num">1.4d</div><div class="kpi-sub">target: ≤ 2 days</div></div>
+              <div class="kpi-card"><div class="kpi-label">CSAT (post-engagement)</div><div class="kpi-num">4.8/5</div><div class="kpi-sub">12 responses</div></div>
+            </div>
+            <div class="overview-feed">
+              <div class="finance-card-title">Recent ACE updates</div>
+              <ul class="feed-list">
+                <li class="feed-item"><span class="feed-tag">Northwind Logistics</span><span class="feed-text">Discovery call scheduled · Migration assessment</span><span class="feed-when">today</span></li>
+                <li class="feed-item"><span class="feed-tag">Coastal Credit Union</span><span class="feed-text">SOW signed · Landing zone PoC</span><span class="feed-when">yesterday</span></li>
+                <li class="feed-item"><span class="feed-tag">Verdant Energy</span><span class="feed-text">Closed-won · $32k · RI optimization</span><span class="feed-when">2d ago</span></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        <section v-show="activeTab === 'engagements'" class="portal-page">
+          <div class="container">
+            <h2 class="section-title">Active engagements</h2>
+            <p class="section-lede">Customers your team referred who are currently working with us.</p>
+            <div class="clients-grid">
+              <div v-for="c in clients.filter(c => c.status !== 'paused')" :key="c.name" class="client-card">
+                <div class="client-row"><span class="client-name">{{ c.name }}</span><span class="client-status" :class="'status-' + c.status">{{ c.status }}</span></div>
+                <p class="client-focus">{{ c.focus }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section v-show="activeTab === 'reports'" class="portal-page">
+          <div class="container">
+            <h2 class="section-title">Reports</h2>
+            <p class="section-lede">ACE-formatted outcome summaries you can paste into your partner notes.</p>
+            <ul class="feed-list">
+              <li class="feed-item"><span class="feed-tag">Q1 Outcomes</span><span class="feed-text">5 closed-won · $840k AWS-influenced revenue</span><span class="feed-when">Apr 02</span></li>
+              <li class="feed-item"><span class="feed-tag">Cert Throughput</span><span class="feed-text">38 engineers certified across 4 customers</span><span class="feed-when">Mar 28</span></li>
+              <li class="feed-item"><span class="feed-tag">Migration Velocity</span><span class="feed-text">Avg 6.2 wks · landing zone → first prod workload</span><span class="feed-when">Mar 15</span></li>
+            </ul>
+          </div>
+        </section>
+        <section v-show="activeTab === 'resources'" class="portal-page">
+          <div class="container container-narrow">
+            <h2 class="section-title">Resources</h2>
+            <p class="section-lede">Materials to help you sell WeatherLight engagements.</p>
+            <ul class="feed-list">
+              <li class="feed-item"><span class="feed-tag">One-pager</span><span class="feed-text">WeatherLight Advisors — service overview (PDF)</span><span class="feed-when">v3</span></li>
+              <li class="feed-item"><span class="feed-tag">Case Study</span><span class="feed-text">Verdant Energy: $14k/mo saved via RI review</span><span class="feed-when">Apr</span></li>
+              <li class="feed-item"><span class="feed-tag">Pitch Deck</span><span class="feed-text">AWS-only consultancy positioning · 12 slides</span><span class="feed-when">v2</span></li>
+            </ul>
+          </div>
+        </section>
+      </template>
     </template>
 
     <footer v-if="!currentUser" class="site-footer">
@@ -606,13 +734,35 @@ export default {
       embedTitle: "",
       // Active portal tab (post-login navigation)
       activeTab: "overview",
-      tabs: [
-        { id: "overview",   label: "Overview" },
-        { id: "clients",    label: "Clients" },
-        { id: "financials", label: "Financials" },
-        { id: "training",   label: "Training" },
-        { id: "ops",        label: "Ops", adminOnly: true },
+      // "View as" — admin can preview the site as a client or an AWS rep.
+      // Internal is the real admin experience; the others are stubs for now.
+      viewAs: "internal",
+      viewOptions: [
+        { id: "internal", label: "Internal (admin)" },
+        { id: "client",   label: "Client" },
+        { id: "rep",      label: "AWS Partner Rep" },
       ],
+      tabsByView: {
+        internal: [
+          { id: "overview",   label: "Overview" },
+          { id: "clients",    label: "Clients" },
+          { id: "financials", label: "Financials" },
+          { id: "training",   label: "Training" },
+          { id: "ops",        label: "Ops", adminOnly: true },
+        ],
+        client: [
+          { id: "overview",     label: "My Engagement" },
+          { id: "training",     label: "Training" },
+          { id: "deliverables", label: "Deliverables" },
+          { id: "contact",      label: "Contact Us" },
+        ],
+        rep: [
+          { id: "overview",    label: "Pipeline" },
+          { id: "engagements", label: "Active Engagements" },
+          { id: "reports",     label: "Reports" },
+          { id: "resources",   label: "Resources" },
+        ],
+      },
       // Member portal stats (computed from localStorage in computeStats)
       stats: {
         questionsAnswered: 0,
@@ -696,6 +846,7 @@ export default {
     };
   },
   computed: {
+    tabs() { return this.tabsByView[this.viewAs] || this.tabsByView.internal; },
     // Always strip the unique-suffix dash from handles before display.
     // Storage keeps the full handle for uniqueness; users only ever see the prefix.
     displayHandle() {
@@ -747,6 +898,12 @@ export default {
       // If a tool is open, leaving via a tab click should close it.
       if (this.embedOpen) this.closeTool();
       this.activeTab = id;
+    },
+    setViewAs(id) {
+      this.viewAs = id;
+      this.activeTab = this.tabsByView[id][0].id;
+      this.userMenuOpen = false;
+      if (this.embedOpen) this.closeTool();
     },
     // Allow short usernames like "admin" — auto-append @weatherlightadvisors.com.
     // If the input already looks like an email (has @), pass through unchanged.
@@ -936,10 +1093,9 @@ export default {
     // ─────────── Theme toggle ───────────
     applyStoredThemeOverride() {
       const v = localStorage.getItem("wl-theme");
-      if (v === "dark" || v === "light") {
-        this.themeOverride = v;
-        this.applyThemeClass();
-      }
+      // Default to dark on first visit; respect explicit choice afterwards.
+      this.themeOverride = (v === "light" || v === "dark") ? v : "dark";
+      this.applyThemeClass();
     },
     applyThemeClass() {
       const html = document.documentElement;
@@ -1210,6 +1366,44 @@ export default {
   cursor: pointer;
 }
 .user-menu button:hover { background: #f5f8fc; }
+.user-menu-section {
+  margin-top: 0.4rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f0f4f9;
+}
+.user-menu-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7c93;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.5rem 0.25rem;
+}
+.view-pick { font-size: 0.88rem !important; padding: 0.4rem 0.5rem !important; }
+.view-pick.active {
+  background: #f0f7fd !important;
+  color: #1a3a6e !important;
+  font-weight: 600;
+}
+.user-menu-signout {
+  margin-top: 0.4rem;
+  padding-top: 0.6rem !important;
+  border-top: 1px solid #f0f4f9;
+  color: #b3261e !important;
+  font-weight: 500;
+}
+
+.view-banner {
+  display: inline-block;
+  margin-bottom: 1.25rem;
+  padding: 0.45rem 0.9rem;
+  background: rgba(255, 153, 0, 0.12);
+  color: #c2570a;
+  border-radius: 100px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
 
 .hero {
   position: relative;
