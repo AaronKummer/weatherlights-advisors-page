@@ -469,19 +469,6 @@
   },
   {
     "id": 37,
-    "question": "A startup runs a stateful workload on EC2 with EBS gp3. They want to recover from accidental deletion within 15 minutes, across two Regions, with consolidated backup policy management. Which service combination is correct?",
-    "options": [
-      "A. AWS Backup with cross-Region copy enabled in the backup plan, vault lock in compliance mode for retention enforcement, and EventBridge alerts on backup job failures; restore via Backup restore jobs.",
-      "B. Manual EBS snapshots and a cron job.",
-      "C. DLM only, no cross-Region.",
-      "D. AWS Elastic Disaster Recovery (DRS) configured to replicate to S3 only."
-    ],
-    "answer": 0,
-    "explanation": "AWS Backup centralizes EBS backup policy, supports cross-Region copy, and Vault Lock prevents tampering (compliance mode is irreversible). Restore jobs deliver the volume back. DLM (C) is single-Region. DRS (D) replicates to a staging area but the option distorts how DRS works (replicates to a staging subnet in the recovery Region, not S3 only). (B) is fragile.",
-    "domain": "Resilient Cloud Solutions"
-  },
-  {
-    "id": 38,
     "question": "An ALB-backed ECS service must survive a single-AZ outage with no observable customer impact. The team currently runs three tasks across two AZs. What is the most defensible configuration change?",
     "options": [
       "A. Run with placement strategy spread on attribute:ecs.availability-zone across at least three AZs with a minimum healthy task count that survives loss of any one AZ; verify ALB cross-zone load balancing is enabled (default for ALB) and Auto Scaling capacity providers maintain capacity.",
@@ -494,7 +481,7 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 39,
+    "id": 38,
     "question": "A serverless team uses API Gateway in front of Lambda. During a downstream outage they want the API to return cached responses instead of failing. Which is the most cost-effective mechanism?",
     "options": [
       "A. Enable API Gateway stage caching with a TTL appropriate to the data; use cache key parameters and authorize cache invalidation; for finer control, use CloudFront with custom error caching in front.",
@@ -507,7 +494,7 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 40,
+    "id": 39,
     "question": "A multi-account workload uses RDS Proxy in front of a primary RDS PostgreSQL. The team observed that during a Multi-AZ failover, application connections receive lingering errors for 90 seconds. They need failover transparency under 30 seconds. Which change helps the most?",
     "options": [
       "A. Use RDS Proxy with the ConnectionBorrowTimeout tuned, IAM authentication, and ensure the application uses short transactions; RDS Proxy holds the database connection through failover and is the supported way to reduce client impact.",
@@ -520,20 +507,7 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 41,
-    "question": "A government workload requires testing actual fault conditions during business hours, with safety controls ensuring blast radius stays within a single account and stop conditions on production alarms. Which service is appropriate?",
-    "options": [
-      "A. AWS Fault Injection Service (FIS) experiments using resource tags for targeting, stop conditions tied to CloudWatch alarms, and IAM execution role limited to the experiment account.",
-      "B. AWS Config remediation actions.",
-      "C. CloudFormation Drift simulation.",
-      "D. CodeDeploy bake time only."
-    ],
-    "answer": 0,
-    "explanation": "FIS is the managed chaos service: it targets resources by tag/filter, supports stop conditions via CloudWatch alarms, and is account-scoped via its execution role. (B) repairs misconfig, not fault injection. (C) is not a real feature. (D) is unrelated.",
-    "domain": "Resilient Cloud Solutions"
-  },
-  {
-    "id": 42,
+    "id": 40,
     "question": "A product runs DynamoDB Global Tables across three Regions. Engineers want a runbook that, on a Region outage, drains write traffic to one specific Region and prevents conflicting writes during the outage window. Which mechanism is most appropriate?",
     "options": [
       "A. Use Route 53 ARC routing controls plus an application-level write-region selector backed by Parameter Store; reads can continue from local replicas, and writes are pinned to a survivor Region. Conflict prevention is at the application layer because Global Tables uses last-writer-wins.",
@@ -546,7 +520,7 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 43,
+    "id": 41,
     "question": "A team operating CloudFront with a custom origin needs to maintain availability when the primary origin returns 5xx. Which configuration is appropriate?",
     "options": [
       "A. CloudFront origin group with primary and secondary origins, Origin Failover Criteria including 500/502/503/504, and origin shield enabled in a Region close to most viewers; combine with custom error pages for last-resort UX.",
@@ -559,7 +533,7 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 44,
+    "id": 42,
     "question": "An ElastiCache Redis cluster sits behind a backend service. The team needs an automated failover that keeps the same connection string and triggers application alarms on lag spikes greater than 10 seconds. Which configuration provides this?",
     "options": [
       "A. Enable Multi-AZ with automatic failover on the replication group, use the primary endpoint (which is updated on failover), and create CloudWatch alarms on the EngineCPUUtilization and ReplicationLag metrics.",
@@ -572,7 +546,7 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 45,
+    "id": 43,
     "question": "A company runs an active/passive multi-Region architecture. They need to verify quarterly that the passive Region can serve full production load. Which testing approach is best supported by AWS services?",
     "options": [
       "A. Use AWS Resilience Hub assessments, run AWS FIS experiments simulating Region-impairing fault scenarios in pre-prod, and shift live traffic to passive via Route 53 ARC during a scheduled game day with ARC safety rules ensuring a clean state.",
@@ -585,20 +559,7 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 46,
-    "question": "A multi-tenant SaaS uses Lambda extensively. After a regional event, the team wants a consolidated view of failed asynchronous Lambda invocations across the org, with the original payload retained. Which design captures this with minimal custom code?",
-    "options": [
-      "A. Configure Lambda destinations on failure to an EventBridge bus; route to an SQS DLQ that holds payloads, plus an Athena partition projection over S3 logs; for org-wide visibility, deliver to a central security account via cross-account EventBridge bus.",
-      "B. Aggregate via custom DynamoDB tables per function.",
-      "C. Use CloudTrail data events on Lambda.",
-      "D. Print to logs and grep manually."
-    ],
-    "answer": 0,
-    "explanation": "Lambda destinations on failure capture the input record alongside the error response. EventBridge cross-account buses make org-wide aggregation simple. Athena over S3 enables ad-hoc analysis. (B) is heavy custom code. (C) data events do not capture invocation payloads. (D) is not scalable.",
-    "domain": "Resilient Cloud Solutions"
-  },
-  {
-    "id": 47,
+    "id": 44,
     "question": "A failover-critical workload uses NLB with cross-zone load balancing. After a recent test, removing all instances from one AZ caused 2% of TCP connections to time out for ~30s before NLB stopped sending to that AZ. Which improvement reduces this?",
     "options": [
       "A. Tune the NLB target group health check (interval, threshold) so unhealthy targets are removed faster, and ensure connection draining (deregistration delay) is set appropriately; combine with Route 53 health checks on a shorter interval for DNS-level shedding.",
@@ -611,7 +572,20 @@
     "domain": "Resilient Cloud Solutions"
   },
   {
-    "id": 48,
+    "id": 45,
+    "question": "A multi-tenant SaaS uses Lambda extensively. After a regional event, the team wants a consolidated view of failed asynchronous Lambda invocations across the org, with the original payload retained. Which design captures this with minimal custom code?",
+    "options": [
+      "A. Configure Lambda destinations on failure to an EventBridge bus; route to an SQS DLQ that holds payloads, plus an Athena partition projection over S3 logs; for org-wide visibility, deliver to a central security account via cross-account EventBridge bus.",
+      "B. Aggregate via custom DynamoDB tables per function.",
+      "C. Use CloudTrail data events on Lambda.",
+      "D. Print to logs and grep manually."
+    ],
+    "answer": 0,
+    "explanation": "Lambda destinations on failure capture the input record alongside the error response. EventBridge cross-account buses make org-wide aggregation simple. Athena over S3 enables ad-hoc analysis. (B) is heavy custom code. (C) data events do not capture invocation payloads. (D) is not scalable.",
+    "domain": "Monitoring and Logging"
+  },
+  {
+    "id": 46,
     "question": "A platform team must ingest CloudTrail, VPC Flow, and DNS query logs into a central security data lake to power 13-month retention searches and ad-hoc queries. Which design uses managed services and minimal ETL?",
     "options": [
       "A. Use Security Lake to aggregate CloudTrail (management and data events), VPC Flow, and Route 53 Resolver query logs from member accounts via Organizations; query via Athena/QuickSight; lifecycle to Glacier for retention beyond 13 months.",
@@ -624,7 +598,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 49,
+    "id": 47,
     "question": "A team must alert when Lambda P99 duration is anomalously high but tolerate normal periodic batch peaks. Which CloudWatch primitive fits best?",
     "options": [
       "A. A static threshold alarm at 1000ms.",
@@ -637,7 +611,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 50,
+    "id": 48,
     "question": "A company collects application logs from 1,500 EC2 instances. They want structured search, alerting, and the ability to write metric filters that emit to CloudWatch. Which agent and pattern are correct in 2026 best practice?",
     "options": [
       "A. The unified CloudWatch agent with a JSON config that ships logs to CloudWatch Logs log groups, plus subscription filters that fan out to Kinesis Data Firehose to S3 for cold storage; metric filters on the log groups emit numeric metrics for alarms.",
@@ -650,7 +624,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 51,
+    "id": 49,
     "question": "A team operating a microservices fleet on EKS wants distributed tracing with low overhead, automatic context propagation through SQS and HTTP, and a clear service map. Which combination is appropriate?",
     "options": [
       "A. AWS X-Ray with the OpenTelemetry-based ADOT (AWS Distro for OpenTelemetry) collector running as a DaemonSet, instrumented SDKs that propagate W3C traceparent and AWS X-Amzn-Trace-Id, sampling rules tuned per service.",
@@ -663,7 +637,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 52,
+    "id": 50,
     "question": "An ECS Fargate workload is failing intermittently. The team wants per-container metrics (CPU, memory, network), application logs co-located, and to slice by container and task. Which solution provides this with minimal code changes?",
     "options": [
       "A. CloudWatch Container Insights with enhanced observability for ECS, awslogs driver (or FireLens) for application logs, and Container Insights dashboards filtered by ClusterName, TaskDefinitionFamily, and ContainerName.",
@@ -676,7 +650,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 53,
+    "id": 51,
     "question": "An app team's CloudTrail Lake event data store is too large to scan during incident hunts. They need fast targeted queries on management events for the last 30 days while retaining 7 years cheaply. Which configuration helps?",
     "options": [
       "A. Tier the event data store with a hot retention of 30 days and extended retention pricing for the rest, partition queries by eventTime, and use CloudTrail Lake's federated queries from Athena where appropriate.",
@@ -689,7 +663,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 54,
+    "id": 52,
     "question": "A team needs an alarm that fires only when an EC2 instance has high CPU AND the same instance has high disk queue depth, ignoring transient single-metric spikes. Which CloudWatch construct is correct?",
     "options": [
       "A. Two metric alarms combined with a composite alarm using ALARM(cpu) AND ALARM(diskQueue), with M-of-N evaluation periods on each child alarm.",
@@ -702,7 +676,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 55,
+    "id": 53,
     "question": "A team requires that all CloudWatch Logs across the org are encrypted with a CMK and can never be deleted within their retention window. Which combination provides this?",
     "options": [
       "A. Apply an SCP that denies logs:DisassociateKmsKey and logs:DeleteRetentionPolicy and logs:DeleteLogGroup; require associated KMS keys via Config rule cloudwatch-log-group-encrypted; for true immutability also export to an S3 bucket with Object Lock compliance mode.",
@@ -715,7 +689,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 56,
+    "id": 54,
     "question": "A team wants a daily report on AWS spend anomalies and has thousands of resources across 30 accounts. Which managed approach is appropriate?",
     "options": [
       "A. AWS Cost Anomaly Detection with monitors per service and per account, alerts via SNS to a Slack ChatBot channel; combine with Cost and Usage Reports in Athena for deep dive.",
@@ -728,7 +702,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 57,
+    "id": 55,
     "question": "A team manages 80 Lambda functions and wants automatic baseline alarms for Errors, Throttles, and Duration without writing CloudFormation per function. Which approach is appropriate?",
     "options": [
       "A. CloudWatch Application Insights with SAM/CloudFormation-defined Lambda resources, plus a generic CDK Aspect that adds standard alarms to every Lambda construct in the app.",
@@ -741,7 +715,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 58,
+    "id": 56,
     "question": "A finance app uses AWS Glue jobs orchestrated by Step Functions. Operators need to know when a job has been running 25% longer than its rolling P95 baseline. Which approach is best?",
     "options": [
       "A. Use CloudWatch Metrics Insights to compute P95 over a rolling window, push the comparison via Metric Math against the current run duration, and alarm when current exceeds P95 by 25%; tag the alarm to suppress during scheduled large-load periods using composite alarm action suppressors.",
@@ -754,7 +728,7 @@
     "domain": "Monitoring and Logging"
   },
   {
-    "id": 59,
+    "id": 57,
     "question": "A fintech needs alerting via Slack for high-severity GuardDuty findings, with an ack workflow and a 15-minute SLO from finding to engineer ack. Which combination is correct?",
     "options": [
       "A. GuardDuty findings to EventBridge filtered by severity >= 7.0, fanned out to AWS Chatbot in a dedicated Slack channel, plus a Lambda that records ack time when an engineer reacts; surface SLO via CloudWatch metric and alarm.",
@@ -767,7 +741,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 60,
+    "id": 58,
     "question": "A team experienced an incident where an IAM access key was exposed in a public GitHub repo. They need automated remediation: disable the key, rotate it, and isolate the EC2 instances using it. Which design is correct?",
     "options": [
       "A. AWS Health and AWS_RISK_CREDENTIALS_EXPOSED events route via EventBridge to an SSM Automation runbook that disables and recreates the access key, opens a Security Hub finding, and triggers a Lambda that quarantines instances by replacing their security group with a deny-all SG.",
@@ -780,7 +754,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 61,
+    "id": 59,
     "question": "An on-call engineer needs to safely run privileged commands on a production EC2 instance during a Sev-1 with full audit and a justification. Which workflow is appropriate?",
     "options": [
       "A. Session Manager with an IAM policy condition requiring an aws:RequestTag/JustificationId on StartSession, session logs to KMS-encrypted S3, and an EventBridge rule that posts the justification and operator to Slack and Security Hub for review.",
@@ -793,7 +767,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 62,
+    "id": 60,
     "question": "A SaaS team must respond to AWS Config rule violations within five minutes. The rule s3-bucket-public-read-prohibited fires for a misconfigured bucket. Which automatic remediation works without writing custom Lambdas?",
     "options": [
       "A. Configure AWS Config remediation with the SSM Automation document AWS-DisableS3BucketPublicReadWrite as an automatic remediation action with auto-remediation enabled and retry parameters set; concurrent execution and EventBridge notification provide visibility.",
@@ -806,7 +780,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 63,
+    "id": 61,
     "question": "A Sev-2 alert says ALB 5xx is elevated but only for one target group. The team wants a runbook that automatically (1) captures a snapshot of CloudWatch metrics and X-Ray traces, (2) gathers logs from the affected tasks, and (3) opens a ticket. Which orchestration is appropriate?",
     "options": [
       "A. EventBridge rule on the alarm action -> Step Functions express workflow that calls SDKs for CloudWatch GetMetricData and X-Ray GetTraceSummaries, gathers logs via Logs Insights queries, posts a comment to ServiceNow, and stores a bundle in S3 referenced from the ticket.",
@@ -819,7 +793,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 64,
+    "id": 62,
     "question": "An incident requires forensic preservation of an EC2 instance: the team must isolate it from the network, capture memory and disk, and retain artifacts immutably. Which sequence is correct?",
     "options": [
       "A. Detach the instance from its Auto Scaling group (StandBy lifecycle), replace the security group with a forensic deny-all, snapshot EBS volumes with copy-tags, capture memory via SSM Run Command running an approved tool, copy artifacts to an S3 bucket with Object Lock compliance mode, and tag the case ID; document via Security Hub finding.",
@@ -832,7 +806,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 65,
+    "id": 63,
     "question": "A platform must detect when an unintended IAM role gains AdministratorAccess and revoke within minutes. Which detection is most reliable?",
     "options": [
       "A. EventBridge rule on AttachRolePolicy or PutRolePolicy with policy ARN arn:aws:iam::aws:policy/AdministratorAccess, plus IAM Access Analyzer external access findings; on match, an SSM Automation runbook detaches the policy and notifies via Security Hub.",
@@ -845,7 +819,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 66,
+    "id": 64,
     "question": "A team needs a single pane of glass that aggregates GuardDuty, Inspector v2, Macie, and IAM Access Analyzer findings across the org with consistent severity normalization and the ability to send to ServiceNow. Which service is the right hub?",
     "options": [
       "A. AWS Security Hub with Organization-wide enablement, security standards enabled per the team's framework, EventBridge filtering by severity to a ServiceNow integration; configure cross-region aggregation and finding aggregation in the delegated administrator account.",
@@ -858,7 +832,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 67,
+    "id": 65,
     "question": "A storefront service throttles when DynamoDB latency spikes. The team wants the on-call channel to receive a 'panic' page only if DDB latency AND retries AND application 5xx rise together. Which CloudWatch construct fits?",
     "options": [
       "A. A composite alarm combining three metric alarms with AND logic, using action suppressors to silence during scheduled bulk imports, and routing to PagerDuty via SNS.",
@@ -871,7 +845,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 68,
+    "id": 66,
     "question": "A team wants to auto-create incident records and timeline events whenever a critical CloudWatch alarm fires, including links to the runbook and the ability to open a war room. Which AWS service is purpose-built for this?",
     "options": [
       "A. AWS Systems Manager Incident Manager with response plans linking the alarm to runbooks and chat channels (Chatbot), automation documents for triage, and post-incident analysis templates.",
@@ -884,7 +858,7 @@
     "domain": "Incident and Event Response"
   },
   {
-    "id": 69,
+    "id": 67,
     "question": "A team noticed anomalous EC2 launches in a development account by a long-dormant access key. They want to prevent any future unfamiliar-region API call by that account globally and automatically. Which control fits?",
     "options": [
       "A. Apply an SCP that denies actions outside an allowed Region list (aws:RequestedRegion), and an IAM permission boundary on the dev account roles; pair with GuardDuty UnusualBehavior findings and an EventBridge rule that auto-disables the offending key on detection.",
@@ -895,6 +869,32 @@
     "answer": 0,
     "explanation": "Region restriction is enforced via aws:RequestedRegion in SCP/IAM, not network-layer ACLs. GuardDuty Unusual* findings detect the behavior and an EventBridge rule + SSM disables the key fast. (B) is overkill. (C) is for HTTP. (D) NACLs do not understand AWS Regions.",
     "domain": "Incident and Event Response"
+  },
+  {
+    "id": 68,
+    "question": "A startup runs a stateful workload on EC2 with EBS gp3. They want to recover from accidental deletion within 15 minutes, across two Regions, with consolidated backup policy management. Which service combination is correct?",
+    "options": [
+      "A. AWS Backup with cross-Region copy enabled in the backup plan, vault lock in compliance mode for retention enforcement, and EventBridge alerts on backup job failures; restore via Backup restore jobs.",
+      "B. Manual EBS snapshots and a cron job.",
+      "C. DLM only, no cross-Region.",
+      "D. AWS Elastic Disaster Recovery (DRS) configured to replicate to S3 only."
+    ],
+    "answer": 0,
+    "explanation": "AWS Backup centralizes EBS backup policy, supports cross-Region copy, and Vault Lock prevents tampering (compliance mode is irreversible). Restore jobs deliver the volume back. DLM (C) is single-Region. DRS (D) replicates to a staging area but the option distorts how DRS works (replicates to a staging subnet in the recovery Region, not S3 only). (B) is fragile.",
+    "domain": "Security and Compliance"
+  },
+  {
+    "id": 69,
+    "question": "A government workload requires testing actual fault conditions during business hours, with safety controls ensuring blast radius stays within a single account and stop conditions on production alarms. Which service is appropriate?",
+    "options": [
+      "A. AWS Fault Injection Service (FIS) experiments using resource tags for targeting, stop conditions tied to CloudWatch alarms, and IAM execution role limited to the experiment account.",
+      "B. AWS Config remediation actions.",
+      "C. CloudFormation Drift simulation.",
+      "D. CodeDeploy bake time only."
+    ],
+    "answer": 0,
+    "explanation": "FIS is the managed chaos service: it targets resources by tag/filter, supports stop conditions via CloudWatch alarms, and is account-scoped via its execution role. (B) repairs misconfig, not fault injection. (C) is not a real feature. (D) is unrelated.",
+    "domain": "Security and Compliance"
   },
   {
     "id": 70,
