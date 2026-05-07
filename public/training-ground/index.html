@@ -101,18 +101,103 @@
     background: var(--panel);
     border-right: 1px solid var(--border);
     overflow-y: auto;
-    padding: 1rem 0.85rem;
+    overflow-x: hidden;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
   }
-  .tg-palette h3 {
+  .tg-palette-search-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--panel);
+    padding: 0.85rem 0.85rem 0.7rem;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .tg-palette-search {
+    width: 100%;
+    padding: 0.55rem 0.7rem 0.55rem 2rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--ink);
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .tg-palette-search:focus {
+    outline: none;
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.18);
+  }
+  .tg-palette-search::-webkit-search-cancel-button { display: none; }
+  .tg-palette-search-icon {
+    position: absolute;
+    left: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .tg-palette-list {
+    padding: 0.4rem 0.85rem 1rem;
+  }
+  .tg-cat {
+    margin-top: 0.85rem;
+  }
+  .tg-cat:first-child { margin-top: 0.5rem; }
+  .tg-cat-head {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 0.3rem 0.2rem;
+    margin-bottom: 0.4rem;
+    color: var(--muted);
     font-size: 0.7rem;
     font-weight: 700;
-    color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-bottom: 0.6rem;
-    margin-top: 1rem;
+    cursor: pointer;
+    user-select: none;
   }
-  .tg-palette h3:first-child { margin-top: 0; }
+  .tg-cat-head:hover { color: var(--ink); }
+  .tg-cat-arrow {
+    width: 10px; height: 10px;
+    margin-right: 0.4rem;
+    transition: transform 0.18s ease;
+    color: var(--muted);
+  }
+  .tg-cat.collapsed .tg-cat-arrow { transform: rotate(-90deg); }
+  .tg-cat-count {
+    margin-left: auto;
+    font-size: 0.66rem;
+    color: var(--muted);
+    background: var(--bg);
+    padding: 0.1rem 0.4rem;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+  }
+  .tg-cat.collapsed .tg-cat-body { display: none; }
+  .tg-palette-empty {
+    padding: 1.5rem 0.5rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-style: italic;
+  }
+  /* Hidden via search filter — keeps the dragstart reference alive but takes no space */
+  .tg-service.tg-hidden { display: none; }
+  /* Highlight match */
+  .tg-service mark {
+    background: rgba(91, 155, 213, 0.25);
+    color: inherit;
+    padding: 0;
+    border-radius: 2px;
+  }
+  html.theme-sapphire .tg-service mark { background: rgba(0, 212, 170, 0.2); }
   .tg-service {
     display: flex;
     align-items: center;
@@ -637,7 +722,15 @@
     </div>
   </header>
 
-  <aside class="tg-palette" id="tg-palette"></aside>
+  <aside class="tg-palette" id="tg-palette">
+    <div class="tg-palette-search-wrap" style="position: sticky;">
+      <svg class="tg-palette-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
+      </svg>
+      <input type="search" id="tg-palette-search" class="tg-palette-search" placeholder="Search services…" autocomplete="off" />
+    </div>
+    <div class="tg-palette-list" id="tg-palette-list"></div>
+  </aside>
 
   <div class="tg-canvas-wrap" id="tg-canvas-wrap">
     <svg class="tg-svg" id="tg-svg"></svg>
@@ -905,23 +998,115 @@
   const toastEl  = $("tg-toast");
 
   // ───────── Build palette + scenario tabs ─────────
+  // Persisted collapsed state per category
+  const COLLAPSE_KEY = "tg-cat-collapsed";
+  function getCollapsedCats() {
+    try { return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || "[]")); }
+    catch { return new Set(); }
+  }
+  function saveCollapsedCats(set) {
+    localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...set]));
+  }
+
   function buildPalette() {
+    const listEl = $("tg-palette-list");
     const cats = [...new Set(SERVICES.map(s => s.cat))];
-    paletteEl.innerHTML = "";
+    const collapsed = getCollapsedCats();
+    listEl.innerHTML = "";
+
     cats.forEach(cat => {
-      const h = document.createElement("h3"); h.textContent = cat; paletteEl.appendChild(h);
+      const catEl = document.createElement("div");
+      catEl.className = "tg-cat" + (collapsed.has(cat) ? " collapsed" : "");
+      catEl.dataset.cat = cat;
+
+      const head = document.createElement("button");
+      head.className = "tg-cat-head";
+      head.innerHTML = `
+        <svg class="tg-cat-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        <span>${cat}</span>
+        <span class="tg-cat-count">${SERVICES.filter(s => s.cat === cat).length}</span>`;
+      head.addEventListener("click", () => {
+        const c = getCollapsedCats();
+        if (c.has(cat)) { c.delete(cat); catEl.classList.remove("collapsed"); }
+        else { c.add(cat); catEl.classList.add("collapsed"); }
+        saveCollapsedCats(c);
+      });
+      catEl.appendChild(head);
+
+      const body = document.createElement("div");
+      body.className = "tg-cat-body";
       SERVICES.filter(s => s.cat === cat).forEach(s => {
         const el = document.createElement("div");
         el.className = "tg-service";
         el.draggable = true;
         el.dataset.svc = s.id;
+        el.dataset.search = (s.name + " " + s.abbr + " " + s.cat).toLowerCase();
         el.innerHTML = `<span class="tg-service-icon" style="background:${s.color}">${s.abbr}</span><span class="tg-service-name">${s.name}</span>`;
         el.addEventListener("dragstart", (e) => {
           e.dataTransfer.setData("text/plain", s.id);
         });
-        paletteEl.appendChild(el);
+        body.appendChild(el);
       });
+      catEl.appendChild(body);
+      listEl.appendChild(catEl);
     });
+
+    // Empty-search placeholder (hidden by default)
+    const empty = document.createElement("div");
+    empty.className = "tg-palette-empty";
+    empty.id = "tg-palette-empty";
+    empty.textContent = "No services match that search.";
+    empty.style.display = "none";
+    listEl.appendChild(empty);
+
+    wireSearch();
+  }
+
+  function wireSearch() {
+    const input = $("tg-palette-search");
+    if (input._wired) return;
+    input._wired = true;
+    input.addEventListener("input", () => filterPalette(input.value));
+  }
+
+  function filterPalette(q) {
+    q = q.trim().toLowerCase();
+    const services = document.querySelectorAll(".tg-service");
+    let visible = 0;
+    services.forEach(el => {
+      const txt = el.dataset.search || "";
+      const match = !q || txt.includes(q);
+      el.classList.toggle("tg-hidden", !match);
+      if (match) {
+        visible++;
+        // highlight match in name
+        const nameEl = el.querySelector(".tg-service-name");
+        const name = SVC[el.dataset.svc].name;
+        if (q && name.toLowerCase().includes(q)) {
+          const idx = name.toLowerCase().indexOf(q);
+          nameEl.innerHTML = name.slice(0, idx) + "<mark>" + name.slice(idx, idx + q.length) + "</mark>" + name.slice(idx + q.length);
+        } else {
+          nameEl.textContent = name;
+        }
+      }
+    });
+    // Auto-expand any collapsed category that has matches when searching
+    const cats = document.querySelectorAll(".tg-cat");
+    cats.forEach(catEl => {
+      const hasMatch = catEl.querySelector(".tg-service:not(.tg-hidden)");
+      const cat = catEl.dataset.cat;
+      if (q) {
+        // While searching, auto-show matching cats and hide empties
+        catEl.style.display = hasMatch ? "" : "none";
+        if (hasMatch) catEl.classList.remove("collapsed");
+      } else {
+        catEl.style.display = "";
+        // restore stored collapsed state
+        const collapsed = getCollapsedCats();
+        catEl.classList.toggle("collapsed", collapsed.has(cat));
+      }
+    });
+    $("tg-palette-empty").style.display = (visible === 0 && q) ? "" : "none";
   }
   function buildScenarioTabs() {
     scenariosEl.innerHTML = "";
