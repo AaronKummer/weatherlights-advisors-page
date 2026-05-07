@@ -1,0 +1,919 @@
+[
+  {
+    "id": 1,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A development team uses AWS CodePipeline to deploy a microservices application. The pipeline includes a source stage (CodeCommit), a build stage (CodeBuild), and a deploy stage (CodeDeploy). The team wants to add an approval step before deploying to production, but only for changes to specific branches.\n\nWhich approach meets these requirements with the LEAST operational overhead?",
+    "options": {
+      "A": "Add a manual approval action in the pipeline between the build and deploy stages. Use an SNS topic to notify approvers.",
+      "B": "Create a Lambda function that evaluates the branch name and conditionally creates an approval action dynamically.",
+      "C": "Create separate pipelines for each branch with different configurations.",
+      "D": "Use CodePipeline pipeline variables and conditions to add the approval action only when the source branch matches the specified pattern."
+    },
+    "answer": ["D"],
+    "explanation": "CodePipeline supports pipeline-level variables and stage conditions that can evaluate branch names and conditionally include or skip stages. This is the built-in, lowest-overhead solution for conditional pipeline logic."
+  },
+  {
+    "id": 2,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A company uses AWS CodeDeploy to deploy an application to Amazon EC2 instances in an Auto Scaling group. During a recent deployment, several instances failed health checks, causing service degradation for 15 minutes before the team noticed.\n\nHow should the DevOps engineer configure CodeDeploy to MINIMIZE the impact of failed deployments?",
+    "options": {
+      "A": "Configure the deployment group to use an in-place deployment with the AllAtOnce deployment configuration.",
+      "B": "Configure the deployment group to use a blue/green deployment with automatic rollback on deployment failure and alarm-based rollback using CloudWatch alarms.",
+      "C": "Configure the deployment group with a minimum healthy hosts value of 100% and manual rollback.",
+      "D": "Configure the deployment group with traffic hooks that run integration tests, but keep the AllAtOnce deployment configuration."
+    },
+    "answer": ["B"],
+    "explanation": "Blue/green deployments route traffic to a new set of instances, allowing instant rollback by redirecting traffic back to the original instances. Combined with automatic rollback on deployment failure and CloudWatch alarm-based rollback, this minimizes the impact of failed deployments by detecting failures quickly and automatically reverting."
+  },
+  {
+    "id": 3,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A company has a multi-account AWS environment with separate accounts for development, staging, and production. The DevOps team needs to set up a CI/CD pipeline in the development account that deploys to all three accounts.\n\nWhat is the MOST secure way to allow CodePipeline in the development account to deploy to the production account?",
+    "options": {
+      "A": "Store production account IAM user credentials in AWS Secrets Manager in the development account and use them in the deploy stage.",
+      "B": "Create a cross-account IAM role in the production account that trusts the development account's CodePipeline service role, and configure the pipeline to assume this role.",
+      "C": "Use a single IAM user with administrator access across all accounts.",
+      "D": "Copy the deployment artifacts to an S3 bucket in the production account using bucket policies, then trigger a separate pipeline in the production account."
+    },
+    "answer": ["B"],
+    "explanation": "Cross-account IAM roles are the recommended approach for cross-account access. The production account creates a role that trusts the CodePipeline service role in the development account. This follows the principle of least privilege and does not require sharing long-term credentials."
+  },
+  {
+    "id": 4,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A DevOps engineer is designing a CI/CD pipeline for a containerized application that runs on Amazon ECS with Fargate. The application must have zero downtime during deployments and the ability to quickly roll back if the new version has errors.\n\nWhich deployment strategy should the engineer use?",
+    "options": {
+      "A": "ECS rolling update with minimum healthy percent set to 100% and maximum percent set to 200%.",
+      "B": "ECS blue/green deployment using AWS CodeDeploy with a canary traffic shifting configuration (10% for 5 minutes, then 100%).",
+      "C": "Stop all running tasks and start new tasks with the updated task definition.",
+      "D": "Use an external deployment controller that drains connections from old tasks before stopping them."
+    },
+    "answer": ["B"],
+    "explanation": "Blue/green deployments with CodeDeploy and canary traffic shifting provide zero downtime, gradual traffic shifting for validation, and instant rollback capability. The canary configuration routes 10% of traffic to the new version first, allowing validation before full cutover, with automatic rollback if CloudWatch alarms trigger."
+  },
+  {
+    "id": 5,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A company uses AWS CodeBuild to build and test its application. Build times have increased significantly as the project has grown. The DevOps team has identified that dependency downloads account for 60% of the build time.\n\nWhich solution will MOST effectively reduce build times?",
+    "options": {
+      "A": "Increase the compute type of the CodeBuild project to use a larger instance.",
+      "B": "Enable CodeBuild local caching with both source and custom cache modes, caching the dependency directory.",
+      "C": "Pre-install all dependencies in a custom Docker image and use it as the CodeBuild environment.",
+      "D": "Store dependencies in an S3 bucket and download them at the start of each build."
+    },
+    "answer": ["B"],
+    "explanation": "CodeBuild local caching stores cache artifacts on the build host, providing the fastest cache retrieval. Source cache mode caches the Git metadata, and custom cache mode allows caching specific directories like dependency folders (node_modules, .m2, pip cache). This directly addresses the dependency download bottleneck with minimal configuration."
+  },
+  {
+    "id": 6,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A DevOps engineer needs to implement a deployment pipeline that deploys a Lambda function. The function must be tested with a small percentage of production traffic before full deployment. If error rates exceed 1%, the deployment must automatically roll back.\n\nWhich approach meets these requirements?",
+    "options": {
+      "A": "Use AWS SAM with a DeploymentPreference of Canary10Percent5Minutes and configure a CloudWatch alarm on the Lambda Errors metric as an alarm hook.",
+      "B": "Create two Lambda function versions and manually update the alias weights through the console.",
+      "C": "Deploy the new version to a separate Lambda function and use Route 53 weighted routing to split traffic.",
+      "D": "Use CodeDeploy with an EC2 deployment group configured for Lambda functions."
+    },
+    "answer": ["A"],
+    "explanation": "AWS SAM's DeploymentPreference property integrates with CodeDeploy to provide automated canary deployments for Lambda functions. Canary10Percent5Minutes shifts 10% of traffic to the new version, waits 5 minutes, then completes the shift. Alarms on the Lambda Errors metric can trigger automatic rollback if error rates exceed the threshold."
+  },
+  {
+    "id": 7,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A development team has a monorepo in AWS CodeCommit that contains multiple microservices. They want changes to each microservice to trigger only its own build pipeline, not the pipelines of other microservices.\n\nHow should the DevOps engineer configure this?",
+    "options": {
+      "A": "Create a single CodePipeline with multiple build actions, each filtering by file path.",
+      "B": "Create separate CodePipelines for each microservice, each triggered by an EventBridge rule that uses CodeCommit event filtering on the file path of the changed files.",
+      "C": "Create a Lambda function triggered by CodeCommit events that parses the commit diff and starts the appropriate CodeBuild project.",
+      "D": "Use CodePipeline triggers with file path filter conditions to start only when specific directories change."
+    },
+    "answer": ["D"],
+    "explanation": "CodePipeline supports trigger filters including file path conditions (glob patterns) that determine whether a pipeline execution should start. By configuring each pipeline with a file path filter matching its microservice directory, only relevant pipelines are triggered. This is a native, low-overhead solution."
+  },
+  {
+    "id": 8,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A company is migrating from a manual deployment process to CI/CD. The application is deployed across 500 Amazon EC2 instances. The team requires that deployments can be halted if more than 5% of instances fail during deployment.\n\nWhich CodeDeploy configuration satisfies this requirement?",
+    "options": {
+      "A": "Use the OneAtATime deployment configuration.",
+      "B": "Create a custom deployment configuration with a minimum healthy hosts value of 95% using the HOST_COUNT type.",
+      "C": "Create a custom deployment configuration with a minimum healthy hosts value of 95% using the FLEET_PERCENT type.",
+      "D": "Use the HalfAtATime deployment configuration with automatic rollback enabled."
+    },
+    "answer": ["C"],
+    "explanation": "A custom deployment configuration with FLEET_PERCENT type and minimum healthy hosts of 95% ensures that the deployment halts if more than 5% of instances fail. FLEET_PERCENT is preferred over HOST_COUNT when the fleet size may change with auto-scaling, as it scales proportionally."
+  },
+  {
+    "id": 9,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A DevOps engineer needs to store and manage Docker images for a containerized application deployed on Amazon ECS. The images must be scanned for vulnerabilities before deployment, and any images with critical vulnerabilities must be blocked from being used.\n\nWhich solution meets these requirements?",
+    "options": {
+      "A": "Store images in Amazon ECR with enhanced scanning enabled. Create an EventBridge rule that triggers a Lambda function to delete images with critical findings.",
+      "B": "Store images in Amazon ECR with basic scanning enabled. Configure an ECR lifecycle policy to remove images with vulnerabilities.",
+      "C": "Store images in Amazon S3 and use Amazon Inspector to scan them. Block deployments via a CodePipeline manual approval.",
+      "D": "Store images in Amazon ECR with enhanced scanning enabled. Use ECR image scanning filters and configure an EventBridge rule to block ECS task definitions that reference images with critical findings."
+    },
+    "answer": ["D"],
+    "explanation": "Amazon ECR enhanced scanning uses Amazon Inspector for continuous vulnerability scanning. EventBridge rules can react to scan findings and prevent deployment of images with critical vulnerabilities by blocking the ECS task definition update. This provides automated, continuous security enforcement."
+  },
+  {
+    "id": 10,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A company uses AWS CloudFormation to manage its infrastructure. A developer accidentally modified a security group directly through the console, causing a configuration drift. The DevOps team wants to detect and automatically remediate such drift.\n\nWhich solution provides automated drift detection AND remediation?",
+    "options": {
+      "A": "Enable CloudFormation drift detection on a schedule using EventBridge and CloudFormation. When drift is detected, trigger a Lambda function that runs a CloudFormation stack update with the original template.",
+      "B": "Use AWS Config rules to detect changes and manually update the stack.",
+      "C": "Enable AWS CloudTrail and create a CloudWatch alarm for console changes.",
+      "D": "Use CloudFormation stack policies to prevent any modifications."
+    },
+    "answer": ["A"],
+    "explanation": "Scheduling CloudFormation drift detection via EventBridge and triggering a Lambda function for automatic stack updates provides both detection and remediation. The Lambda function can call UpdateStack with the original template to revert any manual changes. Config rules can detect changes but do not natively trigger CloudFormation updates."
+  },
+  {
+    "id": 11,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A company manages 500 Amazon EC2 instances across multiple accounts and regions using AWS Systems Manager. The DevOps team needs to ensure all instances have a specific set of software packages installed and kept up to date.\n\nWhich approach provides the MOST automated solution?",
+    "options": {
+      "A": "Create a cron job on each instance that checks for and installs updates.",
+      "B": "Use AWS Systems Manager State Manager with an association that runs the AWS-RunPatchBaseline document on a schedule.",
+      "C": "Use AWS Systems Manager Patch Manager with a patch baseline and maintenance window to automatically patch instances on a schedule.",
+      "D": "Write a Lambda function that SSHs into each instance and runs package update commands."
+    },
+    "answer": ["C"],
+    "explanation": "Systems Manager Patch Manager with custom patch baselines and maintenance windows provides a fully managed, automated solution for keeping software packages up to date. It supports multi-account and multi-region operations through AWS Organizations integration and provides compliance reporting."
+  },
+  {
+    "id": 12,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A DevOps engineer is creating a CloudFormation template for a multi-tier application. The template needs to create resources in a specific order: a VPC first, then subnets, then an RDS instance in those subnets. The RDS instance also needs a security group that references the VPC.\n\nThe engineer is experiencing circular dependency errors. Which approach resolves this?",
+    "options": {
+      "A": "Use DependsOn attributes on all resources to explicitly define the creation order.",
+      "B": "Split the security group into a separate resource without an embedded ingress rule, and use a separate AWS::EC2::SecurityGroupIngress resource to add the rule after both resources exist.",
+      "C": "Create all resources in a single resource block with nested references.",
+      "D": "Use CloudFormation custom resources to create the resources in sequence."
+    },
+    "answer": ["B"],
+    "explanation": "Circular dependencies in CloudFormation typically occur when two resources reference each other. The standard solution is to break the cycle by separating the security group from its ingress/egress rules. By using AWS::EC2::SecurityGroupIngress as a standalone resource, the circular reference is eliminated because the security group no longer needs to know about the resource that references it at creation time."
+  },
+  {
+    "id": 13,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A company has a CloudFormation stack that provisions an Amazon RDS database with sensitive credentials. The DevOps engineer needs to ensure the database password is securely managed and can be automatically rotated.\n\nWhich approach is MOST secure?",
+    "options": {
+      "A": "Store the password as a plaintext parameter with NoEcho set to true in the CloudFormation template.",
+      "B": "Use AWS Secrets Manager to generate and store the password. Reference the secret in the CloudFormation template using dynamic references ({{resolve:secretsmanager:...}}).",
+      "C": "Hardcode the password in the template and restrict access to the template file.",
+      "D": "Store the password in AWS Systems Manager Parameter Store as a String type and reference it in the template."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Secrets Manager with dynamic references in CloudFormation provides the most secure approach. Secrets Manager can generate strong random passwords, store them encrypted, and automatically rotate them. Dynamic references ({{resolve:secretsmanager:...}}) ensure the secret is never exposed in the CloudFormation template, parameters, or outputs."
+  },
+  {
+    "id": 14,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A DevOps team needs to deploy a CloudFormation stack that creates IAM roles and policies. The stack also needs to create a Lambda function that uses a custom resource. The deployment is failing with \"CAPABILITY_NAMED_IAM\" errors.\n\nWhat must the team do to resolve this issue?",
+    "options": {
+      "A": "Remove the IAM resources from the template and create them manually.",
+      "B": "Acknowledge the CAPABILITY_NAMED_IAM and CAPABILITY_AUTO_EXPAND capabilities when creating or updating the stack.",
+      "C": "Use an IAM user with administrator access to create the stack.",
+      "D": "Add a Metadata section to the template declaring the IAM capabilities."
+    },
+    "answer": ["B"],
+    "explanation": "When a CloudFormation template creates or modifies IAM resources with custom names, you must explicitly acknowledge the CAPABILITY_NAMED_IAM capability. If the template also uses macros or nested stacks with transforms, CAPABILITY_AUTO_EXPAND is also required. This is a safety mechanism to ensure the operator is aware that the template will create IAM resources."
+  },
+  {
+    "id": 15,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A company wants to enforce tagging standards across all AWS resources in its organization. Any resource created without the required tags (Environment, CostCenter, Owner) must be flagged as non-compliant.\n\nWhich solution provides organization-wide enforcement with the LEAST operational overhead?",
+    "options": {
+      "A": "Create an AWS Config organizational rule using the required-tags managed rule and deploy it across all accounts using delegated administrator.",
+      "B": "Write a Lambda function in each account that checks tags on newly created resources via CloudTrail events.",
+      "C": "Use IAM policies in each account to deny resource creation without the required tags.",
+      "D": "Manually audit resources weekly using AWS Resource Groups Tag Editor."
+    },
+    "answer": ["A"],
+    "explanation": "AWS Config organizational rules allow you to deploy Config rules across all accounts in an AWS Organization from a central delegated administrator account. The required-tags managed rule evaluates whether resources have the specified required tags. This provides automatic, organization-wide compliance monitoring with minimal operational overhead."
+  },
+  {
+    "id": 16,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A DevOps engineer needs to manage configuration parameters for an application deployed across development, staging, and production environments. The parameters include database endpoints, feature flags, and API keys. The solution must support versioning and environment-specific values.\n\nWhich approach is MOST appropriate?",
+    "options": {
+      "A": "Store all parameters in a single JSON file in the application's source repository.",
+      "B": "Use AWS Systems Manager Parameter Store with hierarchical parameter paths (e.g., /app/dev/db-endpoint, /app/prod/db-endpoint) and SecureString type for sensitive values.",
+      "C": "Store parameters in environment variables defined in the EC2 instance user data.",
+      "D": "Create separate CloudFormation templates for each environment with hardcoded values."
+    },
+    "answer": ["B"],
+    "explanation": "Systems Manager Parameter Store with hierarchical paths provides centralized, environment-aware configuration management. Hierarchical paths (e.g., /app/{env}/param) make it easy to organize parameters by environment. SecureString type encrypts sensitive values using KMS. Parameter Store also supports versioning, access control via IAM policies on parameter paths, and integration with other AWS services."
+  },
+  {
+    "id": 17,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A company is using AWS CloudFormation StackSets to deploy infrastructure across 50 AWS accounts in an organization. A recent StackSet update failed in 3 accounts, leaving those accounts with outdated resources.\n\nHow should the DevOps engineer handle the failed instances while minimizing disruption to the other 47 accounts?",
+    "options": {
+      "A": "Delete the entire StackSet and recreate it.",
+      "B": "Use the RetryStackInstances API to retry the failed instances without affecting the successfully updated accounts.",
+      "C": "Manually update the CloudFormation stacks in the 3 failed accounts.",
+      "D": "Import the stacks in the failed accounts into a new StackSet."
+    },
+    "answer": ["B"],
+    "explanation": "The RetryStackInstances API operation retries stack operations on specified instances that failed during a previous StackSet operation. It only affects the failed instances, leaving successfully updated accounts unchanged. This is the most efficient and least disruptive approach for handling partial StackSet update failures."
+  },
+  {
+    "id": 18,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A company runs a microservices architecture on Amazon ECS. Users are reporting intermittent latency spikes, but the DevOps team cannot determine which service is causing the bottleneck from CloudWatch metrics alone.\n\nWhich service provides the MOST detailed visibility into the request flow across microservices?",
+    "options": {
+      "A": "Amazon CloudWatch Logs Insights with structured JSON logging.",
+      "B": "AWS X-Ray with the X-Ray SDK integrated into each microservice to trace requests end-to-end.",
+      "C": "Amazon CloudWatch ServiceLens without X-Ray integration.",
+      "D": "AWS CloudTrail with data events enabled for all services."
+    },
+    "answer": ["B"],
+    "explanation": "AWS X-Ray provides distributed tracing that follows requests as they traverse multiple microservices. The X-Ray SDK instruments HTTP requests, AWS SDK calls, and database queries, creating a service map that shows latency at each hop. This makes it the ideal tool for identifying which specific service in a microservices architecture is causing latency bottlenecks."
+  },
+  {
+    "id": 19,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A DevOps engineer needs to centralize logs from all AWS accounts in an organization into a single S3 bucket in a security account. The logs must include CloudTrail, VPC Flow Logs, and application logs from CloudWatch Logs.\n\nWhich combination of steps achieves this? (Select TWO.)",
+    "options": {
+      "A": "Create an organization-level CloudTrail trail that delivers logs to an S3 bucket in the security account.",
+      "B": "Configure CloudWatch Logs subscription filters in each account with a cross-account Kinesis Data Firehose delivery stream that writes to the central S3 bucket.",
+      "C": "Use AWS Config to automatically forward all logs to the central S3 bucket.",
+      "D": "Install the CloudWatch agent on each instance and configure it to write directly to the security account's S3 bucket.",
+      "E": "Enable VPC Flow Logs in each account and configure them to deliver to the central S3 bucket using a bucket policy that allows cross-account writes."
+    },
+    "answer": ["A", "B"],
+    "explanation": "An organization-level CloudTrail trail automatically collects API activity from all accounts and delivers logs to a central S3 bucket. For CloudWatch Logs (including application logs and VPC Flow Logs that are sent to CloudWatch), cross-account subscription filters with Kinesis Data Firehose provide a scalable streaming pipeline to the central bucket. Option E works for VPC Flow Logs but does not address application logs."
+  },
+  {
+    "id": 20,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A company needs to be alerted when its monthly AWS spending exceeds predefined thresholds. The DevOps team also wants to forecast future spending and detect anomalous charges.\n\nWhich combination of AWS services provides alerting AND anomaly detection? (Select TWO.)",
+    "options": {
+      "A": "AWS Budgets with alert thresholds and SNS notifications.",
+      "B": "AWS Cost Explorer with cost anomaly detection enabled.",
+      "C": "Amazon CloudWatch billing alarms in the us-east-1 region.",
+      "D": "AWS Trusted Advisor cost optimization checks.",
+      "E": "AWS Cost and Usage Reports exported to S3."
+    },
+    "answer": ["A", "B"],
+    "explanation": "AWS Budgets provides threshold-based alerting on actual and forecasted spending, with SNS notifications when thresholds are exceeded. AWS Cost Explorer's cost anomaly detection uses machine learning to identify unusual spending patterns and sends alerts. Together they provide both planned-threshold and ML-based anomaly alerting."
+  },
+  {
+    "id": 21,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A DevOps engineer needs to create a CloudWatch dashboard that displays the p99 latency of an API Gateway REST API, broken down by resource path and HTTP method. The dashboard must auto-update every minute.\n\nWhich approach provides this level of detail?",
+    "options": {
+      "A": "Use the default API Gateway metrics in CloudWatch, which include per-resource-path dimensions.",
+      "B": "Enable API Gateway detailed metrics to get per-resource and per-method CloudWatch metrics, then create a dashboard with those dimensions and a 1-minute refresh interval.",
+      "C": "Parse API Gateway access logs with CloudWatch Logs Insights and display the results on a dashboard.",
+      "D": "Use AWS X-Ray analytics to build the dashboard."
+    },
+    "answer": ["B"],
+    "explanation": "API Gateway detailed metrics (enabled per stage) provide CloudWatch metrics at the resource and method level, including Latency, IntegrationLatency, 4XXError, and 5XXError. With detailed metrics enabled, you can create a CloudWatch dashboard using these granular dimensions. The p99 statistic is available as an extended statistic on these metrics."
+  },
+  {
+    "id": 22,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A company has configured Amazon EventBridge rules to trigger Lambda functions for various automation tasks. Recently, some events were not processed, and the team suspects events were lost.\n\nHow can the DevOps engineer improve the reliability of event processing?",
+    "options": {
+      "A": "Increase the Lambda function timeout to the maximum 15 minutes.",
+      "B": "Configure a dead-letter queue (DLQ) on the EventBridge rule target so failed event deliveries are captured in an SQS queue for later analysis and reprocessing.",
+      "C": "Enable EventBridge schema discovery to capture all events.",
+      "D": "Increase the EventBridge rule rate limit by requesting a service quota increase."
+    },
+    "answer": ["B"],
+    "explanation": "Configuring a dead-letter queue on EventBridge rule targets ensures that events that cannot be delivered to the target (e.g., due to Lambda throttling, permission errors, or target unavailability) are captured in an SQS queue. This prevents event loss and allows the team to analyze and reprocess failed events."
+  },
+  {
+    "id": 23,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A DevOps team needs to be alerted within 1 minute when the error rate of a Lambda function exceeds 5% of total invocations. CloudWatch standard metrics show invocation count and error count separately.\n\nWhich approach provides the MOST accurate alerting?",
+    "options": {
+      "A": "Create two separate CloudWatch alarms: one for errors exceeding a count threshold and one for invocations dropping below a threshold.",
+      "B": "Create a CloudWatch metric math expression that calculates the error rate as (Errors / Invocations * 100) and set an alarm on this expression with a 1-minute evaluation period.",
+      "C": "Use CloudWatch Logs metric filters to parse Lambda logs for errors and create an alarm on the custom metric.",
+      "D": "Use AWS X-Ray fault metrics with a 5-minute evaluation period."
+    },
+    "answer": ["B"],
+    "explanation": "CloudWatch metric math allows you to create expressions that combine multiple metrics. By calculating (Errors / Invocations * 100), you get the actual error rate as a percentage, which is more accurate than absolute thresholds. This expression can be evaluated every minute for near-real-time alerting."
+  },
+  {
+    "id": 24,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A company wants to track all API calls made across its AWS organization for security audit purposes. The logs must be stored for 7 years, be tamper-proof, and be searchable.\n\nWhich solution meets ALL of these requirements?",
+    "options": {
+      "A": "Create an organization trail in CloudTrail that delivers logs to an S3 bucket with S3 Object Lock in compliance mode and a 7-year retention period. Use Amazon Athena for querying.",
+      "B": "Create individual trails in each account that deliver to local S3 buckets with lifecycle policies.",
+      "C": "Enable CloudTrail Lake and retain events for 7 years. Query events using CloudTrail Lake SQL queries.",
+      "D": "Stream CloudTrail logs to CloudWatch Logs and set a 7-year retention period."
+    },
+    "answer": ["A"],
+    "explanation": "An organization trail captures API calls across all accounts. S3 Object Lock in compliance mode makes logs tamper-proof (immutable for the specified retention period, cannot be deleted even by the root user). Amazon Athena enables SQL queries on S3-stored CloudTrail logs. While CloudTrail Lake (option C) also works, it is significantly more expensive for 7-year retention compared to S3 with Athena."
+  },
+  {
+    "id": 25,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A DevOps engineer needs to implement auto-remediation for non-compliant security groups. When a security group is found to have an inbound rule allowing 0.0.0.0/0 on port 22, the rule should be automatically removed.\n\nWhich solution provides real-time detection and automatic remediation?",
+    "options": {
+      "A": "Create a scheduled Lambda function that checks all security groups every hour.",
+      "B": "Use AWS Config with the restricted-ssh managed rule and configure an automatic remediation action using a Systems Manager Automation document that revokes the non-compliant ingress rule.",
+      "C": "Enable VPC Flow Logs and create a CloudWatch alarm for SSH traffic.",
+      "D": "Use IAM policies to prevent creation of security group rules that allow 0.0.0.0/0."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Config provides near-real-time evaluation of resource configurations. The restricted-ssh managed rule specifically checks for unrestricted SSH access. Config's automatic remediation feature can trigger a Systems Manager Automation document (such as AWS-DisablePublicAccessForSecurityGroup) to automatically remove the non-compliant rule when detected."
+  },
+  {
+    "id": 26,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "An Amazon EC2 instance is potentially compromised. The DevOps team needs to preserve forensic evidence while preventing further damage.\n\nWhat is the correct order of incident response actions?",
+    "options": {
+      "A": "Terminate the instance, then analyze CloudWatch Logs for suspicious activity.",
+      "B": "Isolate the instance by changing its security group to one that denies all traffic, create EBS snapshots of all volumes, then launch a forensic analysis instance from the snapshots in an isolated VPC.",
+      "C": "Stop the instance, detach all EBS volumes, and relaunch from the original AMI.",
+      "D": "Take an AMI of the instance, terminate the original, then launch a new instance from the AMI."
+    },
+    "answer": ["B"],
+    "explanation": "Proper incident response requires isolating the instance (changing its security group to deny all traffic prevents further network communication without destroying evidence), preserving evidence (EBS snapshots capture the disk state), and conducting analysis in an isolated environment. Terminating or stopping the instance would destroy volatile memory and potentially lose evidence."
+  },
+  {
+    "id": 27,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A company needs to automatically stop EC2 instances that have been idle (CPU utilization below 5%) for more than 24 hours to reduce costs.\n\nWhich solution is the MOST operationally efficient?",
+    "options": {
+      "A": "Create a CloudWatch alarm for each instance with a threshold of 5% CPU utilization, a 24-hour evaluation period, and an EC2 stop action.",
+      "B": "Write a Lambda function that queries CloudWatch metrics for all instances and stops idle ones. Trigger it hourly with EventBridge.",
+      "C": "Use AWS Systems Manager State Manager to check CPU utilization and stop instances.",
+      "D": "Use AWS Trusted Advisor to identify idle instances and manually stop them."
+    },
+    "answer": ["A"],
+    "explanation": "CloudWatch alarms with EC2 actions (stop, terminate, reboot, recover) are a native, fully managed solution for automated instance management. Setting a 24-hour evaluation period (or 24 consecutive 1-hour datapoints) on CPU utilization with a stop action provides automated, per-instance idle detection and response without any custom code or infrastructure."
+  },
+  {
+    "id": 28,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A DevOps engineer receives an alert that an Auto Scaling group is rapidly scaling out, launching hundreds of instances. The engineer suspects a runaway scaling event.\n\nWhich IMMEDIATE action should the engineer take to stop the scaling while investigating the root cause?",
+    "options": {
+      "A": "Delete the Auto Scaling group.",
+      "B": "Suspend the Auto Scaling group's scaling processes.",
+      "C": "Set the desired capacity to 0.",
+      "D": "Remove all scaling policies from the Auto Scaling group."
+    },
+    "answer": ["B"],
+    "explanation": "Suspending the Auto Scaling group's scaling processes immediately prevents further scale-out or scale-in actions while preserving the current instances and configuration. This allows investigation without destroying the evidence of the current state. Deleting the group or setting capacity to 0 would be destructive, and removing policies might not stop all scaling triggers."
+  },
+  {
+    "id": 29,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A company's Amazon RDS Multi-AZ database experienced a failover event. The DevOps team wants to be notified of future RDS events including failovers, maintenance windows, and configuration changes.\n\nWhich approach provides the MOST comprehensive notification coverage?",
+    "options": {
+      "A": "Create a CloudWatch alarm on the RDS ReplicaLag metric.",
+      "B": "Enable RDS Event Subscriptions for the DB instance with all event categories selected, and configure an SNS topic as the destination.",
+      "C": "Monitor the RDS console for event notifications.",
+      "D": "Create an EventBridge rule for RDS API calls via CloudTrail."
+    },
+    "answer": ["B"],
+    "explanation": "RDS Event Subscriptions provide comprehensive notification for RDS events including failover, maintenance, configuration changes, backup, recovery, and more. By subscribing to all event categories for a DB instance and sending to an SNS topic, the team receives real-time notifications for all RDS operational events."
+  },
+  {
+    "id": 30,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A company receives a notification from AWS Abuse that one of its EC2 instances is sending spam emails. The instance is part of an Auto Scaling group serving production traffic.\n\nWhat should the DevOps engineer do FIRST?",
+    "options": {
+      "A": "Immediately terminate the instance and let the Auto Scaling group replace it.",
+      "B": "Detach the instance from the Auto Scaling group, isolate it by modifying its security group, and investigate.",
+      "C": "Ignore the notification until the next maintenance window.",
+      "D": "Create an AMI of the instance and terminate it."
+    },
+    "answer": ["B"],
+    "explanation": "Detaching the instance from the Auto Scaling group allows the group to launch a clean replacement while preserving the compromised instance for forensic investigation. Isolating it via security group prevents further abuse. Simply terminating the instance would destroy forensic evidence, and ignoring an abuse notification violates AWS Acceptable Use Policy."
+  },
+  {
+    "id": 31,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A DevOps engineer needs to implement a solution that automatically creates snapshots of all EBS volumes tagged with \"Backup=true\" daily, and deletes snapshots older than 30 days.\n\nWhich solution requires the LEAST custom code?",
+    "options": {
+      "A": "Write a Lambda function triggered by a daily EventBridge scheduled rule that uses the EC2 API to create and manage snapshots.",
+      "B": "Use Amazon Data Lifecycle Manager (DLM) with a lifecycle policy that targets volumes with the tag \"Backup=true\", creates daily snapshots, and retains them for 30 days.",
+      "C": "Use AWS Backup with a backup plan that targets EBS volumes and specifies a 30-day retention period.",
+      "D": "Create a Systems Manager maintenance window that runs a script to create and clean up snapshots."
+    },
+    "answer": ["B"],
+    "explanation": "Amazon Data Lifecycle Manager (DLM) is purpose-built for automating EBS snapshot lifecycle management. It uses tag-based targeting, supports scheduled snapshot creation, and handles retention/deletion automatically based on configured policies. No custom code is required. While AWS Backup (option C) also works, DLM is more specifically designed for EBS snapshot management and is the most direct solution."
+  },
+  {
+    "id": 32,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A company runs a critical web application on Amazon EC2 instances behind an Application Load Balancer across three Availability Zones. The application must survive the loss of an entire Availability Zone without service degradation.\n\nHow should the DevOps engineer size the Auto Scaling group?",
+    "options": {
+      "A": "Run the exact number of instances needed to handle peak load, spread evenly across 3 AZs.",
+      "B": "Run enough total capacity across 3 AZs so that if one AZ is lost, the remaining 2 AZs can handle the full production load (N+1 AZ redundancy).",
+      "C": "Run instances in only 2 AZs with 50% capacity in each.",
+      "D": "Use a single AZ with reserved instances for maximum cost efficiency."
+    },
+    "answer": ["B"],
+    "explanation": "For AZ fault tolerance, you must provision enough capacity across N+1 AZs so that losing any single AZ leaves sufficient capacity. With 3 AZs, each AZ should carry at most 50% of the total required capacity (so any 2 AZs can handle 100% of the load). This is known as N+1 AZ redundancy and is a core high-availability design pattern."
+  },
+  {
+    "id": 33,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A company has a disaster recovery requirement of RPO=1 hour and RTO=4 hours for its primary workload running in us-east-1. The workload uses Amazon RDS MySQL, Amazon S3, and EC2 instances.\n\nWhich DR strategy meets these requirements at the LOWEST cost?",
+    "options": {
+      "A": "Multi-site active-active with identical infrastructure in us-west-2.",
+      "B": "Warm standby with a scaled-down version of the production environment running in us-west-2.",
+      "C": "Pilot light with RDS cross-region read replica, S3 cross-region replication, and AMIs copied to us-west-2. Scale up infrastructure during DR activation.",
+      "D": "Backup and restore with daily snapshots copied to us-west-2."
+    },
+    "answer": ["C"],
+    "explanation": "Pilot light keeps the minimum critical infrastructure running (database replica, copied AMIs) while leaving compute resources off until needed. The RDS cross-region read replica provides near-real-time data replication (well within 1-hour RPO). During DR activation, the read replica is promoted and compute infrastructure is scaled up, achievable within the 4-hour RTO. This is less expensive than warm standby because compute resources are not running during normal operations."
+  },
+  {
+    "id": 34,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A company is running a stateful application on Amazon EC2 instances with session data stored in memory. The DevOps team wants to make the application highly available without losing session data during instance failures.\n\nWhich solution provides session persistence with HIGH AVAILABILITY?",
+    "options": {
+      "A": "Enable sticky sessions on the Application Load Balancer.",
+      "B": "Externalize session data to Amazon ElastiCache for Redis with Multi-AZ enabled and automatic failover.",
+      "C": "Store session data on EBS volumes and reattach them to new instances.",
+      "D": "Write session data to the local instance store."
+    },
+    "answer": ["B"],
+    "explanation": "Externalizing session data to ElastiCache for Redis with Multi-AZ removes the dependency on any single instance. If an instance fails, other instances can serve the user's session from Redis. Multi-AZ with automatic failover ensures Redis itself is highly available. Sticky sessions (option A) tie a user to a specific instance, so session data is lost if that instance fails."
+  },
+  {
+    "id": 35,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A company hosts a static website on Amazon S3 with CloudFront as the CDN. The DevOps team wants to ensure the website remains available even if an entire AWS Region becomes unavailable.\n\nWhich approach provides multi-region resilience for the static website?",
+    "options": {
+      "A": "Enable S3 cross-region replication to a bucket in another region. Configure CloudFront with an origin group that has both S3 buckets, with automatic failover.",
+      "B": "Use S3 Transfer Acceleration to speed up content delivery.",
+      "C": "Enable S3 versioning and create a lifecycle policy.",
+      "D": "Host the website on EC2 instances in multiple regions behind Route 53."
+    },
+    "answer": ["A"],
+    "explanation": "S3 cross-region replication ensures the website content is synchronized across regions. CloudFront origin groups allow you to configure a primary and secondary origin with automatic failover. If CloudFront receives a 5xx error or cannot connect to the primary S3 origin, it automatically routes requests to the secondary origin in the other region."
+  },
+  {
+    "id": 36,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A company runs an application that processes messages from an Amazon SQS queue. During peak hours, the processing falls behind and the queue depth grows. The application runs on an Auto Scaling group.\n\nWhich scaling metric provides the MOST effective scaling for queue-based processing?",
+    "options": {
+      "A": "Scale based on CPU utilization of the EC2 instances.",
+      "B": "Scale based on the ApproximateNumberOfMessagesVisible metric divided by the number of running instances (backlog per instance).",
+      "C": "Scale based on the NetworkIn metric.",
+      "D": "Scale based on a fixed schedule that matches historical peak hours."
+    },
+    "answer": ["B"],
+    "explanation": "The backlog-per-instance metric (queue depth divided by number of instances) provides the most accurate scaling signal for queue processors. This metric accounts for both the workload (queue depth) and current capacity (instance count), enabling proportional scaling. AWS recommends this approach in their documentation for SQS-based auto scaling, using a target tracking scaling policy."
+  },
+  {
+    "id": 37,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A DevOps engineer is designing a multi-region architecture for a DynamoDB-based application. The application needs to handle read and write traffic in both regions with automatic conflict resolution.\n\nWhich DynamoDB feature should be used?",
+    "options": {
+      "A": "DynamoDB Streams with a Lambda function that replicates writes to the secondary region.",
+      "B": "DynamoDB global tables, which provide multi-region, multi-active replication with automatic conflict resolution using last-writer-wins.",
+      "C": "DynamoDB DAX (DynamoDB Accelerator) in both regions.",
+      "D": "DynamoDB on-demand backups with cross-region restore."
+    },
+    "answer": ["B"],
+    "explanation": "DynamoDB global tables provide fully managed, multi-region, multi-active database replication. Writes can be made to any replica table, and DynamoDB automatically propagates changes to all regions. Conflicts are resolved using a last-writer-wins mechanism based on timestamps. This provides the lowest latency for globally distributed applications."
+  },
+  {
+    "id": 38,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A DevOps team needs to implement a health check for an application behind an Application Load Balancer. The application has a deep health check endpoint (/health/deep) that validates database connectivity and external service dependencies, and a shallow health check endpoint (/health) that only validates the application is running.\n\nWhich health check configuration should be used for the ALB target group?",
+    "options": {
+      "A": "Use the deep health check (/health/deep) with a short interval and low unhealthy threshold.",
+      "B": "Use the shallow health check (/health) for the ALB target group to avoid cascading failures when downstream services are temporarily unavailable. Use the deep health check for application-level monitoring separately.",
+      "C": "Use no health check and rely on TCP port checks.",
+      "D": "Use both health checks simultaneously on the same target group."
+    },
+    "answer": ["B"],
+    "explanation": "Using a deep health check on an ALB can cause cascading failures: if a shared downstream service (like a database) has a brief hiccup, all instances could fail health checks simultaneously, taking down the entire application. The ALB should use a shallow health check to verify the application process is responsive. Deep health checks should be monitored separately via CloudWatch or external monitoring, alerting the team without removing instances from service."
+  },
+  {
+    "id": 39,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A company needs to prevent any IAM user or role in its child accounts from creating public S3 buckets. This restriction must apply organization-wide and cannot be overridden by account administrators.\n\nWhich solution enforces this requirement?",
+    "options": {
+      "A": "Create an S3 bucket policy on every bucket that denies public access.",
+      "B": "Enable S3 Block Public Access at the account level in each account.",
+      "C": "Create a Service Control Policy (SCP) that denies the s3:PutBucketPolicy and s3:PutBucketAcl actions when the request would make the bucket public, and attach it to the organization root or relevant OUs.",
+      "D": "Use IAM permission boundaries on all IAM users."
+    },
+    "answer": ["C"],
+    "explanation": "Service Control Policies (SCPs) provide organization-wide guardrails that cannot be overridden by account administrators. An SCP that denies actions that would make S3 buckets public applies to all IAM principals in the affected accounts. SCPs are the only mechanism that restricts even the root user of member accounts, making them the strongest enforcement tool."
+  },
+  {
+    "id": 40,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A DevOps engineer needs to ensure that all Amazon EBS volumes in the organization are encrypted. Existing unencrypted volumes must be identified and flagged, and new unencrypted volumes must be prevented from being created.\n\nWhich combination of solutions provides both detection AND prevention? (Select TWO.)",
+    "options": {
+      "A": "Use an SCP to deny the ec2:CreateVolume action when the ec2:Encrypted condition key is not set to true.",
+      "B": "Use AWS Config with the encrypted-volumes managed rule to identify existing unencrypted EBS volumes.",
+      "C": "Enable EBS encryption by default in each account.",
+      "D": "Use CloudWatch metrics to monitor unencrypted volume creation.",
+      "E": "Create an IAM policy that denies EBS volume creation."
+    },
+    "answer": ["A", "B"],
+    "explanation": "The SCP with the ec2:Encrypted condition key prevents creation of unencrypted volumes across all accounts (prevention). AWS Config's encrypted-volumes rule continuously evaluates existing EBS volumes and flags unencrypted ones as non-compliant (detection). Together they provide comprehensive coverage. Enabling EBS encryption by default (option C) only affects the default behavior but does not prevent explicit creation of unencrypted volumes."
+  },
+  {
+    "id": 41,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A company wants to standardize the provisioning of AWS resources across its organization. Development teams should be able to deploy pre-approved architectures without having direct access to the underlying AWS services.\n\nWhich service enables this self-service model?",
+    "options": {
+      "A": "AWS CloudFormation with stack policies.",
+      "B": "AWS Service Catalog with portfolios and products defined as CloudFormation templates, shared across the organization.",
+      "C": "AWS Config with custom rules.",
+      "D": "AWS Control Tower with guardrails."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Service Catalog allows administrators to create portfolios of pre-approved CloudFormation-based products. Developers can launch these products from a self-service portal without needing direct IAM permissions to create the underlying resources. Service Catalog uses launch constraints to provision resources with a service role, enabling least-privilege access while allowing standardized resource provisioning."
+  },
+  {
+    "id": 42,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A DevOps engineer is setting up a new multi-account AWS environment using AWS Control Tower. The engineer needs to ensure that all new accounts automatically have CloudTrail enabled, Config rules deployed, and VPC flow logs configured.\n\nHow does Control Tower achieve this?",
+    "options": {
+      "A": "The engineer must manually configure each service in every new account.",
+      "B": "Control Tower uses Account Factory with account baselines that automatically configure mandatory guardrails, CloudTrail, Config, and centralized logging for new accounts.",
+      "C": "Control Tower uses Lambda functions to configure services post-account creation.",
+      "D": "Control Tower relies on SCPs alone to enforce these configurations."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Control Tower's Account Factory automates the provisioning of new accounts with a defined baseline configuration. This baseline automatically includes CloudTrail logging, AWS Config with mandatory Config rules (guardrails), and centralized log aggregation. The account baseline is applied consistently to every new account, ensuring organizational standards are met from account creation."
+  },
+  {
+    "id": 43,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A company needs to implement a policy that restricts EC2 instance launches to specific instance types (t3.micro, t3.small, t3.medium) across all accounts in the development OU.\n\nWhich implementation is MOST effective?",
+    "options": {
+      "A": "Create IAM policies in each account that restrict instance types.",
+      "B": "Create an SCP with an explicit deny for ec2:RunInstances that uses a condition to deny all instance types except the allowed list, and attach it to the development OU.",
+      "C": "Use AWS Config to flag non-compliant instances after they are launched.",
+      "D": "Configure launch templates that only allow specific instance types."
+    },
+    "answer": ["B"],
+    "explanation": "An SCP attached to an OU provides centralized, mandatory enforcement. Using a deny statement with a StringNotEquals condition on ec2:InstanceType ensures that only the specified instance types can be launched. SCPs cannot be overridden by account-level IAM policies, providing the strongest enforcement. Config rules (option C) only detect non-compliance after the fact, and IAM policies (option A) require per-account management."
+  },
+  {
+    "id": 44,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A company uses AWS Organizations and wants to share a common set of VPC subnets with multiple member accounts. Each account's resources should be able to deploy into the shared subnets without each account managing its own VPC.\n\nWhich feature enables this?",
+    "options": {
+      "A": "VPC peering between all accounts.",
+      "B": "AWS Resource Access Manager (RAM) to share VPC subnets from a central networking account with member accounts.",
+      "C": "AWS Transit Gateway to connect all VPCs.",
+      "D": "AWS PrivateLink to create private connectivity."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Resource Access Manager (RAM) enables sharing of VPC subnets across accounts within an organization. The central networking account creates the VPC and subnets, then shares specific subnets with member accounts using RAM. Resources in member accounts (EC2 instances, RDS instances, etc.) can be launched directly into the shared subnets. This simplifies network management and reduces IP address waste."
+  },
+  {
+    "id": 45,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A company has a CodePipeline that deploys a serverless application defined in an AWS SAM template. The team wants to run integration tests against the deployed staging environment before promoting to production.\n\nWhich pipeline configuration achieves this?",
+    "options": {
+      "A": "Add a CodeBuild action after the staging deploy stage that runs integration tests against the staging endpoint. Add a manual approval action, then a production deploy stage.",
+      "B": "Run integration tests locally before committing code.",
+      "C": "Deploy directly to production and run tests in production.",
+      "D": "Use CodeDeploy hooks to run tests during the production deployment."
+    },
+    "answer": ["A"],
+    "explanation": "Adding a CodeBuild test action after the staging deployment allows integration tests to run against the actual deployed environment. A manual approval action gates the production deployment, giving the team a chance to review test results. This pattern (source -> build -> deploy staging -> test staging -> approve -> deploy production) is a standard CI/CD best practice."
+  },
+  {
+    "id": 46,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A DevOps engineer needs to implement infrastructure as code testing. The CloudFormation templates must be validated for syntax errors, security misconfigurations, and compliance with company standards BEFORE deployment.\n\nWhich combination provides the MOST comprehensive pre-deployment validation? (Select TWO.)",
+    "options": {
+      "A": "Use cfn-lint to validate CloudFormation template syntax and best practices in the CodeBuild build stage.",
+      "B": "Use cfn-nag or Checkov to scan templates for security misconfigurations and compliance violations in the CodeBuild build stage.",
+      "C": "Use CloudFormation change sets to preview changes before deployment.",
+      "D": "Manually review templates before each deployment.",
+      "E": "Enable CloudFormation termination protection on all stacks."
+    },
+    "answer": ["A", "B"],
+    "explanation": "cfn-lint validates CloudFormation templates for syntax errors, resource property validation, and best practices. cfn-nag or Checkov performs security-focused static analysis, checking for insecure configurations like public S3 buckets, unencrypted resources, or overly permissive IAM policies. Running both in the CodeBuild stage provides automated, comprehensive pre-deployment validation as part of the CI/CD pipeline."
+  },
+  {
+    "id": 47,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A DevOps engineer is managing an application that uses Amazon ECS on EC2 with containers that need access to secrets at runtime. The secrets must be injected as environment variables without being stored in the task definition.\n\nWhich approach is MOST secure?",
+    "options": {
+      "A": "Store secrets in the task definition environment section as plaintext.",
+      "B": "Reference secrets stored in AWS Secrets Manager or SSM Parameter Store SecureString in the task definition using the secrets property with the valueFrom field.",
+      "C": "Store secrets in an S3 bucket and download them at container startup.",
+      "D": "Pass secrets via Docker build arguments."
+    },
+    "answer": ["B"],
+    "explanation": "ECS natively supports injecting secrets from Secrets Manager or SSM Parameter Store SecureString parameters as environment variables. Using the secrets property with valueFrom in the container definition, the ECS agent retrieves the secret value at task launch and injects it as an environment variable. The plaintext secret never appears in the task definition, CloudFormation template, or ECS console."
+  },
+  {
+    "id": 48,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A company needs to ensure that all EC2 instances across the organization have the SSM Agent installed and running, and that inventory data is collected from all instances.\n\nWhich combination provides this with the LEAST effort? (Select TWO.)",
+    "options": {
+      "A": "Use AWS Systems Manager Quick Setup to configure SSM Agent deployment and inventory collection across the organization.",
+      "B": "Create a custom AMI with SSM Agent pre-installed and mandate its use.",
+      "C": "Use Systems Manager State Manager to create an association that ensures the SSM Agent is running on all managed instances.",
+      "D": "Manually install SSM Agent on each instance via SSH.",
+      "E": "Use AWS Config to check if SSM Agent is installed."
+    },
+    "answer": ["A", "C"],
+    "explanation": "Systems Manager Quick Setup provides a one-click configuration experience for common management tasks across an organization, including SSM Agent deployment and inventory collection. State Manager associations ensure the SSM Agent remains in the desired running state across all instances by periodically verifying and remediating. Together they provide automated, organization-wide coverage with minimal manual effort."
+  },
+  {
+    "id": 49,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A company has hundreds of Lambda functions and needs to standardize logging across all functions. They want structured JSON logs with correlation IDs for tracing, and the ability to query logs efficiently.\n\nWhich approach provides standardized logging with EFFICIENT querying?",
+    "options": {
+      "A": "Use print statements in each Lambda function and search logs in the CloudWatch console.",
+      "B": "Use Lambda Powertools to implement structured JSON logging with correlation IDs. Use CloudWatch Logs Insights to query the structured logs across multiple log groups.",
+      "C": "Write custom logging middleware for each runtime and store logs in S3.",
+      "D": "Send all logs to Amazon Elasticsearch using a CloudWatch Logs subscription filter."
+    },
+    "answer": ["B"],
+    "explanation": "Lambda Powertools provides a standardized structured logging library that outputs JSON-formatted logs with built-in support for correlation IDs, tracing integration, and common fields. CloudWatch Logs Insights provides a SQL-like query language optimized for querying JSON-structured logs across multiple log groups simultaneously, making it efficient to search and analyze logs from hundreds of functions."
+  },
+  {
+    "id": 50,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A DevOps engineer needs to monitor the performance of an Amazon RDS for PostgreSQL database. The team wants to identify slow queries, lock waits, and overall database load.\n\nWhich feature provides the MOST comprehensive database-level performance monitoring?",
+    "options": {
+      "A": "Amazon CloudWatch standard metrics for RDS (CPUUtilization, FreeableMemory, etc.).",
+      "B": "Amazon RDS Performance Insights with the Performance Insights dashboard showing database load, top SQL queries, wait events, and host/user breakdown.",
+      "C": "Enhanced Monitoring for OS-level metrics.",
+      "D": "pg_stat_statements extension configured manually."
+    },
+    "answer": ["B"],
+    "explanation": "RDS Performance Insights provides a comprehensive view of database performance. Its dashboard displays database load as average active sessions, broken down by wait events (CPU, IO, lock waits), top SQL queries consuming the most database time, and load by host/user. This allows quick identification of slow queries, lock contention, and resource bottlenecks without manual configuration of database extensions."
+  },
+  {
+    "id": 51,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A company wants to automatically respond to AWS Health events that indicate EC2 instance hardware degradation. When such an event occurs, the affected instances should be automatically replaced.\n\nWhich solution provides this automation?",
+    "options": {
+      "A": "Create an EventBridge rule that matches AWS Health events for EC2 hardware issues and triggers a Lambda function that terminates the affected instance (Auto Scaling group replaces it).",
+      "B": "Monitor the AWS Health Dashboard manually and replace instances when issues are observed.",
+      "C": "Use CloudWatch alarms on StatusCheckFailed_System to detect issues.",
+      "D": "Configure EC2 instance recovery actions."
+    },
+    "answer": ["A"],
+    "explanation": "AWS Health events are published to EventBridge, allowing automated responses. An EventBridge rule matching AWS Health EC2 hardware degradation events can trigger a Lambda function that gracefully handles the replacement—draining connections, terminating the degraded instance, and allowing the Auto Scaling group to launch a replacement on healthy hardware. This provides proactive, automated remediation before the hardware fully fails."
+  },
+  {
+    "id": 52,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A DevOps engineer needs to implement a solution that detects when an IAM access key is exposed in a public GitHub repository and automatically disables the compromised key.\n\nWhich AWS service detects this type of credential exposure?",
+    "options": {
+      "A": "Amazon GuardDuty, which monitors for compromised credentials and generates findings for unauthorized API calls made with exposed keys.",
+      "B": "AWS Config rules that check IAM key rotation compliance.",
+      "C": "AWS CloudTrail Insights that detects unusual API activity.",
+      "D": "Amazon Inspector that scans for exposed credentials."
+    },
+    "answer": ["A"],
+    "explanation": "Amazon GuardDuty integrates with partner threat intelligence feeds and monitors CloudTrail logs for API calls made with potentially compromised credentials. GuardDuty also receives notifications when AWS detects IAM credentials published on GitHub. When compromised credentials are detected, GuardDuty generates findings that can trigger automated remediation via EventBridge and Lambda to disable the affected IAM access key."
+  },
+  {
+    "id": 53,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A company runs an application across two AWS Regions for disaster recovery. The application uses an Amazon Aurora MySQL cluster. The DevOps team needs the database to be available for reads in both regions during normal operations and to support failover to the secondary region with an RPO of less than 1 second.\n\nWhich Aurora feature meets these requirements?",
+    "options": {
+      "A": "Aurora cross-region read replicas.",
+      "B": "Aurora Global Database with secondary clusters in the DR region.",
+      "C": "Aurora Multi-Master within a single region.",
+      "D": "Manual database snapshots copied to the DR region."
+    },
+    "answer": ["B"],
+    "explanation": "Aurora Global Database uses dedicated replication infrastructure to replicate data across regions with typical lag of under 1 second. The secondary cluster supports read operations, providing local read performance. During failover, the secondary cluster can be promoted to a standalone read-write cluster with an RPO typically under 1 second, meeting the sub-second RPO requirement."
+  },
+  {
+    "id": 54,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A DevOps engineer needs to design a solution for a batch processing workload that can tolerate interruptions. The workload must be cost-optimized and must automatically restart failed jobs.\n\nWhich architecture provides the MOST cost-effective solution?",
+    "options": {
+      "A": "Run the workload on On-Demand EC2 instances in an Auto Scaling group.",
+      "B": "Use AWS Batch with a compute environment that uses Spot Instances and configure job retry strategies with automatic retries on failure.",
+      "C": "Run the workload on Reserved Instances.",
+      "D": "Use Lambda functions for batch processing."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Batch with Spot Instances provides the most cost-effective compute for interruptible batch workloads (up to 90% savings). Batch's job retry strategies automatically resubmit failed jobs, handling Spot interruptions gracefully. Batch also manages the Spot fleet, scaling up and down based on job queue depth, and supports mixed instance type strategies to maximize Spot availability."
+  },
+  {
+    "id": 55,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A DevOps engineer needs to implement a solution that automatically remediates AWS Config rule violations. When an S3 bucket is found without server-side encryption enabled, encryption must be automatically enabled.\n\nWhich approach implements automatic remediation?",
+    "options": {
+      "A": "Create a CloudWatch alarm on the Config compliance metric and trigger an SNS notification.",
+      "B": "Configure the AWS Config rule with an automatic remediation action that uses the AWS-EnableS3BucketEncryption Systems Manager Automation document.",
+      "C": "Write a Lambda function that periodically scans all S3 buckets.",
+      "D": "Use an SCP to prevent bucket creation without encryption."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Config supports automatic remediation actions on non-compliant resources. By associating a Systems Manager Automation document with a Config rule, non-compliant resources are automatically remediated. The AWS-EnableS3BucketEncryption document enables default encryption on the non-compliant bucket. This provides event-driven, near-real-time remediation without custom code."
+  },
+  {
+    "id": 56,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A company wants to implement a tagging enforcement strategy. Resources created without the required tags must be automatically terminated or deleted after a 24-hour grace period.\n\nWhich combination of services implements this? (Select TWO.)",
+    "options": {
+      "A": "Use AWS Config with the required-tags rule to detect untagged resources.",
+      "B": "Configure AWS Config automatic remediation with a custom Systems Manager Automation document that waits 24 hours and then terminates the resource if tags are still missing.",
+      "C": "Use AWS Tag Editor to manually tag resources.",
+      "D": "Create an SCP to prevent all resource creation.",
+      "E": "Send an SNS notification and hope the team tags the resource."
+    },
+    "answer": ["A", "B"],
+    "explanation": "AWS Config's required-tags rule detects resources missing required tags. A custom Systems Manager Automation document can implement the 24-hour grace period logic: when triggered by Config remediation, it waits 24 hours, re-checks if tags have been added, and terminates the resource only if it remains non-compliant. This provides automated enforcement with a grace period for teams to comply."
+  },
+  {
+    "id": 57,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A DevOps team is implementing trunk-based development with short-lived feature branches. They want to ensure that every pull request is automatically validated with unit tests, integration tests, and a CloudFormation template validation before merging.\n\nWhich AWS-native solution automates this?",
+    "options": {
+      "A": "Create a CodePipeline that triggers on CodeCommit pull request events via EventBridge, runs CodeBuild to execute tests and validate templates, and reports the results back to the pull request as a comment.",
+      "B": "Require developers to manually run tests before merging.",
+      "C": "Use a post-merge CodePipeline to detect and revert bad merges.",
+      "D": "Set up a scheduled CodeBuild project that tests all branches nightly."
+    },
+    "answer": ["A"],
+    "explanation": "CodeCommit pull request events can trigger EventBridge rules that start CodePipeline executions or CodeBuild projects. The build project runs unit tests, integration tests, and cfn-lint/cfn-nag validation. CodeBuild can post results back to the CodeCommit pull request as comments using the CodeCommit API, providing automated quality gates before merge."
+  },
+  {
+    "id": 58,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A DevOps engineer needs to perform a rolling update of an Auto Scaling group managed by CloudFormation. The update must replace instances one at a time, waiting for each new instance to signal that it is ready before replacing the next instance.\n\nWhich CloudFormation feature provides this controlled rolling update behavior?",
+    "options": {
+      "A": "Use the UpdatePolicy attribute with AutoScalingRollingUpdate, specifying MinInstancesInService, MaxBatchSize of 1, and WaitOnResourceSignals set to true with a PauseTime.",
+      "B": "Use CloudFormation change sets to preview the update.",
+      "C": "Manually terminate instances one at a time.",
+      "D": "Use the DeletionPolicy attribute to retain old instances."
+    },
+    "answer": ["A"],
+    "explanation": "The UpdatePolicy attribute with AutoScalingRollingUpdate controls how CloudFormation handles rolling updates to Auto Scaling groups. MinInstancesInService ensures minimum capacity during updates. MaxBatchSize of 1 replaces one instance at a time. WaitOnResourceSignals with PauseTime pauses the rollout until the new instance sends a cfn-signal, confirming it is healthy and ready. This provides safe, controlled rolling deployments."
+  },
+  {
+    "id": 59,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A company runs a containerized application on Amazon EKS. The DevOps team needs to collect and centralize logs from all pods, including application logs and Kubernetes control plane logs.\n\nWhich combination provides comprehensive EKS log collection? (Select TWO.)",
+    "options": {
+      "A": "Enable EKS control plane logging to send API server, audit, authenticator, controller manager, and scheduler logs to CloudWatch Logs.",
+      "B": "Deploy a Fluent Bit DaemonSet as a log forwarder that collects container logs from all nodes and sends them to CloudWatch Logs.",
+      "C": "SSH into each node and manually collect logs.",
+      "D": "Use kubectl logs to view logs in real-time only.",
+      "E": "Store logs on the node's local filesystem."
+    },
+    "answer": ["A", "B"],
+    "explanation": "EKS control plane logging sends Kubernetes system component logs directly to CloudWatch Logs. Fluent Bit (or Fluentd) deployed as a DaemonSet runs on every node and collects container stdout/stderr logs, forwarding them to CloudWatch Logs (or other destinations). Together they provide comprehensive logging coverage for both the Kubernetes control plane and application workloads."
+  },
+  {
+    "id": 60,
+    "source": "DOP-C02 Practice",
+    "domain": "High Availability and Fault Tolerance",
+    "question": "A company needs to implement a solution where Route 53 automatically routes traffic away from an unhealthy region. The application runs in us-east-1 (primary) and eu-west-1 (secondary).\n\nWhich Route 53 configuration provides automated regional failover?",
+    "options": {
+      "A": "Use Route 53 simple routing with both region endpoints.",
+      "B": "Use Route 53 failover routing with health checks on the primary region's endpoint. Configure the primary record with a health check and the secondary record as a failover target.",
+      "C": "Use Route 53 weighted routing with equal weights.",
+      "D": "Use Route 53 latency-based routing."
+    },
+    "answer": ["B"],
+    "explanation": "Route 53 failover routing with health checks provides automated DNS-level failover. When the primary endpoint fails its health check, Route 53 automatically returns the secondary endpoint's IP address. Health checks can monitor HTTP/HTTPS endpoints, TCP connections, or CloudWatch alarms, providing flexible failure detection. This is the standard pattern for active-passive regional failover."
+  },
+  {
+    "id": 61,
+    "source": "DOP-C02 Practice",
+    "domain": "Incident and Event Response",
+    "question": "A company uses Amazon EventBridge to route events between microservices. The DevOps team needs to archive all events for compliance and be able to replay past events for debugging purposes.\n\nWhich EventBridge feature satisfies both requirements?",
+    "options": {
+      "A": "Configure an EventBridge event archive on the event bus with a retention period. Use the archive replay feature to re-send archived events to the event bus for debugging.",
+      "B": "Send all events to an SQS queue for storage.",
+      "C": "Enable CloudTrail to log EventBridge API calls.",
+      "D": "Create a Lambda function that stores events in DynamoDB."
+    },
+    "answer": ["A"],
+    "explanation": "EventBridge event archives capture and store events that match a specified pattern. Archived events can be replayed to the event bus, re-triggering all downstream rules and targets. This is valuable for both compliance (storing all events for audit) and debugging (replaying events to reproduce and investigate issues). The archive retention period can be configured to meet compliance requirements."
+  },
+  {
+    "id": 62,
+    "source": "DOP-C02 Practice",
+    "domain": "SDLC Automation",
+    "question": "A DevOps engineer is implementing a GitOps workflow for Kubernetes deployments on Amazon EKS. Changes to the Git repository should automatically sync to the EKS cluster.\n\nWhich tool is designed for GitOps-based continuous delivery to Kubernetes?",
+    "options": {
+      "A": "AWS CodePipeline with a kubectl deploy action.",
+      "B": "Argo CD or Flux, which continuously monitor a Git repository and automatically reconcile the cluster state with the desired state defined in Git.",
+      "C": "AWS Lambda functions that run kubectl commands.",
+      "D": "Amazon ECR image scanning triggers."
+    },
+    "answer": ["B"],
+    "explanation": "Argo CD and Flux are purpose-built GitOps tools for Kubernetes. They continuously monitor a Git repository for changes to Kubernetes manifests and automatically reconcile the cluster state to match the desired state in Git. This pull-based model is the core GitOps pattern, providing declarative, version-controlled, and auditable deployments. Both are CNCF projects widely used with EKS."
+  },
+  {
+    "id": 63,
+    "source": "DOP-C02 Practice",
+    "domain": "Configuration Management",
+    "question": "A DevOps engineer is managing an AWS environment where some teams use Terraform and others use CloudFormation. A recently imported resource in CloudFormation is drifting because Terraform is also managing it.\n\nWhat is the BEST practice to prevent resource management conflicts?",
+    "options": {
+      "A": "Use CloudFormation import to bring all Terraform-managed resources under CloudFormation control.",
+      "B": "Establish clear resource ownership boundaries — each resource should be managed by exactly one IaC tool. Use tagging conventions to indicate the managing tool, and implement SCPs or Config rules to detect dual-management.",
+      "C": "Stop using one of the IaC tools entirely.",
+      "D": "Allow both tools to manage the same resources and manually resolve conflicts."
+    },
+    "answer": ["B"],
+    "explanation": "The fundamental best practice is single ownership: each resource should be managed by exactly one IaC tool. Tagging conventions (e.g., ManagedBy=CloudFormation or ManagedBy=Terraform) make ownership visible. Config rules can detect and alert on resources that show signs of dual management (e.g., out-of-band changes). This prevents drift conflicts without requiring teams to abandon their preferred tool."
+  },
+  {
+    "id": 64,
+    "source": "DOP-C02 Practice",
+    "domain": "Monitoring and Logging",
+    "question": "A DevOps team needs to implement composite alarms that trigger only when multiple conditions are true simultaneously — for example, both high CPU utilization AND high memory utilization on the same instance.\n\nWhich CloudWatch feature supports this?",
+    "options": {
+      "A": "Create two separate alarms and manually correlate them.",
+      "B": "Use CloudWatch composite alarms that combine multiple alarm states using Boolean logic (AND, OR, NOT) to trigger only when the composite condition is met.",
+      "C": "Use CloudWatch metric math to combine CPU and memory into a single metric.",
+      "D": "Use CloudWatch anomaly detection on both metrics."
+    },
+    "answer": ["B"],
+    "explanation": "CloudWatch composite alarms allow you to combine the states of multiple individual alarms using Boolean operators (AND, OR, NOT). A composite alarm transitions to ALARM state only when the specified combination of child alarm states is met. This reduces alarm noise by triggering only when multiple conditions are simultaneously true, preventing false positives from single-metric spikes."
+  },
+  {
+    "id": 65,
+    "source": "DOP-C02 Practice",
+    "domain": "Policies and Standards Automation",
+    "question": "A company needs to prevent member accounts in its AWS Organization from leaving the organization or disabling service control policies.\n\nWhich approach ensures accounts cannot leave the organization?",
+    "options": {
+      "A": "Use an SCP that denies the organizations:LeaveOrganization action applied to the root of the organization.",
+      "B": "Remove IAM permissions for organizations actions in each account.",
+      "C": "Use AWS Config to monitor for organization membership changes.",
+      "D": "Enable multi-factor authentication on all root accounts."
+    },
+    "answer": ["A"],
+    "explanation": "An SCP that explicitly denies the organizations:LeaveOrganization action prevents any principal in the member accounts (including the root user) from removing the account from the organization. This is a critical governance control that ensures centralized management policies cannot be bypassed by account administrators. SCPs applied at the root level affect all member accounts."
+  }
+]

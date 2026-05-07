@@ -34,6 +34,8 @@
     </header>
 
     <section id="top" class="hero">
+      <HeroBalloons class="hero-balloons" />
+
       <svg class="cloud cloud-1" viewBox="0 0 200 80" aria-hidden="true">
         <path d="M40 60 Q15 60 15 45 Q15 28 38 28 Q44 12 64 12 Q86 12 90 30 Q112 26 116 46 Q120 60 100 60 Z"/>
       </svg>
@@ -43,15 +45,9 @@
       <svg class="cloud cloud-3" viewBox="0 0 200 80" aria-hidden="true">
         <path d="M40 60 Q15 60 15 45 Q15 28 38 28 Q44 12 64 12 Q86 12 90 30 Q112 26 116 46 Q120 60 100 60 Z"/>
       </svg>
-      <svg class="cloud cloud-4" viewBox="0 0 200 80" aria-hidden="true">
-        <path d="M40 60 Q15 60 15 45 Q15 28 38 28 Q44 12 64 12 Q86 12 90 30 Q112 26 116 46 Q120 60 100 60 Z"/>
-      </svg>
-      <svg class="cloud cloud-5" viewBox="0 0 200 80" aria-hidden="true">
-        <path d="M40 60 Q15 60 15 45 Q15 28 38 28 Q44 12 64 12 Q86 12 90 30 Q112 26 116 46 Q120 60 100 60 Z"/>
-      </svg>
 
       <div class="hero-inner">
-        <img :src="logoUrl" alt="WeatherLight Advisors" class="hero-logo" />
+        <WeatherLogo with-text class="hero-logo-svg" />
         <h1 class="hero-title">AWS, done right.</h1>
         <p class="hero-sub">
           Certification training, cloud infrastructure setup, and AI-tooling readiness — for engineers
@@ -210,10 +206,13 @@
 <script>
 import axios from "axios";
 import logo from "@/assets/logo.jpg";
+import HeroBalloons from "./HeroBalloons.vue";
+import WeatherLogo from "./WeatherLogo.vue";
 import { config } from "@/config";
 import { startLogin, startSignup, logout, getTokens, decodeIdToken, fetchMe } from "@/auth";
 
 export default {
+  components: { HeroBalloons, WeatherLogo },
   data() {
     return {
       logoUrl: logo,
@@ -440,11 +439,23 @@ export default {
   animation: drift linear infinite;
 }
 
-.cloud-1 { top: 12%;  left: -8%;  width: 220px;  opacity: 0.95; animation-duration: 80s; }
-.cloud-2 { top: 22%;  right: -6%; width: 170px;  opacity: 0.9;  animation-duration: 95s; animation-direction: reverse; }
-.cloud-3 { top: 55%;  left: 8%;   width: 130px;  opacity: 0.85; animation-duration: 110s; }
-.cloud-4 { top: 5%;   left: 55%;  width: 100px;  opacity: 0.7;  animation-duration: 130s; animation-direction: reverse; }
-.cloud-5 { top: 70%;  right: 12%; width: 180px;  opacity: 0.92; animation-duration: 90s; }
+.cloud-1 { top: 12%;  left: -8%;  width: 220px;  opacity: 0.92; animation-duration: 80s; }
+.cloud-2 { top: 7%;   right: -4%; width: 170px;  opacity: 0.88; animation-duration: 95s; animation-direction: reverse; }
+.cloud-3 { top: 78%;  left: 4%;   width: 150px;  opacity: 0.85; animation-duration: 110s; }
+
+.hero-balloons {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.hero-logo-svg {
+  width: 280px;
+  max-width: 75%;
+  height: auto;
+  margin: 0 auto 1.5rem;
+  filter: drop-shadow(0 6px 24px rgba(26, 58, 110, 0.12));
+}
 
 @keyframes drift {
   from { transform: translateX(0); }
@@ -468,12 +479,6 @@ export default {
   text-align: center;
 }
 
-.hero-logo {
-  width: 140px;
-  height: 140px;
-  object-fit: contain;
-  margin-bottom: 2rem;
-}
 
 .hero-title {
   font-size: clamp(2.5rem, 5.5vw, 4rem);
