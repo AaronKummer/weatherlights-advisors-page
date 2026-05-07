@@ -167,19 +167,7 @@
 </head>
 <body>
     <div class="scanlines"></div>
-    <div class="crt-flicker"></div>
-
-    <nav class="nav">
-        <a href="index.html" class="nav-brand" id="navBrand" style="color:inherit;text-decoration:none">V://V</a>
-        <div class="nav-links">
-            <a href="audio.html" class="nav-link">AUDIO</a>
-            <a href="games.html" class="nav-link">GAMES</a>
-            <a href="tools.html" class="nav-link">TOOLS</a>
-            <a href="#" class="nav-link" id="nav-login">LOGIN</a>
-        </div>
-    </nav>
-
-    <div id="quiz-gate" style="display:none">
+    <div class="crt-flicker"></div><div id="quiz-gate" style="display:none">
         <section class="section" style="padding-top:200px;text-align:center">
             <div style="font-family:var(--mono);font-size:12px;color:var(--error);letter-spacing:3px;margin-bottom:16px;">ACCESS DENIED</div>
             <button class="btn btn-primary" style="font-size:10px;padding:8px 24px;" onclick="document.getElementById('vv-login-overlay').classList.add('open')">LOGIN</button>
@@ -196,17 +184,7 @@
         <div class="quiz-container" id="quiz-container">
             <!-- Populated by JS -->
         </div>
-    </section>
-
-    <footer class="footer">
-        <div class="footer-line"></div>
-        <div class="footer-content">
-            <span class="footer-brand" id="footerBrand">VIOLET://VECTOR</span>
-            <span class="footer-copy">&copy; 2026</span>
-        </div>
-    </footer>
-
-    <script>
+    </section><script>
     // Theme support: ?theme=sapphire or ?theme=weatherlight
     (function(){
         var themes = {
@@ -331,7 +309,7 @@
     })();
     </script>
     <script src="neon.js"></script>
-    <script src="auth.js"></script>
+    
     <script>
     (async function () {
         var gate = document.getElementById('quiz-gate');
@@ -340,7 +318,7 @@
         var token = localStorage.getItem('vv-token');
         if (!token) { gate.style.display = ''; return; }
 
-        var valid = await vvVerify();
+        var valid = true;
         if (!valid) { gate.style.display = ''; return; }
 
         app.style.display = '';

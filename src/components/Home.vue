@@ -244,7 +244,7 @@
           <h2 class="section-title">Every AWS certification</h2>
           <p class="section-lede">700+ questions across 7 tracks. Pick a cert and start drilling.</p>
           <div class="cert-picker-grid">
-            <a v-for="b in quizBanks" :key="b.code" :href="toolUrl('/quiz/index.html', { bank: b.code })" class="cert-pill">
+            <a v-for="b in quizBanks" :key="b.code" @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#" class="cert-pill">
               <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
               <div class="cert-pill-name">{{ b.name }}</div>
               <div class="cert-pill-meta">{{ b.questions }} questions</div>
@@ -258,13 +258,13 @@
           <div class="eyebrow">Hands-On Training</div>
           <h2 class="section-title">Learn by doing</h2>
           <div class="member-grid">
-            <a :href="toolUrl('/wargame/index.html')" class="member-card">
+            <a @click.prevent="openTool('/wargame/index.html', 'WeatherLight Wargame')" href="#" class="member-card">
               <div class="member-card-tag">CTF Range</div>
               <div class="member-card-title">Wargame</div>
               <p>25-level terminal hacking game. Linux fundamentals, recon, crypto, lateral movement. XP, ranks, achievements.</p>
               <div class="member-card-cta">Launch Range <span aria-hidden>→</span></div>
             </a>
-            <a :href="toolUrl('/lessons/index.html')" class="member-card">
+            <a @click.prevent="openTool('/lessons/index.html', 'AWS Lessons')" href="#" class="member-card">
               <div class="member-card-tag">Interactive</div>
               <div class="member-card-title">AWS Lessons</div>
               <p>38 services across 6 categories with a drag-and-drop architecture builder and inline quizzes.</p>
@@ -278,7 +278,7 @@
         <div class="container">
           <div class="eyebrow">Memorize</div>
           <h2 class="section-title">Spaced repetition</h2>
-          <a :href="toolUrl('/flashcards/index.html')" class="member-card member-card-wide">
+          <a @click.prevent="openTool('/flashcards/index.html', 'Flashcards')" href="#" class="member-card member-card-wide">
             <div class="member-card-tag">SM-2 Algorithm</div>
             <div class="member-card-title">Flashcards</div>
             <p>180 cards across AWS services and Linux commands. Review what you're forgetting before you forget it.</p>
@@ -404,6 +404,26 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- ───────── Embedded tool modal ───────── -->
+    <div v-if="embedOpen" class="embed-overlay" @click.self="closeTool" @keydown.esc="closeTool">
+      <div class="embed-window">
+        <div class="embed-bar">
+          <div class="embed-traffic">
+            <span class="embed-dot embed-dot-r"></span>
+            <span class="embed-dot embed-dot-y"></span>
+            <span class="embed-dot embed-dot-g"></span>
+          </div>
+          <div class="embed-title">{{ embedTitle }}</div>
+          <button class="embed-close" @click="closeTool" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <iframe :src="embedSrc" class="embed-frame" :title="embedTitle"></iframe>
+      </div>
+    </div>
 
     <!-- ───────── Login ───────── -->
     <v-dialog v-model="loginOpen" max-width="440px" persistent>
@@ -560,6 +580,10 @@ export default {
 
       // Manual theme override: null = follow detection, 'light' | 'dark'
       themeOverride: null,
+      // Embedded-tool modal (quiz / wargame / lessons / flashcards iframe)
+      embedOpen: false,
+      embedSrc: "",
+      embedTitle: "",
       // Member portal stats (computed from localStorage in computeStats)
       stats: {
         questionsAnswered: 0,
@@ -624,6 +648,7 @@ export default {
   async mounted() {
     window.addEventListener('scroll', this.handleScroll);
     document.addEventListener('click', this.handleOutsideClick);
+    document.addEventListener('keydown', this.handleEsc);
     this.applyStoredThemeOverride();
     await this.loadCurrentUser();
     this.computeStats();
@@ -632,10 +657,12 @@ export default {
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
     document.removeEventListener('click', this.handleOutsideClick);
+    document.removeEventListener('keydown', this.handleEsc);
   },
   methods: {
     handleScroll() { this.isScrolled = window.scrollY > 8; },
     handleOutsideClick(e) { if (!e.target.closest('.user-pill')) this.userMenuOpen = false; },
+    handleEsc(e) { if (e.key === "Escape" && this.embedOpen) this.closeTool(); },
     // Allow short usernames like "admin" — auto-append @weatherlightadvisors.com.
     // If the input already looks like an email (has @), pass through unchanged.
     normalizeIdentifier(raw) {
@@ -647,6 +674,19 @@ export default {
     toolUrl(path, extra = {}) {
       const params = new URLSearchParams({ theme: "weatherlight", brand: "WeatherLight Advisors", ...extra });
       return `${path}?${params.toString()}`;
+    },
+    openTool(path, title, extra = {}) {
+      this.embedSrc = this.toolUrl(path, extra);
+      this.embedTitle = title;
+      this.embedOpen = true;
+      document.body.style.overflow = "hidden";
+    },
+    closeTool() {
+      this.embedOpen = false;
+      this.embedSrc = "";
+      document.body.style.overflow = "";
+      // Refresh portal stats since the user may have made progress in the iframe.
+      this.computeStats();
     },
 
     async loadCurrentUser() {
@@ -1644,6 +1684,86 @@ export default {
 .modal-intro { color: #4a5e7e; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.6; }
 .modal-actions { padding: 1rem 1.5rem !important; border-top: 1px solid #f0f4f9; }
 .btn-send { background: #1a3a6e !important; color: #fff !important; }
+
+/* ───────── Embedded tool modal ───────── */
+.embed-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 20, 40, 0.55);
+  backdrop-filter: blur(8px);
+  padding: 2.5vh 2.5vw;
+  animation: fadeIn 0.18s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.embed-window {
+  width: 100%;
+  max-width: 1280px;
+  height: 95vh;
+  background: #ffffff;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 80px rgba(10, 20, 40, 0.45);
+  border: 1px solid rgba(26, 58, 110, 0.1);
+}
+
+.embed-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fc 100%);
+  border-bottom: 1px solid #e0eaf5;
+}
+
+.embed-traffic { display: flex; gap: 0.4rem; }
+.embed-dot { width: 12px; height: 12px; border-radius: 50%; }
+.embed-dot-r { background: #ff5f57; }
+.embed-dot-y { background: #ffbd2e; }
+.embed-dot-g { background: #28c840; }
+
+.embed-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a3a6e;
+  letter-spacing: -0.005em;
+}
+
+.embed-close {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: #4a5e7e;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.embed-close:hover { background: rgba(26, 58, 110, 0.08); color: #1a3a6e; }
+.embed-close svg { width: 18px; height: 18px; }
+
+.embed-frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #ffffff;
+}
+
+@media (max-width: 700px) {
+  .embed-overlay { padding: 0; }
+  .embed-window { height: 100vh; max-width: 100vw; border-radius: 0; }
+}
 
 /* ───────── Auth modals ───────── */
 .auth-card { border-radius: 12px !important; }
