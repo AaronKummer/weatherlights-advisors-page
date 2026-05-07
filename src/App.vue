@@ -182,6 +182,18 @@ html.dark-fallback .member-card-title { color: #ffffff !important; }
 html.dark-fallback .member-card p { color: #8b949e !important; }
 html.dark-fallback .member-card-cta { color: #00d4aa !important; }
 
+/* Cert picker — dark fallback */
+html.dark-fallback .cert-picker { border-top-color: rgba(255, 255, 255, 0.06) !important; }
+html.dark-fallback .cert-picker-title { color: #ffffff !important; }
+html.dark-fallback .cert-pill {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .cert-pill:hover { border-color: rgba(0, 212, 170, 0.4) !important; box-shadow: 0 8px 20px rgba(0, 212, 170, 0.1) !important; }
+html.dark-fallback .cert-pill-code { color: #00d4aa !important; }
+html.dark-fallback .cert-pill-name { color: #ffffff !important; }
+html.dark-fallback .cert-pill-meta { color: #8b949e !important; }
+
 /* Footer */
 html.dark-fallback .site-footer { background: #0a0a0f !important; border-top-color: rgba(255, 255, 255, 0.05) !important; }
 html.dark-fallback .footer-brand { color: #ffffff !important; }

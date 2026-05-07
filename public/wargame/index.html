@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WeatherLight Wargame — Storm Operations</title>
+<title>WARGAME — Violet Vector</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#00ff88">
 <meta name="color-scheme" content="dark">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --accent:#5b9bd5;
-  --accent-dim:#5b9bd544;
-  --accent-bright:#9ec8ed;
-  --secondary:#ff9f6a;
-  --secondary-dim:#ff9f6a44;
+  --accent:#00eeff;
+  --accent-dim:#00eeff44;
+  --accent-bright:#44ffff;
+  --secondary:#ff44aa;
+  --secondary-dim:#ff44aa44;
   --bg:#0a0a0a;
   --bg-panel:#050505;
   --bg-card:#111118;
@@ -37,8 +37,8 @@
   --term-green-muted:#00ff8899;
   --term-dim-text:#33553388;
   --term-progress-dark:#00cc66;
-  --xp-color:#ff9f6a;
-  --xp-glow:#ff9f6a66;
+  --xp-color:#ff44aa;
+  --xp-glow:#ff44aa66;
   --timer-color:#ffaa00;
   --overlay-bg:rgba(0,0,0,0.85);
   --scanline-opacity:0.6;
@@ -1440,7 +1440,7 @@ LEVELS[23] = {
   },
   onInit: function() {
     envVars.__nmap_result = 'Starting Nmap scan of 10.0.2.1\n\nPORT      STATE SERVICE\n22/tcp    open  ssh\n8443/tcp  open  https-alt\n\nNmap done: 1 IP address (1 host up)';
-    envVars['__curl_http__10_0_2_1_8443'] = '<html><head><title>WeatherLight Wargame — Storm Operations</title></head>\n<body>\n<h1>System Status: RUNNING</h1>\n<!-- Debug endpoint: /debug/credentials -->\n<!-- TODO: disable before production -->\n</body></html>';
+    envVars['__curl_http__10_0_2_1_8443'] = '<html><head><title>Admin Panel</title></head>\n<body>\n<h1>System Status: RUNNING</h1>\n<!-- Debug endpoint: /debug/credentials -->\n<!-- TODO: disable before production -->\n</body></html>';
     envVars['__curl_http__10_0_2_1_8443_debug_credentials'] = '{"status":"debug","credentials":{"admin":"0Zf11aPzOIQH7KTqOGKSuWG6GKSk2d4L","readonly":"guest123"}}';
   }
 };

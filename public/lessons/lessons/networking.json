@@ -1,0 +1,204 @@
+{
+  "category": "Networking",
+  "color": "#8c4fff",
+  "services": [
+    {
+      "id": "vpc",
+      "name": "VPC",
+      "fullName": "Virtual Private Cloud",
+      "icon": "cloud",
+      "tagline": "Isolated cloud network you control",
+      "description": "Provision a logically isolated section of AWS where you launch resources in a virtual network you define. Full control over IP ranges, subnets, route tables, and gateways.",
+      "keyPoints": [
+        "CIDR blocks: define IP address range (e.g., 10.0.0.0/16 = 65,536 IPs)",
+        "Subnets: public (with IGW route) and private (no direct internet)",
+        "Route Tables: control traffic flow between subnets and gateways",
+        "NAT Gateway: lets private subnet instances access the internet (outbound only)",
+        "Security Groups (stateful) and NACLs (stateless) for traffic filtering"
+      ],
+      "useCases": ["Application isolation", "Multi-tier architectures", "Hybrid connectivity", "Compliance environments"],
+      "connects": ["ec2", "elb", "rds", "lambda", "route53", "directconnect"],
+      "examTips": [
+        "Security Groups are STATEFUL (return traffic auto-allowed). NACLs are STATELESS (must allow both directions)",
+        "Default VPC: has internet gateway, public subnets, default SG. Custom VPC: everything manual",
+        "VPC Peering: connect two VPCs privately (no transitive peering!)",
+        "VPC Endpoints: Gateway (S3, DynamoDB) and Interface (everything else via PrivateLink)",
+        "Flow Logs: capture IP traffic info for monitoring and troubleshooting"
+      ],
+      "quiz": [
+        {
+          "q": "What is the key difference between Security Groups and NACLs?",
+          "options": ["SGs are cheaper", "SGs are stateful, NACLs are stateless", "NACLs are stateful, SGs are stateless", "There is no difference"],
+          "answer": 1,
+          "explanation": "Security Groups are stateful (return traffic is automatically allowed). NACLs are stateless (you must explicitly allow both inbound AND outbound rules)."
+        },
+        {
+          "q": "How does a private subnet instance access the internet?",
+          "options": ["Internet Gateway directly", "NAT Gateway in a public subnet", "VPC Endpoint", "VPN connection"],
+          "answer": 1,
+          "explanation": "Private subnet instances route outbound traffic through a NAT Gateway (or NAT Instance) placed in a public subnet. This allows outbound-only internet access."
+        }
+      ]
+    },
+    {
+      "id": "route53",
+      "name": "Route 53",
+      "fullName": "Amazon Route 53",
+      "icon": "dns",
+      "tagline": "Scalable DNS and domain registration",
+      "description": "Highly available and scalable Domain Name System (DNS) web service. Routes end users to internet applications by translating domain names to IP addresses.",
+      "keyPoints": [
+        "DNS record types: A, AAAA, CNAME, MX, TXT, NS, SOA, Alias",
+        "Routing policies: Simple, Weighted, Latency, Failover, Geolocation, Geoproximity, Multi-value",
+        "Health checks: monitor endpoint health for DNS failover",
+        "Alias records: point to AWS resources (free, works at zone apex)",
+        "Domain registration: buy and manage domains directly"
+      ],
+      "useCases": ["Domain management", "Traffic routing", "DNS failover", "Blue/green deployments", "Geolocation routing"],
+      "connects": ["cloudfront", "elb", "s3", "ec2", "apigateway", "beanstalk"],
+      "examTips": [
+        "Alias records vs CNAME: Alias is free, works at zone apex (naked domain), AWS-native",
+        "Failover routing: active-passive with health checks for disaster recovery",
+        "Weighted routing: send X% to one endpoint, Y% to another (canary deploys)",
+        "Route 53 is a GLOBAL service (not regional)",
+        "100% availability SLA — the most available AWS service"
+      ],
+      "quiz": [
+        {
+          "q": "Which Route 53 record type can point to an AWS resource AND be used at the zone apex?",
+          "options": ["CNAME", "A record", "Alias record", "TXT record"],
+          "answer": 2,
+          "explanation": "Alias records are Route 53-specific, free of charge, can point to AWS resources (ELB, CloudFront, S3), and work at the zone apex (unlike CNAME)."
+        }
+      ]
+    },
+    {
+      "id": "cloudfront",
+      "name": "CloudFront",
+      "fullName": "Amazon CloudFront",
+      "icon": "cdn",
+      "tagline": "Global content delivery network",
+      "description": "Fast CDN service that securely delivers data, videos, applications, and APIs with low latency and high transfer speeds via a global network of edge locations.",
+      "keyPoints": [
+        "450+ edge locations worldwide for low-latency delivery",
+        "Origins: S3 bucket, ALB, EC2, HTTP server, MediaStore",
+        "Origin Access Control (OAC): restrict S3 access to CloudFront only",
+        "Cache behaviors: path-based rules for different content types",
+        "Lambda@Edge and CloudFront Functions for edge compute"
+      ],
+      "useCases": ["Static website acceleration", "Video streaming", "API acceleration", "Software distribution", "Security at the edge"],
+      "connects": ["s3", "elb", "ec2", "route53", "waf", "acm"],
+      "examTips": [
+        "OAC (Origin Access Control) replaces OAI for S3 origin restriction",
+        "Signed URLs: single file access. Signed Cookies: multiple file access",
+        "Cache invalidation: costs money. Use versioned file names instead",
+        "CloudFront Functions: lightweight (JS only), viewer request/response. Lambda@Edge: full Lambda, all 4 event types",
+        "Field-level encryption: encrypt specific POST fields at edge"
+      ],
+      "quiz": [
+        {
+          "q": "What should you use instead of cache invalidation for cost-effective content updates?",
+          "options": ["Cache clearing API", "Versioned file names (e.g., /app-v2.js)", "Origin failover", "TTL of 0"],
+          "answer": 1,
+          "explanation": "Using versioned file names (cache busting) is free and instant, while cache invalidation requests cost money and take time to propagate."
+        }
+      ]
+    },
+    {
+      "id": "elb",
+      "name": "ELB",
+      "fullName": "Elastic Load Balancing",
+      "icon": "loadbalancer",
+      "tagline": "Distribute traffic across targets",
+      "description": "Automatically distributes incoming traffic across multiple targets (EC2 instances, containers, IPs, Lambda functions) in one or more Availability Zones.",
+      "keyPoints": [
+        "ALB (Application): HTTP/HTTPS, Layer 7, path/host routing, WebSockets",
+        "NLB (Network): TCP/UDP, Layer 4, ultra-low latency, static IPs",
+        "GLB (Gateway): Layer 3, third-party virtual appliances (firewalls, IDS)",
+        "CLB (Classic): legacy, Layer 4+7 — avoid for new deployments",
+        "Health checks: route traffic only to healthy targets"
+      ],
+      "useCases": ["High availability", "Microservices routing", "SSL termination", "Auto Scaling integration", "Blue/green deployments"],
+      "connects": ["ec2", "ecs", "lambda", "vpc", "route53", "waf", "acm"],
+      "examTips": [
+        "ALB: HTTP/HTTPS workloads, content-based routing. NLB: extreme performance, static IP needed",
+        "ALB supports path-based routing (/api/* → one target group, /web/* → another)",
+        "NLB can handle millions of requests/sec with ultra-low latency",
+        "Cross-zone load balancing: ALB always on (free), NLB off by default (costs when enabled)",
+        "Sticky sessions (session affinity): bind user to specific target using cookies"
+      ],
+      "quiz": [
+        {
+          "q": "Which load balancer type should you choose for a microservices architecture needing path-based routing?",
+          "options": ["Network Load Balancer", "Application Load Balancer", "Gateway Load Balancer", "Classic Load Balancer"],
+          "answer": 1,
+          "explanation": "ALB (Application Load Balancer) operates at Layer 7 and supports path-based and host-based routing, ideal for microservices."
+        }
+      ]
+    },
+    {
+      "id": "apigateway",
+      "name": "API Gateway",
+      "fullName": "Amazon API Gateway",
+      "icon": "api",
+      "tagline": "Create, publish, and manage APIs at scale",
+      "description": "Fully managed service for creating, publishing, maintaining, monitoring, and securing REST, HTTP, and WebSocket APIs at any scale.",
+      "keyPoints": [
+        "REST API: full-featured, request validation, WAF integration, caching",
+        "HTTP API: simpler, cheaper, lower latency (for Lambda/HTTP backends)",
+        "WebSocket API: real-time two-way communication",
+        "Stages: deploy to dev, staging, prod with stage variables",
+        "Throttling: 10,000 requests/sec default, burst of 5,000"
+      ],
+      "useCases": ["Serverless APIs", "Microservices facades", "WebSocket apps", "API monetization", "Legacy modernization"],
+      "connects": ["lambda", "dynamodb", "ec2", "stepfunctions", "cognito", "waf"],
+      "examTips": [
+        "REST API vs HTTP API: REST has more features (caching, WAF, API keys). HTTP API is cheaper and faster",
+        "Usage plans + API keys for rate limiting and monetization",
+        "Lambda proxy integration: API Gateway passes full request to Lambda",
+        "Canary deployments: route percentage of traffic to new stage",
+        "API Gateway cache: reduce backend calls (300MB to 237GB, TTL 0-3600s)"
+      ],
+      "quiz": [
+        {
+          "q": "Which API Gateway type is the most cost-effective for a simple Lambda backend?",
+          "options": ["REST API", "HTTP API", "WebSocket API", "Private API"],
+          "answer": 1,
+          "explanation": "HTTP API is up to 70% cheaper than REST API and has lower latency. Use REST API only when you need features like caching, request validation, or WAF."
+        }
+      ]
+    },
+    {
+      "id": "directconnect",
+      "name": "Direct Connect",
+      "fullName": "AWS Direct Connect",
+      "icon": "directconnect",
+      "tagline": "Dedicated network connection to AWS",
+      "description": "Establish a dedicated private network connection from your data center to AWS. Provides more consistent network performance than internet-based connections.",
+      "keyPoints": [
+        "Dedicated connection: 1 Gbps, 10 Gbps, or 100 Gbps port speeds",
+        "Hosted connection: 50 Mbps to 10 Gbps via AWS Partner",
+        "Private VIF: access VPC resources. Public VIF: access public AWS services",
+        "Transit VIF: access VPCs via Transit Gateway",
+        "Lead time: weeks to months to establish (not instant!)"
+      ],
+      "useCases": ["Hybrid architecture", "Large data transfers", "Real-time data feeds", "Regulatory compliance", "Consistent latency requirements"],
+      "connects": ["vpc", "transitgateway", "vpn", "s3"],
+      "examTips": [
+        "Direct Connect is NOT encrypted by default — add VPN over DX for encryption",
+        "Takes weeks/months to set up — not suitable for urgent connectivity",
+        "Direct Connect Gateway: connect to VPCs in multiple regions via single DX",
+        "Use VPN as backup while waiting for DX setup (or as failover)",
+        "LAG: Link Aggregation Group — bundle multiple DX connections"
+      ],
+      "quiz": [
+        {
+          "q": "Is AWS Direct Connect encrypted by default?",
+          "options": ["Yes, always encrypted", "Yes, using TLS", "No, add VPN over DX for encryption", "Only for dedicated connections"],
+          "answer": 2,
+          "explanation": "Direct Connect provides a private connection but is NOT encrypted. For encryption, run a VPN connection over the Direct Connect link."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "category": "Security",
+  "color": "#dd3522",
+  "services": [
+    {
+      "id": "iam",
+      "name": "IAM",
+      "fullName": "Identity and Access Management",
+      "icon": "shield",
+      "tagline": "Control access to AWS resources",
+      "description": "Manage access to AWS services and resources securely. Create users, groups, roles, and policies to control who can do what.",
+      "keyPoints": [
+        "Users: individual identities with long-term credentials",
+        "Groups: collection of users sharing the same permissions",
+        "Roles: temporary credentials assumed by services/users (no long-term keys)",
+        "Policies: JSON documents defining allow/deny permissions",
+        "MFA: add multi-factor authentication for extra security"
+      ],
+      "useCases": ["User management", "Service permissions", "Cross-account access", "Federation", "Least privilege enforcement"],
+      "connects": ["ec2", "s3", "lambda", "rds", "kms", "organizations"],
+      "examTips": [
+        "Explicit DENY always overrides any ALLOW in IAM policies",
+        "Use ROLES instead of access keys whenever possible (EC2 instance profiles, Lambda execution roles)",
+        "Policy evaluation: explicit deny > explicit allow > implicit deny",
+        "Resource-based policies (S3 bucket policy) vs Identity-based policies (IAM policy)",
+        "IAM is GLOBAL — not region-specific"
+      ],
+      "quiz": [
+        {
+          "q": "What happens when an IAM policy has both an Allow and a Deny for the same action?",
+          "options": ["Allow wins", "Deny wins", "Last policy applied wins", "Error occurs"],
+          "answer": 1,
+          "explanation": "In IAM, an explicit Deny ALWAYS overrides an Allow. This is a fundamental IAM evaluation rule."
+        },
+        {
+          "q": "What should you use instead of IAM user access keys for an EC2 instance that needs S3 access?",
+          "options": ["Root account keys", "IAM role with instance profile", "S3 bucket policy only", "Security group rules"],
+          "answer": 1,
+          "explanation": "IAM roles with instance profiles provide temporary, automatically rotated credentials — far more secure than embedding access keys."
+        }
+      ]
+    },
+    {
+      "id": "kms",
+      "name": "KMS",
+      "fullName": "Key Management Service",
+      "icon": "key",
+      "tagline": "Create and manage encryption keys",
+      "description": "Managed service to create and control cryptographic keys used to encrypt your data. Integrated with most AWS services for seamless encryption.",
+      "keyPoints": [
+        "CMKs: Customer Master Keys — symmetric (AES-256) or asymmetric (RSA/ECC)",
+        "Key policies: resource-based policies controlling key access",
+        "Automatic key rotation: annually for AWS-managed and customer-managed keys",
+        "Envelope encryption: encrypt data key with CMK, encrypt data with data key",
+        "Integrated with 100+ AWS services (S3, EBS, RDS, etc.)"
+      ],
+      "useCases": ["Data encryption", "Digital signing", "Compliance", "Secret management", "Envelope encryption"],
+      "connects": ["s3", "ebs", "rds", "lambda", "secretsmanager", "cloudtrail"],
+      "examTips": [
+        "AWS-managed keys: AWS creates/manages/rotates. Customer-managed: you control policy, rotation, deletion",
+        "KMS keys are REGIONAL — cross-region operations need re-encryption",
+        "4 KB limit: KMS can directly encrypt up to 4 KB. For larger data, use envelope encryption",
+        "Key deletion has 7-30 day waiting period (cannot be undone after deletion)",
+        "CloudTrail logs every KMS API call for auditing"
+      ],
+      "quiz": [
+        {
+          "q": "What is the maximum data size KMS can directly encrypt?",
+          "options": ["256 bytes", "4 KB", "1 MB", "256 MB"],
+          "answer": 1,
+          "explanation": "KMS can directly encrypt up to 4 KB of data. For larger data, use envelope encryption: KMS generates a data key, which encrypts the actual data."
+        }
+      ]
+    },
+    {
+      "id": "waf",
+      "name": "WAF",
+      "fullName": "Web Application Firewall",
+      "icon": "firewall",
+      "tagline": "Protect web apps from common exploits",
+      "description": "Web application firewall that helps protect web applications from common web exploits that could affect availability, compromise security, or consume excessive resources.",
+      "keyPoints": [
+        "Web ACLs: rules that define allowed/blocked traffic patterns",
+        "Managed rule groups: AWS and Marketplace pre-built rules (OWASP Top 10)",
+        "Rate-based rules: block IPs exceeding request thresholds",
+        "Geo-match: block or allow by country",
+        "Deploys on ALB, CloudFront, API Gateway, AppSync"
+      ],
+      "useCases": ["SQL injection prevention", "XSS protection", "DDoS mitigation", "Bot control", "IP reputation filtering"],
+      "connects": ["cloudfront", "elb", "apigateway", "shield", "cloudwatch"],
+      "examTips": [
+        "WAF rules are evaluated in order of priority (lowest number first)",
+        "Rate-based rules: minimum threshold is 100 requests per 5 minutes",
+        "WAF can inspect: headers, query strings, URI path, body (first 8 KB)",
+        "AWS Managed Rules: free core rule set (CRS) for common threats",
+        "WAF logs can go to S3, CloudWatch Logs, or Kinesis Data Firehose"
+      ],
+      "quiz": [
+        {
+          "q": "Which AWS resources can WAF be deployed on?",
+          "options": ["EC2 instances directly", "ALB, CloudFront, API Gateway, AppSync", "S3 buckets", "VPC subnets"],
+          "answer": 1,
+          "explanation": "WAF can be attached to ALB, CloudFront distributions, API Gateway REST APIs, and AppSync GraphQL APIs — not directly on EC2 or S3."
+        }
+      ]
+    },
+    {
+      "id": "shield",
+      "name": "Shield",
+      "fullName": "AWS Shield",
+      "icon": "shieldcheck",
+      "tagline": "DDoS protection",
+      "description": "Managed Distributed Denial of Service (DDoS) protection service. Shield Standard is automatic and free; Shield Advanced provides enhanced protection and response team access.",
+      "keyPoints": [
+        "Shield Standard: automatic, free, protects against common Layer 3/4 attacks",
+        "Shield Advanced: $3,000/month, enhanced protection, DDoS Response Team (DRT)",
+        "Advanced: cost protection (AWS credits for scaling costs during attacks)",
+        "Advanced: real-time visibility into attacks via CloudWatch",
+        "Protects: EC2, ELB, CloudFront, Route 53, Global Accelerator"
+      ],
+      "useCases": ["DDoS protection", "Attack visibility", "Cost protection during attacks", "SLA guarantee"],
+      "connects": ["cloudfront", "elb", "route53", "waf", "ec2"],
+      "examTips": [
+        "Shield Standard is AUTOMATIC and FREE for all AWS customers",
+        "Shield Advanced: 24/7 access to DDoS Response Team (DRT)",
+        "Advanced provides cost protection — won't charge you for attack-driven scaling",
+        "Best DDoS protection combo: CloudFront + Shield Advanced + WAF + Route 53",
+        "Shield Advanced has a 1-year commitment"
+      ],
+      "quiz": [
+        {
+          "q": "What does Shield Standard cost?",
+          "options": ["$3,000/month", "$100/month", "Free", "Pay per attack mitigated"],
+          "answer": 2,
+          "explanation": "AWS Shield Standard is free and automatically enabled for all AWS accounts, protecting against common Layer 3/4 DDoS attacks."
+        }
+      ]
+    },
+    {
+      "id": "guardduty",
+      "name": "GuardDuty",
+      "fullName": "Amazon GuardDuty",
+      "icon": "detective",
+      "tagline": "Intelligent threat detection",
+      "description": "Intelligent threat detection service that continuously monitors for malicious activity and unauthorized behavior using ML, anomaly detection, and integrated threat intelligence.",
+      "keyPoints": [
+        "Analyzes: CloudTrail events, VPC Flow Logs, DNS logs, EKS audit logs",
+        "Uses machine learning and threat intelligence feeds",
+        "No agents or software to deploy — enable with one click",
+        "Findings: Low, Medium, High severity with detailed remediation",
+        "Multi-account support via AWS Organizations"
+      ],
+      "useCases": ["Threat detection", "Compromised instance detection", "Crypto-mining detection", "Reconnaissance alerts", "Compliance monitoring"],
+      "connects": ["cloudtrail", "vpc", "eventbridge", "securityhub", "lambda"],
+      "examTips": [
+        "GuardDuty does NOT prevent attacks — it DETECTS and alerts",
+        "Costs based on volume of data analyzed (CloudTrail events, flow logs)",
+        "Automate responses: GuardDuty finding → EventBridge → Lambda",
+        "Can detect cryptocurrency mining on your instances",
+        "30-day free trial, then pay per usage"
+      ],
+      "quiz": [
+        {
+          "q": "What data sources does GuardDuty analyze?",
+          "options": ["Only CloudTrail", "CloudTrail, VPC Flow Logs, and DNS logs", "Application logs", "S3 access logs only"],
+          "answer": 1,
+          "explanation": "GuardDuty analyzes CloudTrail management/data events, VPC Flow Logs, DNS query logs, and optionally EKS audit logs and S3 data events."
+        }
+      ]
+    },
+    {
+      "id": "config",
+      "name": "Config",
+      "fullName": "AWS Config",
+      "icon": "config",
+      "tagline": "Track resource configuration changes",
+      "description": "Service that tracks AWS resource configurations and evaluates them against desired settings. Provides configuration history and change notifications.",
+      "keyPoints": [
+        "Configuration recorder: tracks all resource configurations over time",
+        "Config Rules: evaluate if resources comply with desired configurations",
+        "Managed rules: 300+ pre-built rules (e.g., s3-bucket-public-read-prohibited)",
+        "Remediation: auto-fix non-compliant resources via SSM Automation",
+        "Aggregator: multi-account/multi-region compliance view"
+      ],
+      "useCases": ["Compliance auditing", "Change management", "Security analysis", "Resource inventory", "Troubleshooting"],
+      "connects": ["s3", "sns", "lambda", "cloudtrail", "securityhub", "ssm"],
+      "examTips": [
+        "Config records WHAT changed and WHEN — CloudTrail records WHO made the change",
+        "Config rules can trigger automatic remediation via SSM",
+        "Conformance packs: pre-built groups of rules for compliance frameworks (PCI, HIPAA)",
+        "Config is REGIONAL — use aggregator for multi-region view",
+        "Costs per configuration item recorded + per rule evaluation"
+      ],
+      "quiz": [
+        {
+          "q": "What is the difference between AWS Config and CloudTrail?",
+          "options": ["They do the same thing", "Config tracks resource configurations, CloudTrail tracks API calls", "CloudTrail tracks configurations, Config tracks API calls", "Config is free, CloudTrail is paid"],
+          "answer": 1,
+          "explanation": "AWS Config tracks WHAT your resources look like over time (configuration state). CloudTrail tracks WHO did WHAT (API calls and user activity)."
+        }
+      ]
+    },
+    {
+      "id": "cognito",
+      "name": "Cognito",
+      "fullName": "Amazon Cognito",
+      "icon": "users",
+      "tagline": "User authentication and authorization",
+      "description": "Add user sign-up, sign-in, and access control to web and mobile apps. Supports social identity providers (Google, Facebook, Apple) and enterprise SAML/OIDC.",
+      "keyPoints": [
+        "User Pools: user directory for sign-up/sign-in (returns JWT tokens)",
+        "Identity Pools: provide temporary AWS credentials for resource access",
+        "Social sign-in: Google, Facebook, Apple, Amazon",
+        "Enterprise federation: SAML 2.0 and OpenID Connect",
+        "Built-in UI: hosted sign-in page with customizable branding"
+      ],
+      "useCases": ["Web/mobile authentication", "Social login", "API authorization", "Enterprise SSO", "Guest access"],
+      "connects": ["apigateway", "lambda", "s3", "dynamodb", "alb"],
+      "examTips": [
+        "User Pools = Authentication (who are you?). Identity Pools = Authorization (what can you access?)",
+        "User Pool tokens: ID token (identity), Access token (permissions), Refresh token",
+        "Identity Pools can provide unauthenticated (guest) access with limited permissions",
+        "ALB can directly integrate with Cognito User Pools for authentication",
+        "Lambda triggers: customize flows at sign-up, sign-in, token generation"
+      ],
+      "quiz": [
+        {
+          "q": "What is the difference between Cognito User Pools and Identity Pools?",
+          "options": ["They are the same", "User Pools handle sign-in, Identity Pools provide AWS credentials", "Identity Pools handle sign-in, User Pools provide AWS credentials", "User Pools are for mobile only"],
+          "answer": 1,
+          "explanation": "User Pools handle authentication (sign-up/sign-in, return JWTs). Identity Pools handle authorization (exchange tokens for temporary AWS credentials)."
+        }
+      ]
+    }
+  ]
+}

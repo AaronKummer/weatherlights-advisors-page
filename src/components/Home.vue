@@ -69,22 +69,46 @@
         <div class="eyebrow">Members</div>
         <h2 class="section-title">Welcome aboard, {{ currentUser.handle || currentUser.email }}.</h2>
         <p class="section-lede">
-          Your training range is open. Practice exam banks for AWS certifications, plus a hands-on
-          wargame to sharpen your CLI and security chops.
+          Your training range is open: practice exams for every AWS certification, hands-on AWS lessons,
+          spaced-repetition flashcards, and a 25-level hacking wargame.
         </p>
+
         <div class="member-grid">
-          <a href="/quiz/index.html?bank=saa-c03" class="member-card">
-            <div class="member-card-tag">Practice Exams</div>
-            <div class="member-card-title">AWS Certification Quizzes</div>
-            <p>Full question banks for SAA-C03 (Solutions Architect Associate) and DOP-C02 (DevOps Pro). Timed mode, explanations, domain breakdown.</p>
-            <div class="member-card-cta">Open Quiz <span aria-hidden>→</span></div>
+          <a :href="toolUrl('/lessons/index.html')" class="member-card">
+            <div class="member-card-tag">Interactive</div>
+            <div class="member-card-title">AWS Lessons</div>
+            <p>38 services across compute, storage, database, networking, security, and serverless. Drag-and-drop architecture builder with inline quizzes.</p>
+            <div class="member-card-cta">Start Learning <span aria-hidden>→</span></div>
           </a>
-          <a href="/wargame/index.html" class="member-card">
+          <a :href="toolUrl('/flashcards/index.html')" class="member-card">
+            <div class="member-card-tag">Spaced Repetition</div>
+            <div class="member-card-title">Flashcards</div>
+            <p>180 cards across AWS services and Linux commands. SM-2 spaced-repetition algorithm — review what you're forgetting before you forget it.</p>
+            <div class="member-card-cta">Open Deck <span aria-hidden>→</span></div>
+          </a>
+          <a :href="toolUrl('/wargame/index.html')" class="member-card">
             <div class="member-card-tag">CTF Range</div>
-            <div class="member-card-title">WeatherLight Wargame</div>
-            <p>25 hands-on terminal challenges across 5 chapters — Linux fundamentals, text processing, recon, crypto, lateral movement. XP, ranks, achievements.</p>
+            <div class="member-card-title">Wargame</div>
+            <p>25 hands-on terminal challenges in 5 chapters — Linux basics, text processing, recon, crypto, lateral movement. XP, ranks, achievements.</p>
             <div class="member-card-cta">Launch Range <span aria-hidden>→</span></div>
           </a>
+          <a href="#certs-picker" class="member-card">
+            <div class="member-card-tag">Practice Exams</div>
+            <div class="member-card-title">Certification Quizzes</div>
+            <p>700+ questions across 7 AWS certs — Cloud Practitioner, SAA, DOP, Security, Networking, Data Engineer, SAP. Timed mode + per-domain breakdown.</p>
+            <div class="member-card-cta">Pick a Cert <span aria-hidden>↓</span></div>
+          </a>
+        </div>
+
+        <div id="certs-picker" class="cert-picker">
+          <h3 class="cert-picker-title">Choose your certification</h3>
+          <div class="cert-picker-grid">
+            <a v-for="b in quizBanks" :key="b.code" :href="toolUrl('/quiz/index.html', { bank: b.code })" class="cert-pill">
+              <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
+              <div class="cert-pill-name">{{ b.name }}</div>
+              <div class="cert-pill-meta">{{ b.questions }} questions</div>
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -379,6 +403,17 @@ export default {
       currentUser: null,
       userMenuOpen: false,
 
+      // Quiz banks shown in the cert picker
+      quizBanks: [
+        { code: "clf-c02", name: "Cloud Practitioner",            questions: 100 },
+        { code: "saa-c03", name: "Solutions Architect Associate", questions: 200 },
+        { code: "dea-c01", name: "Data Engineer Associate",       questions: 60  },
+        { code: "dop-c02", name: "DevOps Engineer Pro",           questions: 120 },
+        { code: "sap-c02", name: "Solutions Architect Pro",       questions: 80  },
+        { code: "ans-c01", name: "Advanced Networking",           questions: 60  },
+        { code: "scs-c02", name: "Security Specialty",            questions: 80  },
+      ],
+
       // Auth modals
       loginOpen: false,
       signupOpen: false,
@@ -409,6 +444,10 @@ export default {
   methods: {
     handleScroll() { this.isScrolled = window.scrollY > 8; },
     handleOutsideClick(e) { if (!e.target.closest('.user-pill')) this.userMenuOpen = false; },
+    toolUrl(path, extra = {}) {
+      const params = new URLSearchParams({ theme: "weatherlight", brand: "WeatherLight Advisors", ...extra });
+      return `${path}?${params.toString()}`;
+    },
 
     async loadCurrentUser() {
       const tokens = getTokens();
@@ -865,6 +904,57 @@ export default {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+}
+
+.cert-picker {
+  margin-top: 4rem;
+  padding-top: 3rem;
+  border-top: 1px solid #e0eaf5;
+}
+.cert-picker-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.5rem;
+}
+.cert-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+.cert-pill {
+  display: block;
+  padding: 1rem 1.15rem;
+  background: #ffffff;
+  border: 1px solid #d8e6f3;
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.cert-pill:hover {
+  transform: translateY(-2px);
+  border-color: #5b9bd5;
+  box-shadow: 0 8px 20px rgba(26, 58, 110, 0.08);
+}
+.cert-pill-code {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #2c5aa0;
+  margin-bottom: 0.35rem;
+}
+.cert-pill-name {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #1a3a6e;
+  margin-bottom: 0.2rem;
+}
+.cert-pill-meta {
+  font-size: 0.82rem;
+  color: #6b7c93;
 }
 
 .member-card {

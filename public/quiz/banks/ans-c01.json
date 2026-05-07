@@ -1,0 +1,845 @@
+[
+  {
+    "id": 1,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company is designing a VPC architecture for a new application. The VPC needs to support 500 EC2 instances across 3 Availability Zones, with separate subnets for web, application, and database tiers. Each tier needs room for growth.\n\nWhich CIDR block and subnet strategy is most appropriate?",
+    "options": {
+      "A": "VPC CIDR 10.0.0.0/24 with /28 subnets for each tier and AZ.",
+      "B": "VPC CIDR 10.0.0.0/16 with /20 subnets for each tier and AZ (9 subnets total: 3 tiers x 3 AZs), providing 4,091 usable IPs per subnet.",
+      "C": "VPC CIDR 10.0.0.0/28 with a single subnet for all tiers.",
+      "D": "VPC CIDR 10.0.0.0/16 with a single /16 subnet."
+    },
+    "answer": ["B"],
+    "explanation": "A /16 VPC provides 65,536 IPs — plenty of room. /20 subnets each provide 4,091 usable IPs (AWS reserves 5 per subnet), supporting growth well beyond the initial 500 instances. 9 subnets (3 tiers x 3 AZs) use 9 x /20 = about 37,000 IPs, fitting within the /16. A /24 VPC only has 251 usable IPs. A /28 is only 11 usable IPs. A single subnet violates tier isolation principles."
+  },
+  {
+    "id": 2,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company needs to add IPv6 capability to an existing VPC that currently uses only IPv4. The application must support dual-stack (both IPv4 and IPv6) for a gradual migration.\n\nWhich steps are required to enable IPv6? (Select TWO.)",
+    "options": {
+      "A": "Associate an IPv6 CIDR block with the VPC (Amazon-provided or BYOIP) and assign IPv6 CIDR blocks to the subnets.",
+      "B": "Create a new VPC with IPv6 — you cannot add IPv6 to an existing VPC.",
+      "C": "Update route tables to include IPv6 routes (::/0) pointing to the internet gateway (for public subnets) or an egress-only internet gateway (for private subnets).",
+      "D": "Replace the internet gateway with an IPv6-only gateway.",
+      "E": "Change all security groups from IPv4 to IPv6."
+    },
+    "answer": ["A", "C"],
+    "explanation": "IPv6 can be added to an existing VPC by associating an IPv6 CIDR block. Subnets receive /64 blocks. Route tables must be updated: public subnets route ::/0 to the internet gateway (which supports both IPv4 and IPv6). Private subnets needing outbound-only IPv6 use an egress-only internet gateway (which allows outbound but blocks unsolicited inbound). Security groups support both IPv4 and IPv6 rules simultaneously — no replacement needed."
+  },
+  {
+    "id": 3,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company has 50 VPCs across 5 AWS Regions that need full mesh connectivity. VPCs within the same Region need to communicate, and VPCs across Regions also need connectivity. The company wants centralized routing management.\n\nWhich architecture provides scalable cross-Region full mesh connectivity?",
+    "options": {
+      "A": "VPC peering between all 50 VPCs (1,225 peering connections).",
+      "B": "Deploy a Transit Gateway in each Region, attach all VPCs in that Region to the local Transit Gateway, and create inter-Region Transit Gateway peering connections between all 5 Transit Gateways.",
+      "C": "Deploy VPN connections between all VPCs.",
+      "D": "Use AWS Cloud WAN to define a global network policy."
+    },
+    "answer": ["B"],
+    "explanation": "Transit Gateway in each Region provides hub-and-spoke connectivity locally (each VPC needs only one attachment). Inter-Region peering between Transit Gateways connects the Regions (10 peering connections for 5 Regions). This is dramatically simpler than 1,225 VPC peering connections. While AWS Cloud WAN (D) could also work and provides policy-based management, Transit Gateway peering is the more established, well-tested approach. VPN between 50 VPCs is unmanageable."
+  },
+  {
+    "id": 4,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company has a VPC with CIDR 10.0.0.0/16 but has exhausted available IP addresses. Adding more instances is blocked by insufficient IPs. The company cannot re-IP existing resources.\n\nHow can additional IP addresses be added to the VPC?",
+    "options": {
+      "A": "Modify the existing CIDR to a larger range.",
+      "B": "Associate a secondary CIDR block with the VPC (e.g., 10.1.0.0/16) and create new subnets from the secondary CIDR.",
+      "C": "Delete the VPC and recreate it with a larger CIDR.",
+      "D": "Use Elastic IP addresses to extend the address space."
+    },
+    "answer": ["B"],
+    "explanation": "VPCs support up to 5 CIDR blocks (extendable to 50 via quota increase). Adding a secondary CIDR provides additional IP space without modifying existing resources. New subnets are created from the secondary CIDR. Existing subnets and resources remain on the original CIDR. You cannot modify an existing CIDR block. Deleting the VPC would require rebuilding everything. Elastic IPs are public addresses and don't extend private IP space."
+  },
+  {
+    "id": 5,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company needs to connect 200 VPCs to a Transit Gateway. The Transit Gateway has a default route table. The networking team wants production VPCs to communicate with each other and with shared services VPCs, but NOT with development VPCs.\n\nWhich Transit Gateway configuration achieves this segmentation?",
+    "options": {
+      "A": "Use a single Transit Gateway route table with all VPCs.",
+      "B": "Create separate Transit Gateway route tables for production, development, and shared services. Associate production VPCs with the production route table and development with the development route table. Propagate shared services routes to both production and development route tables.",
+      "C": "Use Network ACLs on each VPC.",
+      "D": "Create separate Transit Gateways for production and development."
+    },
+    "answer": ["B"],
+    "explanation": "Transit Gateway route tables provide network segmentation. Each VPC attachment is associated with one route table (determining which routes it sees) and can propagate its routes to multiple route tables. Production VPCs see each other and shared services. Development VPCs see each other and shared services. Neither sees the other segment. A single route table allows all-to-all communication. NACLs can't control Transit Gateway routing. Separate TGWs prevent shared services sharing."
+  },
+  {
+    "id": 6,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company needs to establish a dedicated 10 Gbps network connection between their on-premises data center and AWS. The connection must be established within 2 weeks, but Direct Connect provisioning typically takes 4-6 weeks.\n\nWhich approach provides the fastest dedicated connectivity?",
+    "options": {
+      "A": "Order a standard Direct Connect connection and wait for provisioning.",
+      "B": "Use a Direct Connect partner who has pre-provisioned capacity at a Direct Connect location (hosted connection), which can be provisioned more quickly.",
+      "C": "Set up a Site-to-Site VPN as temporary connectivity while the Direct Connect is provisioned.",
+      "D": "Use AWS Snow family devices for data transfer."
+    },
+    "answer": ["C"],
+    "explanation": "A Site-to-Site VPN can be set up within hours over the existing internet connection, providing immediate connectivity. The Direct Connect can be provisioned in parallel. Once DX is ready, traffic can be migrated from VPN to DX, with the VPN kept as backup. Hosted connections from partners are faster than dedicated connections but may still take more than 2 weeks. Snow family is for data migration, not ongoing connectivity."
+  },
+  {
+    "id": 7,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company has a 10 Gbps Direct Connect connection. They need to access VPCs in us-east-1 and eu-west-1, and also access public AWS services (S3, DynamoDB) privately.\n\nWhich combination of virtual interfaces and gateway is needed?",
+    "options": {
+      "A": "One private virtual interface per Region and one public virtual interface.",
+      "B": "A Direct Connect Gateway associated with Transit Gateways in both Regions (using transit virtual interfaces), and a public virtual interface for accessing public AWS services.",
+      "C": "Two Direct Connect connections, one per Region.",
+      "D": "A single private virtual interface to one VPC with VPC peering to the other Region."
+    },
+    "answer": ["B"],
+    "explanation": "A Direct Connect Gateway is a global resource that can be associated with Transit Gateways (or VGWs) in multiple Regions. Transit virtual interfaces connect the DX to the DX Gateway, which routes to both Regions. A public virtual interface on the same connection provides access to all AWS public service endpoints. This uses a single physical connection. Private VIFs connect to only one VGW. VPC peering doesn't route through DX. Two connections are unnecessary."
+  },
+  {
+    "id": 8,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company uses AWS Direct Connect for production traffic. The company requires high resiliency for the Direct Connect connection to ensure that a single point of failure doesn't disrupt connectivity.\n\nWhich architecture provides the HIGHEST level of Direct Connect resiliency?",
+    "options": {
+      "A": "A single Direct Connect connection with a VPN backup.",
+      "B": "Two Direct Connect connections at the same Direct Connect location on separate devices.",
+      "C": "Two Direct Connect connections at two different Direct Connect locations (maximum resiliency model), each with connections through different network providers.",
+      "D": "A Link Aggregation Group (LAG) with multiple connections at one location."
+    },
+    "answer": ["C"],
+    "explanation": "AWS's maximum resiliency model uses separate connections at separate Direct Connect locations, ideally through different network providers. This protects against single-device failure, single-location failure, and single-provider failure. Two connections at the same location protect against device failure but not location failure. A LAG bundles connections but at the same device/location. VPN backup provides lower bandwidth."
+  },
+  {
+    "id": 9,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company serves static and dynamic content from an application in us-east-1 to users globally. Static content (images, CSS, JS) can be cached, but dynamic API responses are personalized and uncacheable.\n\nWhich configuration optimizes delivery for BOTH content types?",
+    "options": {
+      "A": "CloudFront with a single origin and default caching for everything.",
+      "B": "CloudFront with two cache behaviors: one for /static/* with long TTL (cacheable) routed to an S3 origin, and one for /api/* with TTL 0 (forwarding all requests to the ALB origin, benefiting from CloudFront's persistent origin connections).",
+      "C": "Direct ALB access for everything without CloudFront.",
+      "D": "Global Accelerator for all content."
+    },
+    "answer": ["B"],
+    "explanation": "CloudFront cache behaviors allow different caching rules per URL path. Static content gets long TTLs and is served from edge cache. Dynamic API content with TTL 0 is not cached but still benefits from CloudFront's optimized network path (persistent HTTP/2 connections to the origin, TCP reuse, edge termination reducing latency). A single behavior either over-caches or under-caches. Direct ALB has no edge optimization. Global Accelerator optimizes network path but doesn't cache."
+  },
+  {
+    "id": 10,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company uses AWS Global Accelerator for a TCP-based application. The application has endpoints in us-east-1 and ap-southeast-1. A disaster takes down the us-east-1 endpoint.\n\nHow does Global Accelerator handle the failover?",
+    "options": {
+      "A": "Global Accelerator continues sending traffic to us-east-1, resulting in errors.",
+      "B": "Users must manually update DNS to point to the ap-southeast-1 endpoint.",
+      "C": "Global Accelerator's health checks detect the failure and automatically route all traffic to the healthy ap-southeast-1 endpoint within seconds, without any DNS changes or client-side reconfiguration.",
+      "D": "Global Accelerator terminates and must be recreated."
+    },
+    "answer": ["C"],
+    "explanation": "Global Accelerator continuously health-checks endpoints. When the us-east-1 endpoint fails health checks, traffic is automatically routed to the next healthy endpoint (ap-southeast-1) within seconds. Since clients connect to static anycast IP addresses (not DNS names), there are no DNS TTL delays. Failover is transparent to clients. This instant failover without DNS changes is a key advantage over Route 53 failover."
+  },
+  {
+    "id": 11,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company uses Amazon Route 53 for DNS and needs to route traffic for their application based on the user's geographic location. Users in Europe should go to eu-west-1, users in Asia to ap-northeast-1, and all others to us-east-1.\n\nWhich Route 53 routing policy should be used?",
+    "options": {
+      "A": "Simple routing with multiple values.",
+      "B": "Geolocation routing policy with location-based records for Europe, Asia, and a default record for all other locations.",
+      "C": "Latency-based routing policy.",
+      "D": "Weighted routing with equal weights."
+    },
+    "answer": ["B"],
+    "explanation": "Geolocation routing directs traffic based on the geographic location of the DNS query origin (continent, country, or state). Records for Europe and Asia route to specific Regions. A default record catches queries from all other locations. Latency-based routing uses network latency measurements and might not always match geographic intent. Weighted routing splits traffic by percentage, not location. Simple routing returns all values."
+  },
+  {
+    "id": 12,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company's on-premises applications need to resolve DNS names for resources in AWS private hosted zones. The company uses Active Directory DNS on-premises.\n\nWhich Route 53 Resolver configuration enables on-premises DNS resolution of AWS private hosted zone records?",
+    "options": {
+      "A": "Create Route 53 Resolver outbound endpoints in the VPC.",
+      "B": "Create Route 53 Resolver inbound endpoints in the VPC, and configure the on-premises DNS servers to forward queries for the private hosted zone domain to the inbound endpoint IP addresses.",
+      "C": "Make the Route 53 private hosted zone public.",
+      "D": "Replicate all DNS records to on-premises Active Directory."
+    },
+    "answer": ["B"],
+    "explanation": "Inbound endpoints receive DNS queries from outside the VPC (on-premises) and resolve them using Route 53 Resolver (which has access to private hosted zones). On-premises DNS servers are configured with conditional forwarders for the private hosted zone domain pointing to the inbound endpoint IP addresses. Outbound endpoints are for the reverse direction (VPC to on-premises DNS). Making zones public exposes records. Manual replication doesn't scale."
+  },
+  {
+    "id": 13,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company wants to monitor network traffic patterns across multiple VPCs to detect anomalies and plan capacity. They need flow-level visibility including source/destination IPs, ports, protocols, and bytes transferred.\n\nWhich feature provides this visibility with the LEAST operational overhead?",
+    "options": {
+      "A": "Install packet capture agents on every EC2 instance.",
+      "B": "Enable VPC Flow Logs (version 5 with additional fields) on all VPCs, delivering to CloudWatch Logs or S3 for analysis with Athena or CloudWatch Logs Insights.",
+      "C": "Enable VPC Traffic Mirroring on all ENIs.",
+      "D": "Use CloudTrail for network monitoring."
+    },
+    "answer": ["B"],
+    "explanation": "VPC Flow Logs capture metadata about IP traffic (source/dest IP, port, protocol, packets, bytes, action) at the VPC, subnet, or ENI level. Version 5 adds fields like vpc-id, subnet-id, and tcp-flags. Delivery to S3 for Athena queries provides cost-effective analysis. No agents to install or manage. Traffic Mirroring captures full packets (overkill for flow analysis). CloudTrail captures API calls, not network traffic."
+  },
+  {
+    "id": 14,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company operates a hybrid DNS architecture with Route 53 Resolver. They notice that DNS resolution for on-premises domains from EC2 instances is intermittently failing.\n\nThe outbound endpoint has two IP addresses in two Availability Zones. What is the MOST likely cause of intermittent failures?",
+    "options": {
+      "A": "The outbound endpoint IP addresses are in the same AZ.",
+      "B": "The on-premises DNS servers are intermittently unreachable from one AZ due to a routing issue or firewall rule. Since the resolver load-balances across endpoints, queries routed through the problematic AZ fail.",
+      "C": "Route 53 Resolver has a request rate limit.",
+      "D": "The forwarding rules have an incorrect domain."
+    },
+    "answer": ["B"],
+    "explanation": "Route 53 Resolver outbound endpoints distribute queries across the ENIs in multiple AZs. If one AZ has connectivity issues to on-premises (asymmetric routing, firewall rules, or Direct Connect issues), queries routed through that AZ fail while queries through the healthy AZ succeed — causing intermittent failures. Check security groups on the endpoint ENIs, NACLs, route tables, and on-premises firewall rules for both AZ IP addresses. Incorrect domains would fail consistently."
+  },
+  {
+    "id": 15,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company has a VPC with multiple subnets. The security team wants to implement stateless packet filtering at the subnet level that can explicitly deny traffic from specific IP ranges.\n\nWhich network control provides stateless filtering with explicit deny capability at the subnet level?",
+    "options": {
+      "A": "Security groups.",
+      "B": "Network ACLs, which are stateless (return traffic must be explicitly allowed), process rules in order, and support both allow and deny rules.",
+      "C": "AWS WAF.",
+      "D": "Route table blackhole routes."
+    },
+    "answer": ["B"],
+    "explanation": "Network ACLs are the only VPC construct that provides stateless packet filtering at the subnet boundary with explicit deny rules. Rules are evaluated in number order, and the first match wins. Both inbound and outbound rules must explicitly allow return traffic (stateless). Security groups are stateful (return traffic is automatic) and only support allow rules. WAF operates at Layer 7 on HTTP/HTTPS. Blackhole routes drop traffic but don't provide fine-grained filtering."
+  },
+  {
+    "id": 16,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company runs a three-tier application. The security team requires that the web tier security group allows HTTP/HTTPS from the internet, but the application tier security group allows traffic ONLY from the web tier, and the database tier allows traffic ONLY from the application tier.\n\nHow should security group references be configured?",
+    "options": {
+      "A": "Use IP addresses in all security group rules.",
+      "B": "Web SG: allow 80/443 from 0.0.0.0/0. App SG: allow app port from Web SG ID (security group reference). DB SG: allow DB port from App SG ID. This chains security groups by reference rather than IP.",
+      "C": "Use a single security group for all tiers with combined rules.",
+      "D": "Use Network ACLs instead of security groups for tier isolation."
+    },
+    "answer": ["B"],
+    "explanation": "Security group referencing allows rules that accept traffic from any instance associated with the referenced security group, regardless of IP address. This dynamically adapts as instances scale. The chain (Internet → Web SG → App SG → DB SG) ensures each tier only accepts traffic from its adjacent tier. IP-based rules break when instances change. A single SG provides no isolation. NACLs are subnet-level, not instance-level."
+  },
+  {
+    "id": 17,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company needs to inspect all traffic between VPCs for threat detection using a third-party security appliance. The appliance runs on EC2 instances.\n\nWhich architecture routes inter-VPC traffic through the inspection appliance?",
+    "options": {
+      "A": "Deploy the appliance behind an Application Load Balancer.",
+      "B": "Deploy the appliance behind a Gateway Load Balancer (GWLB) in an inspection VPC, create GWLB endpoints in spoke VPCs, and configure Transit Gateway routing to direct inter-VPC traffic through the GWLB endpoints.",
+      "C": "Use VPC peering with custom route tables.",
+      "D": "Deploy the appliance as a Lambda function."
+    },
+    "answer": ["B"],
+    "explanation": "Gateway Load Balancer is designed for deploying and scaling network appliances transparently. It uses GENEVE encapsulation to send traffic to appliances and back. GWLB endpoints in spoke VPCs combined with Transit Gateway routing direct inter-VPC traffic through the inspection appliance. This is transparent to applications and scales with the appliance fleet. ALBs are for HTTP applications. VPC peering doesn't support routing through intermediary instances. Lambda can't perform inline packet inspection."
+  },
+  {
+    "id": 18,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company wants to protect their application against DDoS attacks. They currently use AWS Shield Standard. The security team wants advanced DDoS protection with 24/7 access to the DDoS Response Team and cost protection for scaling during an attack.\n\nWhich Shield tier and resources must be protected?",
+    "options": {
+      "A": "Shield Standard provides all these features.",
+      "B": "AWS Shield Advanced, subscribed at the account level and applied to specific resources (CloudFront, ALB, Elastic IP, Global Accelerator, Route 53) to receive advanced DDoS detection, DRT access, and DDoS cost protection.",
+      "C": "AWS WAF alone is sufficient for DDoS protection.",
+      "D": "Network ACLs with rate limiting."
+    },
+    "answer": ["B"],
+    "explanation": "Shield Advanced provides: enhanced detection for application-layer attacks, 24/7 DDoS Response Team access, real-time attack dashboards, AWS WAF at no additional cost for protected resources, and DDoS cost protection (credits for scaling charges during attacks). It must be applied to specific protected resources. Shield Standard only provides basic Layer 3/4 protection. WAF alone handles Layer 7 but not Layer 3/4. NACLs don't have rate limiting."
+  },
+  {
+    "id": 19,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company needs to design a VPC that supports both IPv4 and IPv6. Private instances need outbound-only IPv6 internet access (no inbound IPv6 connections from the internet).\n\nWhich gateway provides outbound-only IPv6 access?",
+    "options": {
+      "A": "NAT Gateway (which handles IPv4 only).",
+      "B": "Egress-only Internet Gateway, which allows outbound IPv6 traffic from the VPC to the internet but blocks inbound IPv6 connection initiation.",
+      "C": "Internet Gateway with NACL rules blocking inbound IPv6.",
+      "D": "VPC endpoint for IPv6."
+    },
+    "answer": ["B"],
+    "explanation": "An egress-only internet gateway is the IPv6 equivalent of a NAT gateway for IPv4. It allows instances to initiate outbound IPv6 connections to the internet but prevents the internet from initiating inbound IPv6 connections. NAT gateways only handle IPv4 traffic. An internet gateway allows both inbound and outbound (NACLs could restrict but are harder to manage). VPC endpoints connect to AWS services, not the internet."
+  },
+  {
+    "id": 20,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company uses Direct Connect with a private virtual interface to access their VPC. The company wants to use the same DX connection to access Amazon S3 with private IP connectivity (not over the public internet and not using a public VIF).\n\nWhich feature enables private S3 access over Direct Connect without a public VIF?",
+    "options": {
+      "A": "S3 Transfer Acceleration.",
+      "B": "Create a VPC interface endpoint for S3 in the VPC connected to Direct Connect, and route S3 traffic from on-premises through the DX private VIF → VPC → S3 interface endpoint.",
+      "C": "Access S3 directly over the private VIF.",
+      "D": "Use an S3 gateway endpoint from on-premises."
+    },
+    "answer": ["B"],
+    "explanation": "An S3 interface endpoint (PrivateLink) creates ENIs in the VPC with private IP addresses. On-premises traffic traverses the DX private VIF to the VPC, then reaches S3 through the interface endpoint — all on private IPs, never touching the public internet. S3 cannot be accessed directly over a private VIF (it's a public service). Gateway endpoints are VPC-only (not reachable from on-premises). Transfer Acceleration uses the public internet."
+  },
+  {
+    "id": 21,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company operates a complex multi-VPC, multi-Region network with Transit Gateways, Direct Connect, and VPNs. The network team needs a centralized dashboard showing the complete network topology, monitoring link health, and tracking routing changes.\n\nWhich AWS service provides this unified network management view?",
+    "options": {
+      "A": "Amazon VPC console.",
+      "B": "AWS Network Manager (part of Cloud WAN), which provides a global view of Transit Gateways, Site-to-Site VPNs, and Direct Connect connections with topology visualization and event monitoring.",
+      "C": "CloudWatch dashboards.",
+      "D": "AWS Config network topology."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Network Manager creates a global network object that aggregates Transit Gateways, VPN connections, and Direct Connect across Regions. It provides topology visualization, event monitoring (link status changes, route changes), and operational metrics. CloudWatch shows individual metrics but not network topology. The VPC console shows one VPC at a time. Config tracks configuration changes but doesn't provide network visualization."
+  },
+  {
+    "id": 22,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company wants to implement TLS termination at the load balancer for their web application while maintaining end-to-end encryption to the backend instances.\n\nWhich ALB configuration provides TLS termination at the ALB with re-encryption to backends?",
+    "options": {
+      "A": "HTTP listener on the ALB forwarding to HTTP target group.",
+      "B": "HTTPS listener on the ALB (terminating client TLS) forwarding to an HTTPS target group (re-encrypting to backends with a separate certificate).",
+      "C": "TCP passthrough on the ALB.",
+      "D": "HTTPS listener with HTTP target group."
+    },
+    "answer": ["B"],
+    "explanation": "HTTPS listener + HTTPS target group provides TLS termination at the ALB (for WAF inspection, routing rules, etc.) and re-encryption to backends. The ALB establishes a new TLS connection to the backend using the backend's certificate. This maintains end-to-end encryption while allowing the ALB to inspect traffic. TCP passthrough doesn't allow ALB to inspect content. HTTP target groups transmit in cleartext between ALB and backend."
+  },
+  {
+    "id": 23,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company has 3 VPCs peered together: VPC-A ↔ VPC-B and VPC-B ↔ VPC-C. The company needs VPC-A to communicate with VPC-C. Adding a direct peering connection is not desired due to management overhead.\n\nWhich alternative provides transitive routing?",
+    "options": {
+      "A": "VPC peering supports transitive routing if route tables are configured correctly.",
+      "B": "Replace VPC peering with a Transit Gateway that all three VPCs attach to, which natively provides transitive routing between all attached VPCs.",
+      "C": "Use a software VPN in VPC-B to route between VPC-A and VPC-C.",
+      "D": "Configure NAT in VPC-B to forward traffic."
+    },
+    "answer": ["B"],
+    "explanation": "Transit Gateway is the AWS solution for transitive routing. All VPCs attach to the TGW and can communicate through it. VPC peering is non-transitive by design — traffic cannot flow A → B → C. While a software VPN or NAT in VPC-B could technically work, they add complexity, single points of failure, and bandwidth limitations. Transit Gateway handles this natively and scales."
+  },
+  {
+    "id": 24,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company uses CloudFront to serve content. They want to restrict access to their ALB origin so that users can ONLY access the application through CloudFront, not by accessing the ALB directly.\n\nWhich approach secures the origin?",
+    "options": {
+      "A": "Use a CloudFront custom header (X-Custom-Origin-Verify) with a secret value that the ALB validates, combined with restricting the ALB security group to CloudFront's managed prefix list (com.amazonaws.global.cloudfront.origin-facing).",
+      "B": "Make the ALB internet-facing and hope users use CloudFront.",
+      "C": "Use an S3 origin access control.",
+      "D": "Put the ALB in a private subnet."
+    },
+    "answer": ["A"],
+    "explanation": "The dual approach ensures security: the ALB security group restricts inbound traffic to CloudFront's IP ranges (using the managed prefix list), and the custom header acts as a shared secret that CloudFront adds to origin requests. The ALB (or application) validates this header, rejecting requests without it. S3 origin access control only works for S3 origins. A private ALB wouldn't be reachable by CloudFront (which connects to public endpoints)."
+  },
+  {
+    "id": 25,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company wants to implement split-horizon DNS where the same domain name (app.example.com) resolves to a public IP from the internet but to a private IP from within the VPC.\n\nHow should Route 53 be configured?",
+    "options": {
+      "A": "Create one public hosted zone only.",
+      "B": "Create a public hosted zone with the public IP record AND a private hosted zone (associated with the VPC) with the private IP record, both for the same domain name. Route 53 automatically serves the private zone to VPC resources and the public zone to internet queries.",
+      "C": "Use a CNAME record that conditionally resolves.",
+      "D": "Configure the VPC DHCP options with a custom DNS server."
+    },
+    "answer": ["B"],
+    "explanation": "Route 53 supports overlapping public and private hosted zones for the same domain. When a DNS query comes from within an associated VPC, Route 53 resolves using the private hosted zone. External queries use the public hosted zone. This provides split-horizon DNS natively. No custom DNS servers or complex CNAME logic needed. DHCP options can point to custom servers but add management overhead."
+  },
+  {
+    "id": 26,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company uses AWS Network Firewall. The security team wants to create a rule that blocks all outbound HTTP/HTTPS traffic to domains not on an approved allowlist.\n\nWhich Network Firewall rule type enables domain-based filtering for HTTPS traffic?",
+    "options": {
+      "A": "Stateless rules with IP-based blocking.",
+      "B": "Stateful rules with a domain list rule group that inspects the TLS Server Name Indication (SNI) field to match domain names in HTTPS traffic without decrypting it.",
+      "C": "Stateful rules with Suricata string matching on the Host header.",
+      "D": "Network ACL rules with domain names."
+    },
+    "answer": ["B"],
+    "explanation": "Network Firewall stateful rules with domain list rule groups inspect the TLS SNI extension in the ClientHello message to identify the target domain. This works for HTTPS traffic without requiring TLS decryption — the SNI is sent in plaintext during the TLS handshake. The rule can allow only whitelisted domains and block everything else. Stateless rules can't inspect SNI. Suricata string matching on Host header only works for HTTP (not HTTPS without decryption). NACLs can't inspect domain names."
+  },
+  {
+    "id": 27,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company is designing a VPC for a serverless application using Lambda, API Gateway, and DynamoDB. The Lambda functions don't need to access any VPC resources but need internet access for external API calls.\n\nShould the Lambda functions be placed in a VPC?",
+    "options": {
+      "A": "Yes, all Lambda functions should be in a VPC for security.",
+      "B": "No. Lambda functions that don't access VPC resources should NOT be placed in a VPC. Non-VPC Lambda has direct internet access without needing NAT gateways, scales without ENI/IP constraints, and has faster cold starts.",
+      "C": "Yes, but only in public subnets.",
+      "D": "It doesn't matter — performance is the same."
+    },
+    "answer": ["B"],
+    "explanation": "Non-VPC Lambda functions have direct internet access through AWS's network and communicate with DynamoDB via public endpoints naturally. Placing them in a VPC requires NAT gateways for internet access (added cost), consumes ENIs and subnet IPs (limiting scale), and adds cold start latency (ENI attachment). VPC placement is only needed when Lambda must access VPC resources (RDS, ElastiCache, private endpoints). Lambda cannot be placed in public subnets — it always uses private subnets."
+  },
+  {
+    "id": 28,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company has two Direct Connect connections at different locations for high availability. BGP is configured with the same prefixes advertised from both connections. The company wants all traffic to prefer the primary connection and failover to the secondary only when the primary is down.\n\nHow should BGP be configured to achieve active/passive failover?",
+    "options": {
+      "A": "Use the same AS path length on both connections.",
+      "B": "Advertise the same prefixes on both connections but prepend the AS path on the secondary connection (making it longer), so BGP naturally prefers the primary connection's shorter AS path.",
+      "C": "Use different BGP communities on each connection.",
+      "D": "Configure static routes instead of BGP."
+    },
+    "answer": ["B"],
+    "explanation": "BGP prefers shorter AS paths. By prepending additional AS numbers to the secondary connection's advertised routes, the AS path becomes longer. BGP routers prefer the primary connection's shorter path. When the primary fails, the secondary's routes become the only available path and traffic automatically fails over. Communities can influence routing but AS path prepending is the standard active/passive technique. Static routes don't support automatic failover."
+  },
+  {
+    "id": 29,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company uses Route 53 health checks to monitor their application endpoints. The application is behind an ALB. The health check is failing intermittently even though the application is healthy.\n\nWhat is the MOST likely cause of intermittent Route 53 health check failures?",
+    "options": {
+      "A": "Route 53 health checkers originate from specific AWS IP ranges. If the ALB's security group doesn't allow inbound traffic from Route 53 health checker IP ranges, checks may fail.",
+      "B": "The Route 53 service is experiencing an outage.",
+      "C": "The ALB idle timeout is too long.",
+      "D": "The health check path is incorrect."
+    },
+    "answer": ["A"],
+    "explanation": "Route 53 health checkers run from multiple regions using specific IP ranges (published in the AWS IP ranges JSON). If the ALB security group only allows traffic from known application CIDRs, some health checkers may be blocked. Intermittent failures occur because different checkers from different IPs are used for each check. The fix is to allow the Route 53 health checker IP ranges in the ALB security group. An incorrect path would fail consistently."
+  },
+  {
+    "id": 30,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company has a VPC with a VPN connection to on-premises. The security team discovers that traffic between the VPN and VPC is unencrypted inside the VPC (between the Virtual Private Gateway and EC2 instances).\n\nIs this a security concern, and what can be done?",
+    "options": {
+      "A": "This is a critical vulnerability that must be immediately addressed.",
+      "B": "Traffic within a VPC is isolated at the hypervisor level by AWS (no other customer can see it), but for defense-in-depth or compliance requirements, application-level encryption (TLS) can be added between instances.",
+      "C": "Enable VPC encryption to encrypt all internal traffic.",
+      "D": "Use IPsec between all EC2 instances."
+    },
+    "answer": ["B"],
+    "explanation": "AWS VPC provides network isolation at the hypervisor level — traffic between instances cannot be intercepted by other customers. However, for compliance frameworks that require encryption in transit at all times, or for defense-in-depth, application-level TLS encryption between components is recommended. There is no 'VPC encryption' toggle. IPsec between all instances is complex and typically unnecessary given VPC isolation, but TLS at the application layer is straightforward."
+  },
+  {
+    "id": 31,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company has a Transit Gateway connecting 30 VPCs. They need to add a new VPC that should be completely isolated — it can access shared services but CANNOT communicate with any other VPC.\n\nHow should the Transit Gateway routing be configured for this isolated VPC?",
+    "options": {
+      "A": "Create a new Transit Gateway route table for the isolated VPC. Associate the isolated VPC attachment with this route table. Add only the shared services VPC routes to this table (do not propagate other VPC routes). In the shared services route table, add a route to the isolated VPC.",
+      "B": "Attach the VPC to the default route table.",
+      "C": "Use Network ACLs on the isolated VPC to block traffic.",
+      "D": "Don't attach the isolated VPC to the Transit Gateway."
+    },
+    "answer": ["A"],
+    "explanation": "A dedicated Transit Gateway route table for the isolated VPC controls exactly which destinations it can reach. By only adding shared services routes and not propagating other VPC routes, the isolated VPC cannot route to other spoke VPCs. The shared services route table needs a route back to the isolated VPC for return traffic. The default route table typically has all propagated routes. NACLs can't control TGW routing. Not attaching prevents access to shared services too."
+  },
+  {
+    "id": 32,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company hosts a website on EC2 instances behind an ALB. The website uses WebSocket connections for real-time features. Users report that WebSocket connections are dropped after 60 seconds of inactivity.\n\nWhat is causing the disconnections, and how should it be fixed?",
+    "options": {
+      "A": "The security group is blocking WebSocket traffic.",
+      "B": "The ALB idle timeout defaults to 60 seconds. WebSocket connections that are idle for longer than this timeout are closed. Increase the ALB idle timeout to match the expected WebSocket idle period.",
+      "C": "WebSockets are not supported on ALB.",
+      "D": "The EC2 instances are running out of memory."
+    },
+    "answer": ["B"],
+    "explanation": "ALB's idle timeout determines how long a connection can be idle before the ALB closes it. The default is 60 seconds. For WebSocket connections that may be idle for longer periods (waiting for real-time events), the idle timeout should be increased (up to 4,000 seconds). Alternatively, implement application-level keepalive pings. ALB fully supports WebSocket connections (upgraded from HTTP). Security groups don't differentiate WebSocket from HTTP."
+  },
+  {
+    "id": 33,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company wants to monitor real-time DNS query patterns for their Route 53 private hosted zones to detect DNS anomalies and troubleshoot resolution issues.\n\nWhich feature enables DNS query logging for private hosted zones?",
+    "options": {
+      "A": "CloudTrail DNS data events.",
+      "B": "Route 53 Resolver query logging, which logs all DNS queries made by resources in associated VPCs to CloudWatch Logs, S3, or Kinesis Data Firehose.",
+      "C": "VPC Flow Logs with port 53 filtering.",
+      "D": "CloudWatch DNS metrics."
+    },
+    "answer": ["B"],
+    "explanation": "Route 53 Resolver query logging captures DNS queries from VPC resources — including the query name, response code, query type, and source VPC. Logs can go to CloudWatch Logs for real-time analysis, S3 for archival, or Kinesis Firehose for streaming. This provides visibility into DNS resolution patterns. CloudTrail logs Route 53 API calls, not DNS queries. Flow Logs show port 53 traffic metadata but not query content. CloudWatch doesn't have DNS query metrics."
+  },
+  {
+    "id": 34,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company wants to enforce that all EC2 instances launched in their VPC can ONLY use specific security groups approved by the security team. Developers should not be able to create or modify security groups.\n\nWhich approach enforces this?",
+    "options": {
+      "A": "Use IAM policies to deny ec2:CreateSecurityGroup and ec2:AuthorizeSecurityGroupIngress/Egress for developer roles, while allowing ec2:RunInstances with a condition that the security group IDs must be from an approved list (using ec2:SecurityGroupIds condition key).",
+      "B": "Remove all security groups and use only NACLs.",
+      "C": "Use AWS Config to detect unauthorized security groups after creation.",
+      "D": "Educate developers to use only approved security groups."
+    },
+    "answer": ["A"],
+    "explanation": "IAM condition keys (ec2:SecurityGroupIds) restrict which security groups can be associated with instances during launch. Denying CreateSecurityGroup and AuthorizeSecurityGroup* prevents developers from creating or modifying groups. This is a preventive control that enforces compliance at launch time. Removing security groups eliminates a critical security layer. Config is detective (after the fact). Education without enforcement is unreliable."
+  },
+  {
+    "id": 35,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company establishes a Site-to-Site VPN connection to AWS. They notice the VPN throughput is limited to approximately 1.25 Gbps per tunnel despite having a 10 Gbps internet connection.\n\nWhat is causing the throughput limitation, and how can it be increased?",
+    "options": {
+      "A": "The internet connection is too slow.",
+      "B": "Each VPN tunnel has a maximum throughput of approximately 1.25 Gbps. To increase aggregate throughput, use multiple VPN connections with Equal-Cost Multi-Path (ECMP) routing on a Transit Gateway, which distributes traffic across tunnels.",
+      "C": "Increase the VPN instance size on the AWS side.",
+      "D": "Enable VPN acceleration."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Site-to-Site VPN tunnels are limited to approximately 1.25 Gbps each. To achieve higher throughput, attach multiple VPN connections to a Transit Gateway with ECMP enabled. ECMP distributes traffic across all active tunnels (up to 50 VPN connections per TGW). Each VPN has 2 tunnels, so 2 VPN connections provide ~5 Gbps of aggregate throughput. VPN acceleration (Global Accelerator for VPN) improves latency but not per-tunnel bandwidth. There is no AWS-side VPN instance to resize."
+  },
+  {
+    "id": 36,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company needs to allow two VPCs with overlapping CIDR ranges (both using 10.0.0.0/16) to communicate for a specific service endpoint.\n\nWhich networking solutions can connect VPCs with overlapping CIDRs? (Select TWO.)",
+    "options": {
+      "A": "VPC peering.",
+      "B": "AWS PrivateLink — exposing the service via a Network Load Balancer and VPC endpoint service.",
+      "C": "Transit Gateway.",
+      "D": "AWS Cloud Map for service discovery with NAT translation.",
+      "E": "ALB with a Lambda target that proxies requests, where the Lambda is not VPC-attached."
+    },
+    "answer": ["B", "E"],
+    "explanation": "PrivateLink resolves overlapping CIDRs by creating an endpoint in the consumer VPC that uses the consumer's IP space. Traffic is routed through the AWS network to the provider's NLB. Alternatively, a non-VPC Lambda as an intermediary proxies requests since it exists outside both VPC address spaces. VPC peering and Transit Gateway cannot route between overlapping CIDRs because routing tables cannot distinguish between identical address ranges."
+  },
+  {
+    "id": 37,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company uses Route 53 weighted routing to split traffic between two ALBs: 80% to the primary and 20% to a canary deployment. After the canary proves stable, the team wants to shift to 100% canary.\n\nHow should the traffic be shifted?",
+    "options": {
+      "A": "Delete the primary record and recreate it.",
+      "B": "Update the weighted records: set the primary weight to 0 and the canary weight to any positive value (e.g., 100). Route 53 will send 100% of traffic to the canary.",
+      "C": "Create a new failover routing policy.",
+      "D": "Change to simple routing with the canary ALB."
+    },
+    "answer": ["B"],
+    "explanation": "In weighted routing, traffic distribution is based on relative weights. Setting the primary to 0 means it receives no traffic. Any positive weight on the canary receives 100% of traffic. This is a zero-downtime traffic shift. Deleting and recreating records causes a brief resolution gap. Changing routing policies requires deleting existing records first. Weighted routing handles this use case perfectly."
+  },
+  {
+    "id": 38,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company uses AWS WAF to protect their CloudFront distribution. The WAF has rate-based rules, managed rule groups, and custom rules. The team notices a rate-based rule is blocking legitimate high-volume API consumers.\n\nHow should the team adjust the WAF configuration to allow legitimate high-volume traffic while still protecting against abuse?",
+    "options": {
+      "A": "Remove the rate-based rule entirely.",
+      "B": "Create a WAF rule with higher priority that explicitly allows traffic from the legitimate consumers' IP addresses (using an IP set), so they bypass the rate-based rule. Keep the rate-based rule for all other traffic.",
+      "C": "Increase the rate limit to accommodate the highest legitimate traffic.",
+      "D": "Disable WAF for the distribution."
+    },
+    "answer": ["B"],
+    "explanation": "WAF rules are evaluated in priority order. A higher-priority Allow rule for the legitimate IP set ensures those consumers are never evaluated against the rate-based rule. All other traffic still gets rate-limited. Simply increasing the rate limit weakens protection for everyone. Removing or disabling WAF eliminates protection. The IP set approach provides surgical exceptions while maintaining security for everyone else."
+  },
+  {
+    "id": 39,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company uses a Network Load Balancer for a TCP-based application. They need to preserve the client's source IP address for the backend instances.\n\nWhich NLB configuration preserves client source IPs?",
+    "options": {
+      "A": "Use an ALB instead of NLB.",
+      "B": "Enable client IP preservation on the target group (enabled by default for instance targets). For IP targets (including those behind a PrivateLink), enable proxy protocol v2 to pass client IP information.",
+      "C": "Use a custom X-Forwarded-For header.",
+      "D": "Configure source NAT on the NLB."
+    },
+    "answer": ["B"],
+    "explanation": "NLB preserves client source IPs by default for instance-type targets (direct routing). For IP-type targets (where NLB performs SNAT), proxy protocol v2 appends the original client IP in a binary header that the backend parses. X-Forwarded-For is an HTTP header used by ALBs, not applicable to TCP passthrough. Source NAT would mask the client IP."
+  },
+  {
+    "id": 40,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company needs to connect their on-premises network to 5 VPCs across 3 Regions using a single Direct Connect connection. The company wants centralized management of the connectivity.\n\nWhich architecture simplifies this multi-Region, multi-VPC connectivity?",
+    "options": {
+      "A": "Create 5 private virtual interfaces, one for each VPC.",
+      "B": "Create a Direct Connect Gateway and associate it with Transit Gateways in each of the 3 Regions. Attach VPCs to their regional Transit Gateway. Use a single transit virtual interface from DX to the DX Gateway.",
+      "C": "Create VPN connections to each VPC.",
+      "D": "Use VPC peering between all VPCs and a single DX to one VPC."
+    },
+    "answer": ["B"],
+    "explanation": "A Direct Connect Gateway is a global construct that bridges the DX connection to multiple Transit Gateways across Regions. A single transit virtual interface connects the DX to the DX Gateway, which distributes traffic to TGWs in 3 Regions. Each TGW connects to its regional VPCs. This uses one VIF instead of 5, and routes are managed centrally. Private VIFs can connect to one VGW each (5 would work but aren't scalable). VPN adds complexity. VPC peering doesn't route through DX."
+  },
+  {
+    "id": 41,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company needs to create VPC security groups that reference security groups in a peered VPC to allow traffic between instances in different VPCs.\n\nIs cross-VPC security group referencing supported?",
+    "options": {
+      "A": "No — security groups can only reference groups within the same VPC.",
+      "B": "Yes — for peered VPCs within the same Region, security groups can reference security groups in the peer VPC by using the peer VPC's security group ID (e.g., sg-xxx in vpc-peer). This does NOT work for inter-Region peering or Transit Gateway connections.",
+      "C": "Yes — it works across all VPC connection types.",
+      "D": "Only with Transit Gateway."
+    },
+    "answer": ["B"],
+    "explanation": "Cross-VPC security group referencing is supported for intra-Region VPC peering connections. You specify the peer VPC ID and security group ID in the rule. This allows rules like 'allow traffic from sg-abc in vpc-123'. However, this feature is NOT supported for inter-Region VPC peering or Transit Gateway connections — for those, you must use CIDR-based security group rules. This is a common exam topic."
+  },
+  {
+    "id": 42,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company uses Route 53 for DNS. They need to create an alias record that points to an ALB. The domain is hosted in a Route 53 public hosted zone.\n\nWhat is the key advantage of using an alias record instead of a CNAME record for the zone apex (example.com)?",
+    "options": {
+      "A": "Alias records are faster than CNAME records.",
+      "B": "DNS RFC prohibits CNAME records at the zone apex (alongside SOA and NS records). Route 53 alias records work at the zone apex because they are resolved within AWS before responding to the client. Alias records to AWS resources also incur no Route 53 query charges.",
+      "C": "CNAME records don't support ALB endpoints.",
+      "D": "Alias records support more record types."
+    },
+    "answer": ["B"],
+    "explanation": "The DNS specification (RFC 1034) prohibits CNAME records at the zone apex because the apex must have SOA and NS records, and CNAME cannot coexist with other record types. Route 53 alias records are an AWS extension that resolves the target's IP addresses internally and returns them as if they were A/AAAA records. This works at the apex and is free for queries to AWS resources (ALB, CloudFront, S3, etc.). CNAMEs work for subdomains but not the apex."
+  },
+  {
+    "id": 43,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company's Direct Connect connection uses BGP to exchange routes. The company advertises 200 routes from on-premises to AWS. AWS-side VPC routes are not appearing on-premises.\n\nWhat is the MOST likely issue?",
+    "options": {
+      "A": "BGP is not supported on Direct Connect.",
+      "B": "The Virtual Private Gateway or Transit Gateway may not have route propagation enabled for the VPC routes. Alternatively, the maximum prefix limit may have been reached — a private VIF supports up to 100 BGP routes from AWS to on-premises by default.",
+      "C": "The DX connection is physically disconnected.",
+      "D": "VPC CIDR blocks must be manually configured as static routes."
+    },
+    "answer": ["B"],
+    "explanation": "AWS advertises VPC routes via BGP only when route propagation is enabled on the Virtual Private Gateway or Transit Gateway. The default limit is 100 prefixes advertised from AWS to on-premises per BGP session. If this limit is exceeded or propagation isn't enabled, routes won't appear. The fact that 200 routes are being sent from on-premises (within the default 100 prefix limit from on-premises which can be increased) suggests the connection works — the issue is in the AWS-to-on-premises direction."
+  },
+  {
+    "id": 44,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company is building a multi-tenant SaaS application. Each tenant's resources are in a separate VPC. Tenants must access a shared API hosted in a central services VPC, but tenants must NOT be able to communicate with each other.\n\nWhich architecture provides secure, isolated tenant access to shared services?",
+    "options": {
+      "A": "VPC peering between each tenant VPC and the central VPC.",
+      "B": "Transit Gateway with separate route tables: each tenant VPC has its own route table containing only the shared services route. The shared services VPC route table has routes to all tenants.",
+      "C": "All tenants in a single VPC with security groups for isolation.",
+      "D": "Internet-facing API that tenants access over the public internet."
+    },
+    "answer": ["B"],
+    "explanation": "Transit Gateway with per-tenant route tables ensures each tenant can only reach shared services. Since tenant route tables don't contain routes to other tenant VPCs, inter-tenant communication is impossible at the network layer. VPC peering would also work (peering is non-transitive), but doesn't scale as well to many tenants. A single VPC with security groups risks lateral movement. Public API exposes the service to internet threats."
+  },
+  {
+    "id": 45,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company uses VPC Flow Logs to monitor network traffic. The logs show many REJECT entries for traffic from internal instances to port 443 on specific IP addresses.\n\nWhich TWO resources could be causing the rejects?",
+    "options": {
+      "A": "Security group outbound rules blocking port 443.",
+      "B": "Network ACL outbound rules blocking port 443 on the source subnet.",
+      "C": "Route table missing a route to the destination.",
+      "D": "Network ACL inbound rules on the destination subnet blocking traffic from the source.",
+      "E": "The destination instance's firewall (iptables/Windows Firewall)."
+    },
+    "answer": ["B", "D"],
+    "explanation": "VPC Flow Logs REJECT entries indicate traffic blocked by security groups or Network ACLs (these are the only VPC-level controls that generate REJECT in Flow Logs). Since security groups are stateful and most default to allow all outbound, NACLs are the more common cause for outbound blocks. NACL rejects can occur on the source subnet's outbound rules or the destination subnet's inbound rules. Missing routes result in traffic being dropped (not logged as REJECT in Flow Logs). Instance-level firewalls don't appear in VPC Flow Logs."
+  },
+  {
+    "id": 46,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company uses AWS PrivateLink to expose an internal API to a partner company. The partner creates an interface VPC endpoint to access the service. The company wants to restrict which partner VPC endpoints can connect to their service.\n\nHow is this controlled?",
+    "options": {
+      "A": "Security groups on the NLB.",
+      "B": "The VPC endpoint service's allowed principals configuration — only whitelisted AWS account IDs or IAM principals can create endpoints to the service. Additionally, each endpoint connection request can require manual acceptance.",
+      "C": "The NLB listener rules.",
+      "D": "Route 53 private hosted zone associations."
+    },
+    "answer": ["B"],
+    "explanation": "VPC endpoint services have a 'Whitelisted principals' setting that specifies which AWS accounts are allowed to create endpoints connecting to the service. Additionally, the service can be configured to require acceptance of each endpoint connection request, providing an additional approval gate. NLB security groups and listeners don't control which accounts can create endpoints. Route 53 is for DNS resolution."
+  },
+  {
+    "id": 47,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company has a multi-AZ application behind an NLB. The NLB has cross-zone load balancing disabled (default for NLB). AZ-a has 4 targets and AZ-b has 1 target.\n\nHow is traffic distributed?",
+    "options": {
+      "A": "Equally across all 5 targets (20% each).",
+      "B": "Each AZ receives 50% of traffic. Within AZ-a, each of 4 targets gets 12.5%. The single target in AZ-b receives the full 50% — potentially overloaded.",
+      "C": "All traffic goes to AZ-a because it has more targets.",
+      "D": "Traffic is distributed by instance weight."
+    },
+    "answer": ["B"],
+    "explanation": "With cross-zone load balancing disabled (NLB default), DNS distributes traffic equally across AZs. AZ-a's 50% is split among 4 targets (12.5% each). AZ-b's single target handles the entire 50%. This imbalance can cause overload. Enabling cross-zone load balancing distributes traffic evenly across all 5 targets regardless of AZ (20% each). This is why cross-zone should be enabled when target counts differ across AZs, though it incurs cross-AZ data transfer charges for NLB."
+  },
+  {
+    "id": 48,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company is migrating from a flat on-premises network to AWS and wants to implement proper network segmentation. They need public-facing web servers, private application servers, private databases, and a management/bastion tier.\n\nHow many subnet tiers should be created per AZ?",
+    "options": {
+      "A": "1 subnet per AZ (flat network).",
+      "B": "4 subnets per AZ: public (web/NAT/ALB), private application, private database, and private management. Each tier gets its own subnet with appropriate route tables and NACLs.",
+      "C": "2 subnets per AZ (public and private).",
+      "D": "One large subnet with security groups for segmentation."
+    },
+    "answer": ["B"],
+    "explanation": "Four subnet tiers provide proper segmentation: Public subnets (internet gateway route) host ALBs, NAT gateways, and bastion hosts. Application subnets (NAT gateway route) host app servers. Database subnets (no internet route) host RDS/ElastiCache. Management subnets host bastion/jumpbox instances with strict NACLs. Each tier has separate NACLs for defense in depth. Two subnets work for simple applications but miss the database and management isolation. Flat networks are an anti-pattern."
+  },
+  {
+    "id": 49,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company needs to use CloudFront to serve content from an S3 bucket without making the bucket public. The content should only be accessible through CloudFront.\n\nWhich CloudFront feature restricts S3 access?",
+    "options": {
+      "A": "CloudFront signed URLs.",
+      "B": "CloudFront Origin Access Control (OAC), which authenticates CloudFront requests to S3 using sigv4. The S3 bucket policy allows access only from the CloudFront distribution's OAC, blocking direct S3 access.",
+      "C": "S3 bucket policy allowing all CloudFront IP ranges.",
+      "D": "S3 presigned URLs generated by CloudFront."
+    },
+    "answer": ["B"],
+    "explanation": "Origin Access Control (OAC) is the modern replacement for Origin Access Identity (OAI). It signs requests to S3 using AWS Signature Version 4, and the S3 bucket policy grants access only to the specific CloudFront distribution. This ensures objects can only be retrieved via CloudFront. Signed URLs control who can access CloudFront, not how CloudFront accesses S3. Allowing CloudFront IP ranges is less secure and the ranges change. CloudFront doesn't generate presigned S3 URLs."
+  },
+  {
+    "id": 50,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company runs a hybrid network with Direct Connect. They want to implement end-to-end encryption for traffic between on-premises and AWS, including within the VPC up to the application.\n\nWhich layered approach provides the most comprehensive encryption?",
+    "options": {
+      "A": "IPsec VPN over Direct Connect only.",
+      "B": "MACsec (Layer 2 encryption) on the Direct Connect connection for physical link encryption, IPsec VPN over DX for network-layer encryption, AND TLS at the application layer for end-to-end encryption.",
+      "C": "Application-level TLS only.",
+      "D": "VPC-level encryption setting."
+    },
+    "answer": ["B"],
+    "explanation": "A defense-in-depth approach uses multiple encryption layers: MACsec encrypts the physical DX link (if supported at the location), IPsec VPN over DX encrypts at the network layer (covering all traffic), and TLS at the application layer provides true end-to-end encryption that persists within the VPC. Each layer protects against different threats. IPsec alone leaves traffic unencrypted within the VPC. TLS alone doesn't encrypt non-application traffic. There is no VPC-level encryption setting."
+  },
+  {
+    "id": 51,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company uses Route 53 for DNS management. They need to migrate a domain from another DNS provider to Route 53 without any DNS resolution downtime.\n\nWhat is the correct migration procedure?",
+    "options": {
+      "A": "Change the name servers at the registrar immediately.",
+      "B": "Create a Route 53 hosted zone, recreate all DNS records in Route 53 matching the existing provider, lower TTLs at the old provider before migration, then update the domain's name server records at the registrar to Route 53's name servers. Monitor for 48-72 hours.",
+      "C": "Delete records at the old provider first, then create them in Route 53.",
+      "D": "Use Route 53 domain transfer to automatically migrate records."
+    },
+    "answer": ["B"],
+    "explanation": "A zero-downtime migration requires: 1) Create the hosted zone and replicate all records in Route 53 first (so Route 53 can serve queries immediately). 2) Lower TTLs at the old provider days in advance (so changes propagate faster). 3) Update name servers at the registrar. During propagation (up to 48-72 hours), both providers may receive queries — both must have correct records. Deleting old records first causes downtime. Domain transfer doesn't copy DNS records."
+  },
+  {
+    "id": 52,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company uses a Site-to-Site VPN connection to AWS. The VPN is configured with two tunnels for redundancy. The on-premises router supports BGP. Currently, only one tunnel is active.\n\nWhat should the network engineer verify to ensure both tunnels are active for redundancy?",
+    "options": {
+      "A": "Both tunnels should be in standby mode.",
+      "B": "Verify that the on-premises router has BGP sessions established with both VPN tunnel endpoints. Both tunnels should show 'UP' status in the AWS console with active BGP sessions. If using active/active, ensure ECMP is enabled.",
+      "C": "Only one tunnel can be active at a time by design.",
+      "D": "Delete and recreate the VPN connection."
+    },
+    "answer": ["B"],
+    "explanation": "AWS Site-to-Site VPN provides two tunnels for redundancy, and both CAN be active simultaneously (active/active mode). Each tunnel connects to a different endpoint in a different AZ. The on-premises router should have BGP sessions with both tunnel endpoints. If only one is up, check: BGP configuration on the router for the second tunnel, IKE/IPsec parameters, firewall rules for the second tunnel's endpoint IP, and tunnel interface status. Both tunnels being active provides fault tolerance."
+  },
+  {
+    "id": 53,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company is designing an architecture where multiple VPCs need to access centralized VPC endpoints for S3 and DynamoDB to avoid each VPC needing its own endpoints.\n\nCan VPC endpoints be shared across VPCs?",
+    "options": {
+      "A": "Yes — VPC endpoints are automatically shared.",
+      "B": "Gateway endpoints (S3, DynamoDB) cannot be shared across VPCs. Interface endpoints CAN be accessed from peered VPCs or VPCs connected via Transit Gateway if DNS and routing are configured. However, a centralized pattern uses interface endpoints in a shared services VPC with Route 53 private hosted zone overrides.",
+      "C": "No — each VPC must have its own endpoints for all services.",
+      "D": "Only through PrivateLink."
+    },
+    "answer": ["B"],
+    "explanation": "Gateway endpoints are VPC-local and cannot be routed from other VPCs. Interface endpoints create ENIs with private IPs that can be routed from other VPCs via peering or TGW. For centralized access, create interface endpoints in a shared services VPC and configure Route 53 private hosted zones to override the service DNS names to point to those endpoint IPs. This avoids duplicating endpoints in every VPC but requires proper DNS and routing configuration."
+  },
+  {
+    "id": 54,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company uses AWS WAF with CloudFront. They want to block requests from automated bots while allowing legitimate web crawlers (Googlebot, Bingbot).\n\nWhich WAF feature provides intelligent bot management?",
+    "options": {
+      "A": "Rate-based rules that block high-frequency IPs.",
+      "B": "AWS WAF Bot Control managed rule group, which categorizes traffic into verified bots (search engines), unverified bots, and human traffic, allowing you to block or challenge bot traffic while allowing verified crawlers.",
+      "C": "IP reputation lists.",
+      "D": "Custom regex rules matching User-Agent strings."
+    },
+    "answer": ["B"],
+    "explanation": "WAF Bot Control uses multiple signals (HTTP fingerprinting, behavioral analysis, verified bot IP lists) to categorize traffic. Verified bots (Googlebot, Bingbot) are identified by both their IP addresses and verification methods. You can create rules that allow verified bots while blocking or challenging unverified bot traffic. Rate-based rules catch volume-based bots but block legitimate crawlers too. User-Agent matching is easily spoofed."
+  },
+  {
+    "id": 55,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company wants to accelerate their Site-to-Site VPN connection by using the AWS global network backbone instead of the public internet.\n\nWhich feature provides VPN acceleration?",
+    "options": {
+      "A": "Use a larger VPN instance.",
+      "B": "Enable Accelerated Site-to-Site VPN, which uses AWS Global Accelerator to route VPN traffic from the on-premises endpoint to the nearest AWS edge location, then over the AWS backbone to the VPN endpoint.",
+      "C": "Use Direct Connect instead.",
+      "D": "Enable VPN compression."
+    },
+    "answer": ["B"],
+    "explanation": "Accelerated Site-to-Site VPN (enabled when creating or modifying a VPN connection attached to a Transit Gateway) uses AWS Global Accelerator's edge network. VPN traffic enters the AWS backbone at the nearest edge location, reducing the distance over the unpredictable public internet. This improves latency and consistency. Direct Connect is a different product. There is no VPN compression feature. The 'VPN instance' is an AWS-managed resource you can't resize."
+  },
+  {
+    "id": 56,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company's Route 53 health check monitors an HTTPS endpoint. The health check reports the endpoint as unhealthy, but the application works fine when accessed from a browser.\n\nWhat should the network engineer check?",
+    "options": {
+      "A": "The DNS record is misconfigured.",
+      "B": "Route 53 health checkers don't follow redirects by default, the SSL certificate might not cover the health check IP (SNI mismatch), the security group/firewall might block health checker IPs, or the health check path returns a non-2xx response to Route 53's User-Agent.",
+      "C": "Route 53 doesn't support HTTPS health checks.",
+      "D": "The endpoint is truly unhealthy."
+    },
+    "answer": ["B"],
+    "explanation": "Common causes of false-unhealthy health checks: 1) Redirects (301/302) — health checkers don't follow them, 2) SSL/TLS certificate issues — the certificate must match the hostname Route 53 uses (Enable SNI in health check config), 3) Firewall/SG blocking Route 53 health checker IPs, 4) Application returning non-2xx to specific User-Agents, 5) String matching failure if 'Search string' is configured. Browsers handle redirects and certificate issues that health checkers don't."
+  },
+  {
+    "id": 57,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Design",
+    "question": "A company needs to assign static private IP addresses to specific EC2 instances (for license management or DNS configuration). The instances are in an Auto Scaling group.\n\nHow can this be achieved while maintaining Auto Scaling flexibility?",
+    "options": {
+      "A": "Assign Elastic IPs to the instances.",
+      "B": "This is architecturally challenging. Static private IPs and Auto Scaling are somewhat contradictory. Best approach: use secondary ENIs with pre-assigned IPs that a lifecycle hook Lambda function attaches to new instances, or use Route 53 with a Lambda function that updates DNS records for new instances.",
+      "C": "Auto Scaling automatically preserves IPs.",
+      "D": "Use the subnet's first available IP."
+    },
+    "answer": ["B"],
+    "explanation": "Auto Scaling launches instances with dynamically assigned IPs. To maintain static identity: 1) Pre-create ENIs with specific IPs and use a lifecycle hook + Lambda to attach the next available ENI during launch. 2) Or use Route 53 private DNS updates via lifecycle hooks. Both approaches add complexity. Elastic IPs are public, not private. Auto Scaling doesn't preserve private IPs. This is why modern architectures prefer service discovery over static IPs."
+  },
+  {
+    "id": 58,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Security",
+    "question": "A company has deployed AWS Network Firewall in their inspection VPC. They want to write custom Suricata rules to detect and block a specific malware command-and-control protocol.\n\nWhich Network Firewall rule group type supports custom Suricata rules?",
+    "options": {
+      "A": "Stateless rule group with 5-tuple matching.",
+      "B": "Stateful rule group with Suricata-compatible IPS rules, which supports the full Suricata rule syntax including content matching, PCRE regex, flowbits, and protocol-specific keywords.",
+      "C": "Domain list rule group.",
+      "D": "Managed rule group."
+    },
+    "answer": ["B"],
+    "explanation": "Network Firewall's stateful rule groups support Suricata-compatible rules with the full syntax: content matching (including hex patterns for malware signatures), PCRE regex, flow tracking (flowbits for multi-packet detection), and protocol keywords. This enables deep packet inspection for C2 protocol detection. Stateless rules only match 5-tuple (IP/port/protocol). Domain lists filter DNS/TLS domains. Managed rules are pre-built by AWS or partners."
+  },
+  {
+    "id": 59,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Implementation",
+    "question": "A company uses CloudFront with Lambda@Edge for custom request processing. They need to add security headers (Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options) to all responses.\n\nWhich Lambda@Edge event type should trigger the function?",
+    "options": {
+      "A": "Viewer Request.",
+      "B": "Origin Request.",
+      "C": "Origin Response — to add headers to the response before CloudFront caches it, so all subsequent cached responses include the security headers.",
+      "D": "Viewer Response."
+    },
+    "answer": ["C"],
+    "explanation": "Origin Response triggers after the origin returns the response but before CloudFront caches it. Adding security headers here means they're included in the cached response and served to all subsequent viewers without invoking the function again. Viewer Response triggers on every response to viewers (more invocations, higher cost). Viewer/Origin Request events modify the request, not the response. Origin Response is the most efficient for adding headers to all responses."
+  },
+  {
+    "id": 60,
+    "source": "ANS-C01 Practice",
+    "domain": "Network Management",
+    "question": "A company uses VPC Flow Logs delivered to S3. They need to analyze traffic patterns using SQL queries, identifying top talkers, most-used ports, and rejected connections over the past 30 days.\n\nWhich service provides the most efficient query capability for Flow Logs in S3?",
+    "options": {
+      "A": "Download the logs and analyze locally.",
+      "B": "Amazon Athena with a table definition matching the Flow Log format, using partition projection for date-based partitions to efficiently query specific time ranges.",
+      "C": "Import into Amazon Redshift.",
+      "D": "CloudWatch Logs Insights."
+    },
+    "answer": ["B"],
+    "explanation": "Athena provides serverless SQL querying directly against S3 data. With partition projection (automatically generating partition values based on date patterns), Athena efficiently scans only the relevant date partitions, minimizing cost and query time. Flow Log format maps directly to an Athena table definition. Redshift requires loading data and cluster management. CloudWatch Logs Insights works for CW Logs, not S3. Local analysis doesn't scale for 30 days of Flow Logs."
+  }
+]

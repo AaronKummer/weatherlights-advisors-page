@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VV Flashcards</title>
+<style>
+/* ── Themes ── */
+:root {
+  --bg: #0f0f14;
+  --bg2: #1a1a24;
+  --bg3: #24243a;
+  --text: #e0e0e8;
+  --text-dim: #8888a0;
+  --accent: #9b6dff;
+  --accent2: #c084fc;
+  --accent-dim: rgba(155,109,255,.15);
+  --card-bg: #1e1e2e;
+  --card-border: #2a2a40;
+  --green: #4ade80;
+  --yellow: #facc15;
+  --red: #f87171;
+  --blue: #60a5fa;
+  --radius: 12px;
+  --shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+[data-theme="sapphire"] {
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+  --accent-dim: rgba(59,130,246,.15);
+}
+[data-theme="weatherlight"] {
+  --bg: #f5f5f0;
+  --bg2: #e8e8e0;
+  --bg3: #ddddd0;
+  --text: #1a1a2e;
+  --text-dim: #666680;
+  --card-bg: #ffffff;
+  --card-border: #d0d0d8;
+  --accent: #7c3aed;
+  --accent2: #a78bfa;
+  --accent-dim: rgba(124,58,237,.12);
+  --shadow: 0 8px 32px rgba(0,0,0,.1);
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+button { cursor: pointer; font-family: inherit; }
+a { color: var(--accent); }
+
+/* ── Auth screen ── */
+#auth-screen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 2rem; text-align: center;
+}
+#auth-screen h1 { font-size: 2rem; margin-bottom: .5rem; }
+#auth-screen p { color: var(--text-dim); margin-bottom: 1.5rem; }
+#auth-screen input {
+  background: var(--bg2); border: 1px solid var(--card-border); color: var(--text);
+  padding: .75rem 1rem; border-radius: var(--radius); width: 300px; max-width: 90vw;
+  font-size: 1rem; margin-bottom: 1rem;
+}
+#auth-screen button {
+  background: var(--accent); color: #fff; border: none;
+  padding: .75rem 2rem; border-radius: var(--radius); font-size: 1rem; font-weight: 600;
+}
+#auth-error { color: var(--red); font-size: .875rem; margin-top: .5rem; display: none; }
+
+/* ── App layout ── */
+#app { display: none; }
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.5rem; border-bottom: 1px solid var(--card-border);
+  background: var(--bg2); flex-wrap: wrap; gap: .5rem;
+}
+.app-header h1 { font-size: 1.25rem; white-space: nowrap; }
+.header-controls { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.header-controls select, .header-controls button {
+  background: var(--bg3); border: 1px solid var(--card-border); color: var(--text);
+  padding: .4rem .75rem; border-radius: 8px; font-size: .875rem;
+}
+.header-controls button:hover { border-color: var(--accent); }
+.brand-tag {
+  font-size: .75rem; color: var(--text-dim); opacity: .7;
+}
+
+/* ── Stats bar ── */
+.stats-bar {
+  display: flex; gap: 1rem; padding: 1rem 1.5rem; flex-wrap: wrap;
+  border-bottom: 1px solid var(--card-border); background: var(--bg);
+}
+.stat-item { text-align: center; min-width: 80px; }
+.stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: .75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; }
+
+/* ── Main area ── */
+.main-area {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 2rem 1rem; max-width: 700px; margin: 0 auto;
+}
+
+/* ── Empty / done states ── */
+.state-message {
+  text-align: center; padding: 3rem 1rem;
+}
+.state-message h2 { font-size: 1.5rem; margin-bottom: .5rem; }
+.state-message p { color: var(--text-dim); }
+.state-message .emoji { font-size: 3rem; margin-bottom: 1rem; }
+
+/* ── Card ── */
+.card-container {
+  perspective: 1200px; width: 100%; max-width: 540px;
+  margin-bottom: 2rem;
+}
+.card {
+  position: relative; width: 100%; min-height: 280px;
+  transform-style: preserve-3d;
+  transition: transform .5s cubic-bezier(.4,.2,.2,1);
+  cursor: pointer;
+}
+.card.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0; backface-visibility: hidden;
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2rem; text-align: center; overflow-y: auto;
+}
+.card-back { transform: rotateY(180deg); }
+.card-face .card-label {
+  position: absolute; top: .75rem; left: 1rem;
+  font-size: .7rem; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text-dim);
+}
+.card-face .card-counter {
+  position: absolute; top: .75rem; right: 1rem;
+  font-size: .7rem; color: var(--text-dim);
+}
+.card-face h2 { font-size: 1.3rem; line-height: 1.4; }
+.card-face p { font-size: 1rem; color: var(--text); line-height: 1.6; margin-top: .5rem; }
+.card-face .hint { font-size: .8rem; color: var(--text-dim); margin-top: auto; padding-top: 1rem; }
+
+/* ── Answer buttons ── */
+.answer-buttons {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: .75rem; width: 100%; max-width: 540px;
+}
+.answer-buttons button {
+  border: 1px solid var(--card-border); border-radius: var(--radius);
+  padding: .75rem .5rem; font-size: .9rem; font-weight: 600;
+  background: var(--bg2); color: var(--text);
+  transition: all .15s;
+}
+.answer-buttons button:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.btn-again { border-color: var(--red) !important; color: var(--red) !important; }
+.btn-hard  { border-color: var(--yellow) !important; color: var(--yellow) !important; }
+.btn-good  { border-color: var(--green) !important; color: var(--green) !important; }
+.btn-easy  { border-color: var(--blue) !important; color: var(--blue) !important; }
+.btn-again:hover { background: rgba(248,113,113,.12) !important; }
+.btn-hard:hover  { background: rgba(250,204,21,.12) !important; }
+.btn-good:hover  { background: rgba(74,222,128,.12) !important; }
+.btn-easy:hover  { background: rgba(96,165,250,.12) !important; }
+.answer-buttons .interval-hint {
+  font-size: .65rem; font-weight: 400; color: var(--text-dim); display: block; margin-top: .25rem;
+}
+
+/* ── Schedule preview ── */
+.schedule-section {
+  width: 100%; max-width: 540px; margin-top: 2rem;
+}
+.schedule-section h3 {
+  font-size: .85rem; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: .05em; margin-bottom: .75rem;
+}
+.schedule-bars { display: flex; flex-direction: column; gap: .25rem; }
+.schedule-row {
+  display: flex; align-items: center; gap: .5rem; font-size: .8rem;
+}
+.schedule-row .day-label { width: 80px; color: var(--text-dim); text-align: right; }
+.schedule-row .bar {
+  height: 18px; background: var(--accent-dim); border-radius: 4px;
+  min-width: 2px; transition: width .3s;
+}
+.schedule-row .count { color: var(--text-dim); font-size: .75rem; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .stats-bar { gap: .5rem; padding: .75rem 1rem; justify-content: space-between; }
+  .stat-value { font-size: 1.2rem; }
+  .card-face { padding: 1.5rem 1rem; min-height: 220px; }
+  .card-container { min-height: 220px; }
+  .card { min-height: 220px; }
+  .answer-buttons { grid-template-columns: repeat(2, 1fr); }
+  .main-area { padding: 1.5rem .75rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Auth screen -->
+<div id="auth-screen">
+  <h1>VV Flashcards</h1>
+  <p>Spaced repetition study cards</p>
+  <input type="password" id="token-input" placeholder="Enter vv-token" autocomplete="off">
+  <button onclick="authenticate()">Enter</button>
+  <div id="auth-error">Invalid token</div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <header class="app-header">
+    <h1>VV Flashcards</h1>
+    <div class="header-controls">
+      <select id="deck-select" onchange="switchDeck(this.value)"></select>
+      <button onclick="resetDeck()" title="Reset current deck progress">Reset</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+    <span class="brand-tag" id="brand-tag"></span>
+  </header>
+
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-item"><div class="stat-value" id="stat-due">0</div><div class="stat-label">Due Today</div></div>
+    <div class="stat-item"><div class="stat-value" id="stat-new">0</div><div class="stat-label">New</div></div>
+    <div class="stat-item"><div class="stat-value" id="stat-learning">0</div><div class="stat-label">Learning</div></div>
+    <div class="stat-item"><div class="stat-value" id="stat-mastered">0</div><div class="stat-label">Mastered</div></div>
+    <div class="stat-item"><div class="stat-value" id="stat-retention">-</div><div class="stat-label">Retention</div></div>
+    <div class="stat-item"><div class="stat-value" id="stat-reviewed">0</div><div class="stat-label">Today</div></div>
+    <div class="stat-item"><div class="stat-value" id="stat-streak">0</div><div class="stat-label">Streak</div></div>
+  </div>
+
+  <div class="main-area" id="main-area">
+    <!-- dynamically filled -->
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════
+   VV Flashcards — SM-2 Spaced Repetition
+   ════════════════════════════════════════════ */
+
+// ── URL params ──
+const params = new URLSearchParams(location.search);
+const THEME = params.get('theme') || 'violet';
+const BRAND = params.get('brand') || '';
+document.documentElement.setAttribute('data-theme', THEME);
+
+// ── Constants ──
+const STORAGE_PREFIX = 'vv-flashcards-';
+const NEW_CARDS_PER_DAY = 20;
+const MASTERED_INTERVAL = 21; // days
+
+// ── State ──
+let decks = {};        // { deckId: { name, cards: [{id, front, back}] } }
+let currentDeckId = null;
+let progress = {};     // { cardId: { ef, interval, repetitions, dueDate, lastReview } }
+let sessionStats = { reviewed: 0, correct: 0, incorrect: 0 };
+let queue = [];        // cards due now
+let currentCard = null;
+let isFlipped = false;
+
+// ── Auth ──
+function authenticate() {
+  const token = document.getElementById('token-input').value.trim();
+  if (!token) {
+    document.getElementById('auth-error').style.display = 'block';
+    return;
+  }
+  localStorage.setItem('vv-token', token);
+  boot();
+}
+
+function logout() {
+  localStorage.removeItem('vv-token');
+  location.reload();
+}
+
+function checkAuth() {
+  return !!localStorage.getItem('vv-token');
+}
+
+// ── Boot ──
+async function boot() {
+  if (!checkAuth()) {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  if (BRAND) document.getElementById('brand-tag').textContent = BRAND;
+
+  await loadDecks();
+  renderDeckSelect();
+
+  const savedDeck = localStorage.getItem(STORAGE_PREFIX + 'current-deck');
+  if (savedDeck && decks[savedDeck]) {
+    currentDeckId = savedDeck;
+  } else {
+    currentDeckId = Object.keys(decks)[0] || null;
+  }
+  if (currentDeckId) {
+    document.getElementById('deck-select').value = currentDeckId;
+    loadProgress();
+    updateStreak();
+    buildQueue();
+    updateStats();
+    showNextCard();
+  }
+}
+
+// ── Deck loading ──
+async function loadDecks() {
+  // Try loading deck files from decks/ directory
+  const deckFiles = ['aws-services', 'linux-commands'];
+  for (const name of deckFiles) {
+    try {
+      const resp = await fetch(`decks/${name}.json`);
+      if (resp.ok) {
+        const data = await resp.json();
+        decks[data.id || name] = data;
+      }
+    } catch (e) {
+      console.warn(`Could not load deck ${name}:`, e);
+    }
+  }
+
+  // Also check for any decks passed via ?deck= param
+  const extraDeck = params.get('deck');
+  if (extraDeck) {
+    try {
+      const resp = await fetch(extraDeck);
+      if (resp.ok) {
+        const data = await resp.json();
+        decks[data.id || 'custom'] = data;
+      }
+    } catch (e) {
+      console.warn('Could not load custom deck:', e);
+    }
+  }
+
+  // Fallback: if nothing loaded, create a tiny demo deck
+  if (Object.keys(decks).length === 0) {
+    decks['demo'] = {
+      id: 'demo', name: 'Demo Deck',
+      cards: [
+        { id: 'demo-1', front: 'What is spaced repetition?', back: 'A learning technique that reviews material at increasing intervals to optimize long-term retention.' },
+        { id: 'demo-2', front: 'What does SM-2 stand for?', back: 'SuperMemo Algorithm 2 — the spaced repetition scheduling algorithm created by Piotr Wozniak.' },
+      ]
+    };
+  }
+}
+
+function renderDeckSelect() {
+  const sel = document.getElementById('deck-select');
+  sel.innerHTML = '';
+  for (const [id, deck] of Object.entries(decks)) {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = `${deck.name} (${deck.cards.length})`;
+    sel.appendChild(opt);
+  }
+}
+
+function switchDeck(deckId) {
+  currentDeckId = deckId;
+  localStorage.setItem(STORAGE_PREFIX + 'current-deck', deckId);
+  loadProgress();
+  sessionStats = { reviewed: 0, correct: 0, incorrect: 0 };
+  buildQueue();
+  updateStats();
+  showNextCard();
+}
+
+// ── Progress persistence ──
+function storageKey() { return STORAGE_PREFIX + 'progress-' + currentDeckId; }
+
+function loadProgress() {
+  try {
+    progress = JSON.parse(localStorage.getItem(storageKey())) || {};
+  } catch { progress = {}; }
+}
+
+function saveProgress() {
+  localStorage.setItem(storageKey(), JSON.stringify(progress));
+}
+
+function resetDeck() {
+  if (!confirm('Reset all progress for this deck?')) return;
+  progress = {};
+  saveProgress();
+  sessionStats = { reviewed: 0, correct: 0, incorrect: 0 };
+  buildQueue();
+  updateStats();
+  showNextCard();
+}
+
+// ── Streak ──
+function updateStreak() {
+  const key = STORAGE_PREFIX + 'streak';
+  let data;
+  try { data = JSON.parse(localStorage.getItem(key)) || {}; } catch { data = {}; }
+  const today = todayStr();
+  if (!data.lastDate) {
+    data = { lastDate: null, count: 0 };
+  }
+  // We'll update on review, just load for now
+  window._streakData = data;
+}
+
+function recordStreak() {
+  const key = STORAGE_PREFIX + 'streak';
+  const today = todayStr();
+  let data = window._streakData || { lastDate: null, count: 0 };
+  if (data.lastDate === today) return; // already counted today
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = dateStr(yesterday);
+  if (data.lastDate === yStr) {
+    data.count++;
+  } else if (data.lastDate !== today) {
+    data.count = 1;
+  }
+  data.lastDate = today;
+  window._streakData = data;
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+// ── SM-2 Algorithm ──
+function getCardProgress(cardId) {
+  if (!progress[cardId]) {
+    progress[cardId] = {
+      ef: 2.5,           // easiness factor
+      interval: 0,       // days until next review
+      repetitions: 0,    // consecutive correct
+      dueDate: todayStr(),
+      lastReview: null,
+    };
+  }
+  return progress[cardId];
+}
+
+function sm2(cardId, quality) {
+  // quality: 0=Again, 1=Hard, 3=Good, 5=Easy (mapped from buttons)
+  const p = getCardProgress(cardId);
+
+  // Update EF
+  p.ef = Math.max(1.3, p.ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
+
+  if (quality < 3) {
+    // Failed — reset
+    p.repetitions = 0;
+    p.interval = quality === 0 ? 0 : 1; // Again=same session, Hard=1 day
+  } else {
+    p.repetitions++;
+    if (p.repetitions === 1) {
+      p.interval = 1;
+    } else if (p.repetitions === 2) {
+      p.interval = 6;
+    } else {
+      p.interval = Math.round(p.interval * p.ef);
+    }
+    // Easy bonus
+    if (quality === 5) {
+      p.interval = Math.round(p.interval * 1.3);
+    }
+  }
+
+  p.lastReview = todayStr();
+  const due = new Date();
+  due.setDate(due.getDate() + p.interval);
+  p.dueDate = dateStr(due);
+
+  progress[cardId] = p;
+  saveProgress();
+}
+
+function intervalPreview(cardId, quality) {
+  // Predict what interval would result from each answer
+  const p = { ...getCardProgress(cardId) };
+  let ef = Math.max(1.3, p.ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
+  let interval, reps = p.repetitions;
+
+  if (quality < 3) {
+    interval = quality === 0 ? 0 : 1;
+  } else {
+    reps++;
+    if (reps === 1) interval = 1;
+    else if (reps === 2) interval = 6;
+    else interval = Math.round(p.interval * ef);
+    if (quality === 5) interval = Math.round(interval * 1.3);
+  }
+  return formatInterval(interval);
+}
+
+function formatInterval(days) {
+  if (days === 0) return '<10m';
+  if (days === 1) return '1d';
+  if (days < 30) return days + 'd';
+  if (days < 365) return Math.round(days / 30) + 'mo';
+  return (days / 365).toFixed(1) + 'y';
+}
+
+// ── Queue building ──
+function buildQueue() {
+  if (!currentDeckId || !decks[currentDeckId]) { queue = []; return; }
+  const cards = decks[currentDeckId].cards;
+  const today = todayStr();
+
+  // Separate into due, new, future
+  const dueCards = [];
+  const newCards = [];
+
+  for (const card of cards) {
+    const p = progress[card.id];
+    if (!p) {
+      newCards.push(card);
+    } else if (p.dueDate <= today) {
+      dueCards.push(card);
+    }
+    // future cards: skip
+  }
+
+  // Sort due cards: overdue first, then by interval (shorter first)
+  dueCards.sort((a, b) => {
+    const pa = progress[a.id], pb = progress[b.id];
+    return (pa.dueDate > pb.dueDate) ? 1 : -1;
+  });
+
+  // Add some new cards
+  const newToday = newCards.slice(0, NEW_CARDS_PER_DAY);
+
+  // Interleave: all due first, then new
+  queue = [...dueCards, ...newToday];
+}
+
+// ── Rendering ──
+function showNextCard() {
+  const area = document.getElementById('main-area');
+
+  if (queue.length === 0) {
+    // Check if there are any cards at all
+    if (!currentDeckId || !decks[currentDeckId]) {
+      area.innerHTML = '<div class="state-message"><div class="emoji">?</div><h2>No deck loaded</h2><p>Add deck JSON files to the decks/ folder.</p></div>';
+      return;
+    }
+    const total = decks[currentDeckId].cards.length;
+    const reviewed = Object.keys(progress).length;
+    if (reviewed === 0) {
+      area.innerHTML = '<div class="state-message"><div class="emoji">&#128218;</div><h2>Ready to study</h2><p>Deck loaded but no cards in queue. Try refreshing.</p></div>';
+    } else {
+      area.innerHTML = '<div class="state-message"><div class="emoji">&#9989;</div><h2>All done for today!</h2><p>You\'ve reviewed all due cards. Come back tomorrow.</p><p style="margin-top:1rem;color:var(--text-dim)">Reviewed ' + sessionStats.reviewed + ' cards this session</p></div>';
+    }
+    renderSchedule(area);
+    return;
+  }
+
+  currentCard = queue[0];
+  isFlipped = false;
+
+  const p = getCardProgress(currentCard.id);
+  const isNew = p.repetitions === 0 && !p.lastReview;
+  const cardNum = decks[currentDeckId].cards.findIndex(c => c.id === currentCard.id) + 1;
+  const totalCards = decks[currentDeckId].cards.length;
+
+  area.innerHTML = `
+    <div class="card-container">
+      <div class="card" id="flashcard" onclick="flipCard()">
+        <div class="card-face card-front">
+          <span class="card-label">${isNew ? 'NEW' : 'REVIEW'}</span>
+          <span class="card-counter">${cardNum}/${totalCards}</span>
+          <h2>${escHtml(currentCard.front)}</h2>
+          <div class="hint">Tap to reveal</div>
+        </div>
+        <div class="card-face card-back">
+          <span class="card-label">ANSWER</span>
+          <span class="card-counter">${cardNum}/${totalCards}</span>
+          <p>${escHtml(currentCard.back)}</p>
+        </div>
+      </div>
+    </div>
+    <div class="answer-buttons" id="answer-buttons" style="display:none">
+      <button class="btn-again" onclick="answer(0)">Again<span class="interval-hint">${intervalPreview(currentCard.id, 0)}</span></button>
+      <button class="btn-hard" onclick="answer(1)">Hard<span class="interval-hint">${intervalPreview(currentCard.id, 1)}</span></button>
+      <button class="btn-good" onclick="answer(3)">Good<span class="interval-hint">${intervalPreview(currentCard.id, 3)}</span></button>
+      <button class="btn-easy" onclick="answer(5)">Easy<span class="interval-hint">${intervalPreview(currentCard.id, 5)}</span></button>
+    </div>
+  `;
+  renderSchedule(area);
+}
+
+function flipCard() {
+  if (isFlipped) return;
+  isFlipped = true;
+  document.getElementById('flashcard').classList.add('flipped');
+  document.getElementById('answer-buttons').style.display = 'grid';
+}
+
+function answer(quality) {
+  sm2(currentCard.id, quality);
+
+  sessionStats.reviewed++;
+  if (quality >= 3) sessionStats.correct++;
+  else sessionStats.incorrect++;
+
+  recordStreak();
+
+  // Remove from queue; if Again, re-add near end
+  queue.shift();
+  if (quality === 0) {
+    // Re-insert 5-10 cards later
+    const pos = Math.min(queue.length, Math.floor(Math.random() * 6) + 5);
+    queue.splice(pos, 0, currentCard);
+  }
+
+  updateStats();
+  showNextCard();
+}
+
+function updateStats() {
+  if (!currentDeckId || !decks[currentDeckId]) return;
+  const cards = decks[currentDeckId].cards;
+  const today = todayStr();
+  let due = 0, newCount = 0, learning = 0, mastered = 0;
+  let totalReviewed = 0, totalCorrect = 0;
+
+  for (const card of cards) {
+    const p = progress[card.id];
+    if (!p) { newCount++; continue; }
+    if (p.interval >= MASTERED_INTERVAL) mastered++;
+    else if (p.repetitions > 0) learning++;
+    else learning++;
+
+    if (p.dueDate <= today) due++;
+    if (p.lastReview) {
+      totalReviewed++;
+      if (p.repetitions > 0) totalCorrect++;
+    }
+  }
+
+  document.getElementById('stat-due').textContent = due;
+  document.getElementById('stat-new').textContent = newCount;
+  document.getElementById('stat-learning').textContent = learning;
+  document.getElementById('stat-mastered').textContent = mastered;
+  document.getElementById('stat-reviewed').textContent = sessionStats.reviewed;
+  document.getElementById('stat-retention').textContent = totalReviewed > 0
+    ? Math.round((totalCorrect / totalReviewed) * 100) + '%'
+    : '-';
+  document.getElementById('stat-streak').textContent = (window._streakData && window._streakData.count) || 0;
+}
+
+function renderSchedule(container) {
+  if (!currentDeckId || !decks[currentDeckId]) return;
+  const cards = decks[currentDeckId].cards;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const buckets = {};
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today); d.setDate(d.getDate() + i);
+    buckets[dateStr(d)] = 0;
+  }
+
+  for (const card of cards) {
+    const p = progress[card.id];
+    if (!p) continue;
+    if (buckets[p.dueDate] !== undefined) buckets[p.dueDate]++;
+  }
+
+  const max = Math.max(1, ...Object.values(buckets));
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  let html = '<div class="schedule-section"><h3>Upcoming Schedule</h3><div class="schedule-bars">';
+  let i = 0;
+  for (const [date, count] of Object.entries(buckets)) {
+    const d = new Date(date + 'T00:00:00');
+    const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dayNames[d.getDay()];
+    const width = Math.max(2, (count / max) * 200);
+    html += `<div class="schedule-row"><span class="day-label">${label}</span><div class="bar" style="width:${width}px; background:var(--accent-dim)"></div><span class="count">${count}</span></div>`;
+    i++;
+  }
+  html += '</div></div>';
+  container.insertAdjacentHTML('beforeend', html);
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', (e) => {
+  if (document.getElementById('app').style.display === 'none') {
+    if (e.key === 'Enter') authenticate();
+    return;
+  }
+  if (!currentCard) return;
+
+  if (e.key === ' ' || e.key === 'Enter') {
+    e.preventDefault();
+    if (!isFlipped) flipCard();
+  }
+  if (isFlipped) {
+    if (e.key === '1') answer(0);
+    if (e.key === '2') answer(1);
+    if (e.key === '3') answer(3);
+    if (e.key === '4') answer(5);
+  }
+});
+
+// ── Helpers ──
+function todayStr() { return dateStr(new Date()); }
+function dateStr(d) { return d.toISOString().slice(0, 10); }
+function escHtml(s) {
+  const el = document.createElement('span');
+  el.textContent = s;
+  return el.innerHTML;
+}
+
+// ── Init ──
+boot();
+</script>
+</body>
+</html>
