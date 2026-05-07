@@ -1,5 +1,5 @@
 <template>
-  <v-app class="app-light">
+  <div class="page-root">
     <header class="nav-header" :class="{ scrolled: isScrolled }">
       <div class="nav-container">
         <a href="#top" class="nav-logo">
@@ -204,7 +204,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </v-app>
+  </div>
 </template>
 
 <script>
@@ -281,7 +281,7 @@ export default {
 </script>
 
 <style>
-.app-light { background: #ffffff !important; min-height: 100vh; }
+.page-root { background: #ffffff; min-height: 100vh; color: #1a3a6e; }
 </style>
 
 <style scoped>
