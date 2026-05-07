@@ -215,7 +215,7 @@
           <button v-for="t in tabs" :key="t.id"
                   v-show="!t.adminOnly || isAdmin"
                   :class="['portal-tab', { active: activeTab === t.id }]"
-                  @click="activeTab = t.id">
+                  @click="goToTab(t.id)">
             {{ t.label }}
           </button>
         </div>
@@ -741,6 +741,11 @@ export default {
     handleScroll() { this.isScrolled = window.scrollY > 8; },
     handleOutsideClick(e) { if (!e.target.closest('.user-pill')) this.userMenuOpen = false; },
     handleEsc(e) { if (e.key === "Escape" && this.embedOpen) this.closeTool(); },
+    goToTab(id) {
+      // If a tool is open, leaving via a tab click should close it.
+      if (this.embedOpen) this.closeTool();
+      this.activeTab = id;
+    },
     // Allow short usernames like "admin" — auto-append @weatherlightadvisors.com.
     // If the input already looks like an email (has @), pass through unchanged.
     normalizeIdentifier(raw) {
