@@ -174,6 +174,15 @@ html.dark-fallback .role-reps    { background: rgba(255, 170, 68, 0.18) !importa
 html.dark-fallback .status-text { color: #8b949e !important; }
 html.dark-fallback .status-text.disabled { color: #ff7b6b !important; }
 
+html.dark-fallback .active-pill.is-active { background: rgba(40, 200, 120, 0.18) !important; color: #4cdb8c !important; }
+html.dark-fallback .active-pill.is-inactive { background: rgba(139, 148, 158, 0.18) !important; color: #c9d1d9 !important; }
+
+html.dark-fallback .confirm-body { color: #c9d1d9 !important; }
+html.dark-fallback .confirm-body strong { color: #ffffff !important; }
+html.dark-fallback .confirm-danger-title { color: #ff7b6b !important; }
+html.dark-fallback .confirm-action { background: linear-gradient(135deg, #00d4aa, #00a888) !important; color: #0a0a0f !important; }
+html.dark-fallback .confirm-action.confirm-action-danger { background: linear-gradient(135deg, #ff7b6b, #c2473a) !important; color: #ffffff !important; }
+
 /* Sections + tints */
 html.dark-fallback .content-section { background: #0a0a0f !important; }
 html.dark-fallback .content-section-tint {

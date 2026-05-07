@@ -9,6 +9,8 @@ import {
   AdminAddUserToGroupCommand,
   AdminRemoveUserFromGroupCommand,
   AdminListGroupsForUserCommand,
+  AdminEnableUserCommand,
+  AdminDisableUserCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { randomUUID, randomBytes } from "node:crypto";
 
@@ -247,6 +249,21 @@ const handleUpdateUser = async (event) => {
     await cognito.send(new AdminSetUserPasswordCommand({
       UserPoolId: USER_POOL_ID, Username: username, Password: body.password, Permanent: true,
     }));
+  }
+
+  // Soft-toggle active/inactive via Cognito enable/disable. Nothing is
+  // deleted — disabled users keep their record + group memberships and
+  // can be re-activated later.
+  if (typeof body.enabled === "boolean") {
+    const callerEmail = (guard.claims.email || "").toLowerCase();
+    if (callerEmail === username.toLowerCase() && body.enabled === false) {
+      return json(400, { error: "cannot deactivate yourself" });
+    }
+    if (body.enabled) {
+      await cognito.send(new AdminEnableUserCommand({ UserPoolId: USER_POOL_ID, Username: username }));
+    } else {
+      await cognito.send(new AdminDisableUserCommand({ UserPoolId: USER_POOL_ID, Username: username }));
+    }
   }
 
   return json(200, { ok: true });

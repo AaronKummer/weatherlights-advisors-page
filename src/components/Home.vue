@@ -510,11 +510,16 @@
                 <td>
                   <span class="role-pill" :class="'role-' + (u.role || '').toLowerCase()">{{ u.role || '—' }}</span>
                 </td>
-                <td><span class="status-text" :class="{ disabled: !u.enabled }">{{ u.enabled ? u.status : 'DISABLED' }}</span></td>
+                <td>
+                  <span class="active-pill" :class="u.enabled ? 'is-active' : 'is-inactive'">
+                    <span class="active-dot"></span>{{ u.enabled ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
                 <td class="users-table-actions">
                   <button class="btn-link" @click="viewAsUser(u)">View as</button>
                   <button class="btn-link" @click="openEditUser(u)">Edit</button>
-                  <button class="btn-link btn-danger" @click="deleteUser(u)">Delete</button>
+                  <button v-if="u.enabled" class="btn-link btn-danger" @click="deactivateUser(u)">Deactivate</button>
+                  <button v-else class="btn-link" @click="reactivateUser(u)">Reactivate</button>
                 </td>
               </tr>
             </tbody>
@@ -695,6 +700,24 @@
       </v-card>
     </v-dialog>
 
+
+    <!-- ───────── Generic confirm modal ───────── -->
+    <v-dialog v-model="confirm.open" max-width="440px" persistent>
+      <v-card class="modal-card auth-card">
+        <v-card-title class="modal-title" :class="{ 'confirm-danger-title': confirm.danger }">{{ confirm.title }}</v-card-title>
+        <v-card-text class="modal-body">
+          <p v-html="confirm.body" class="confirm-body"></p>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-spacer />
+          <v-btn variant="text" :disabled="confirm.busy" @click="confirm.open = false">Cancel</v-btn>
+          <button class="auth-submit confirm-action" :class="{ 'confirm-action-danger': confirm.danger }"
+                  :disabled="confirm.busy" @click="runConfirm">
+            {{ confirm.busy ? "Working…" : confirm.confirmLabel }}
+          </button>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- ───────── User create / edit modal ───────── -->
     <v-dialog v-model="userModalOpen" max-width="480px" persistent>
@@ -940,6 +963,16 @@ export default {
       userForm: { username: "", email: "", password: "", role: "Clients", displayName: "" },
       userBusy: false,
       userFormError: "",
+      // Generic confirmation dialog (used for deactivate, etc.)
+      confirm: {
+        open: false,
+        title: "",
+        body: "",
+        confirmLabel: "Confirm",
+        danger: false,
+        busy: false,
+        onConfirm: null,
+      },
 
       // Dummy consultancy KPIs + clients (replace with real data later)
       kpis: [
@@ -1446,19 +1479,48 @@ export default {
         this.userBusy = false;
       }
     },
-    async deleteUser(u) {
-      if (!confirm(`Delete user ${u.email}? This cannot be undone.`)) return;
+    askConfirm({ title, body, confirmLabel = "Confirm", danger = false, onConfirm }) {
+      this.confirm = { open: true, title, body, confirmLabel, danger, busy: false, onConfirm };
+    },
+    async runConfirm() {
+      if (!this.confirm.onConfirm) { this.confirm.open = false; return; }
+      this.confirm.busy = true;
       try {
-        const tokens = getTokens();
-        const res = await fetch(`${config.apiBase}/admin/users/${encodeURIComponent(u.username)}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${tokens.id_token}` },
-        });
-        if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
-        await this.loadUsers();
+        await this.confirm.onConfirm();
+        this.confirm.open = false;
       } catch (err) {
-        alert(err.message || "Delete failed");
+        alert(err.message || "Action failed");
+      } finally {
+        this.confirm.busy = false;
       }
+    },
+    async setUserActive(u, active) {
+      const tokens = getTokens();
+      const res = await fetch(`${config.apiBase}/admin/users/${encodeURIComponent(u.username)}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${tokens.id_token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: active }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+      await this.loadUsers();
+    },
+    deactivateUser(u) {
+      this.askConfirm({
+        title: "Deactivate user?",
+        body: `<strong>${u.email}</strong> will no longer be able to sign in. Their account, role, and history are preserved — you can reactivate them at any time.`,
+        confirmLabel: "Deactivate",
+        danger: true,
+        onConfirm: () => this.setUserActive(u, false),
+      });
+    },
+    reactivateUser(u) {
+      this.askConfirm({
+        title: "Reactivate user?",
+        body: `<strong>${u.email}</strong> will be able to sign in again with their existing password and role.`,
+        confirmLabel: "Reactivate",
+        danger: false,
+        onConfirm: () => this.setUserActive(u, true),
+      });
     },
     validateEmail() {
       this.emailErrors = [];
@@ -1834,6 +1896,51 @@ export default {
   color: #4a5e7e;
 }
 .status-text.disabled { color: #b3261e; }
+
+.active-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.7rem;
+  border-radius: 100px;
+}
+.active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+}
+.active-pill.is-active {
+  background: rgba(40, 200, 120, 0.12);
+  color: #1a8a4f;
+}
+.active-pill.is-active .active-dot { animation: active-ping 1.8s ease-out infinite; }
+@keyframes active-ping {
+  0%   { box-shadow: 0 0 0 0 rgba(26, 138, 79, 0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(26, 138, 79, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(26, 138, 79, 0); }
+}
+.active-pill.is-inactive {
+  background: rgba(107, 124, 147, 0.15);
+  color: #6b7c93;
+}
+
+.confirm-body { color: #4a5e7e; font-size: 0.95rem; line-height: 1.6; }
+.confirm-body strong { color: #1a3a6e; }
+.confirm-danger-title { color: #b3261e !important; }
+.confirm-action {
+  margin-top: 0 !important;
+  padding: 0.7rem 1.4rem !important;
+  background: linear-gradient(135deg, #1a3a6e 0%, #2c5aa0 100%) !important;
+}
+.confirm-action.confirm-action-danger {
+  background: linear-gradient(135deg, #b3261e 0%, #8a1a14 100%) !important;
+}
 
 .view-banner {
   display: inline-block;
