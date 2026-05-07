@@ -256,8 +256,8 @@
         <v-card-title class="modal-title">Welcome back</v-card-title>
         <v-card-text class="modal-body">
           <form @submit.prevent="submitLogin" class="auth-form">
-            <label class="auth-label">Email</label>
-            <input class="auth-input" type="email" autocomplete="email" v-model.trim="loginForm.email" autofocus />
+            <label class="auth-label">Email or username</label>
+            <input class="auth-input" type="text" autocapitalize="off" autocorrect="off" autocomplete="username" v-model.trim="loginForm.email" autofocus />
             <label class="auth-label">Password</label>
             <input class="auth-input" type="password" autocomplete="current-password" v-model="loginForm.password" />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
@@ -336,8 +336,8 @@
         <v-card-text class="modal-body">
           <p class="auth-hint">Enter your email and we'll send you a code to reset your password.</p>
           <form @submit.prevent="submitForgot" class="auth-form">
-            <label class="auth-label">Email</label>
-            <input class="auth-input" type="email" autocomplete="email" v-model.trim="forgotForm.email" autofocus />
+            <label class="auth-label">Email or username</label>
+            <input class="auth-input" type="text" autocapitalize="off" autocorrect="off" autocomplete="username" v-model.trim="forgotForm.email" autofocus />
             <p v-if="authError" class="auth-error">{{ authError }}</p>
             <button class="auth-submit" type="submit" :disabled="authBusy">
               {{ authBusy ? "Sending…" : "Send reset code" }}
@@ -444,6 +444,14 @@ export default {
   methods: {
     handleScroll() { this.isScrolled = window.scrollY > 8; },
     handleOutsideClick(e) { if (!e.target.closest('.user-pill')) this.userMenuOpen = false; },
+    // Allow short usernames like "admin" — auto-append @weatherlightadvisors.com.
+    // If the input already looks like an email (has @), pass through unchanged.
+    normalizeIdentifier(raw) {
+      const v = (raw || "").trim();
+      if (!v) return "";
+      if (v.includes("@")) return v.toLowerCase();
+      return `${v.toLowerCase()}@weatherlightadvisors.com`;
+    },
     toolUrl(path, extra = {}) {
       const params = new URLSearchParams({ theme: "weatherlight", brand: "WeatherLight Advisors", ...extra });
       return `${path}?${params.toString()}`;
@@ -489,8 +497,9 @@ export default {
     // Submissions
     async submitLogin() {
       this.authError = "";
-      const { email, password } = this.loginForm;
-      if (!email || !password) { this.authError = "Email and password are required."; return; }
+      const email = this.normalizeIdentifier(this.loginForm.email);
+      const { password } = this.loginForm;
+      if (!email || !password) { this.authError = "Username and password are required."; return; }
       this.authBusy = true;
       try {
         await loginWithPassword(email, password);
@@ -568,8 +577,8 @@ export default {
     },
     async submitForgot() {
       this.authError = "";
-      const { email } = this.forgotForm;
-      if (!email) { this.authError = "Email is required."; return; }
+      const email = this.normalizeIdentifier(this.forgotForm.email);
+      if (!email) { this.authError = "Username is required."; return; }
       this.authBusy = true;
       try {
         await cognito.forgotPassword({ email });
