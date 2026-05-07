@@ -403,6 +403,161 @@
   }
   .tg-port-active { opacity: 1 !important; fill: var(--accent-2) !important; }
 
+  /* Insights panel (floating bottom-left) */
+  .tg-insights {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    width: 320px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    z-index: 20;
+    transform: translateY(0);
+    transition: transform 0.22s ease;
+  }
+  .tg-insights.collapsed { transform: translateY(calc(100% - 44px)); }
+  .tg-insights-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 0.85rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .tg-insights-pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    flex-shrink: 0;
+    animation: ins-pulse 1.6s ease-in-out infinite;
+  }
+  .tg-insights.warn .tg-insights-pulse  { background: var(--warn); }
+  .tg-insights.crit .tg-insights-pulse  { background: var(--bad); }
+  .tg-insights.clean .tg-insights-pulse { background: var(--good); }
+  @keyframes ins-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 currentColor; }
+    50%      { box-shadow: 0 0 0 8px rgba(91, 155, 213, 0); }
+  }
+  .tg-insights-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ink);
+    flex: 1;
+  }
+  .tg-insights-count {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.1rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .tg-insights-arrow {
+    width: 12px; height: 12px;
+    color: var(--muted);
+    transition: transform 0.18s;
+  }
+  .tg-insights.collapsed .tg-insights-arrow { transform: rotate(180deg); }
+  .tg-insights-body {
+    max-height: 320px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-soft);
+  }
+  .tg-insight {
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid var(--border-soft);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .tg-insight:last-child { border-bottom: none; }
+  .tg-insight:hover { background: var(--bg); }
+  .tg-insight-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .tg-insight-sev {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .tg-sev-info  { background: var(--accent-2); }
+  .tg-sev-warn  { background: var(--warn); }
+  .tg-sev-crit  { background: var(--bad); }
+  .tg-insight-title {
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: var(--ink);
+    flex: 1;
+  }
+  .tg-insight-fix {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 0.15rem 0.55rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tg-insight-fix:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  html.theme-sapphire .tg-insight-fix:hover { color: #0a0a0f; }
+  .tg-insight-body {
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    line-height: 1.45;
+    margin-left: 24px;
+  }
+  .tg-insights-empty {
+    padding: 1rem 0.85rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+  .tg-node-group.tg-insight-highlight .tg-node-rect {
+    stroke: var(--warn) !important;
+    stroke-width: 3 !important;
+    filter: drop-shadow(0 0 12px rgba(184, 106, 0, 0.6));
+  }
+  .tg-confetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 25;
+  }
+  .tg-share-status {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    padding: 0.5rem 0.85rem;
+    background: var(--good);
+    color: #fff;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.18s, transform 0.18s;
+    z-index: 30;
+    pointer-events: none;
+  }
+  .tg-share-status.show { opacity: 1; transform: translateY(0); }
+
   /* Floating hint that follows the cursor during a port-drag */
   .tg-drag-hint {
     position: absolute;
@@ -836,6 +991,17 @@
     <svg class="tg-svg" id="tg-svg"></svg>
     <canvas class="tg-canvas" id="tg-canvas"></canvas>
     <div class="tg-drag-hint" id="tg-drag-hint"></div>
+    <canvas class="tg-confetti" id="tg-confetti"></canvas>
+    <aside class="tg-insights" id="tg-insights">
+      <div class="tg-insights-head" id="tg-insights-toggle">
+        <span class="tg-insights-pulse"></span>
+        <span class="tg-insights-title">Architecture Insights</span>
+        <span class="tg-insights-count" id="tg-insights-count">0</span>
+        <svg class="tg-insights-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="tg-insights-body" id="tg-insights-body"></div>
+    </aside>
+    <div class="tg-share-status" id="tg-share-status">Link copied to clipboard</div>
     <div class="tg-empty" id="tg-empty">
       <div class="tg-empty-icon">⌁</div>
       <div class="tg-empty-text">Drag services from the left to start designing.</div>
@@ -871,6 +1037,7 @@
     <ul class="tg-objective-list" id="tg-objective-list"></ul>
     <div class="tg-actions">
       <button class="tg-btn tg-btn-primary" id="tg-validate">Validate &amp; Run</button>
+      <button class="tg-btn tg-btn-ghost" id="tg-share">Share design</button>
       <button class="tg-btn tg-btn-ghost" id="tg-reset">Reset canvas</button>
     </div>
   </aside>
@@ -1137,7 +1304,118 @@
         { type: "edge", from: "eventbridge", to: "lambda",      label: "EventBridge → Lambda" },
       ],
     },
+    {
+      id: "async-job",
+      title: "Async Job Queue",
+      brief: "Frontend submits jobs to a queue; workers chew through them and write results to a database.",
+      objectives: [
+        { type: "has",  svc: "apigw",    label: "Add API Gateway (job submission)" },
+        { type: "has",  svc: "sqs",      label: "Add SQS (job queue)" },
+        { type: "has",  svc: "lambda",   label: "Add Lambda (worker)" },
+        { type: "has",  svc: "dynamodb", label: "Add DynamoDB (job state)" },
+        { type: "edge", from: "apigw",    to: "sqs",      label: "API Gateway → SQS" },
+        { type: "edge", from: "sqs",      to: "lambda",   label: "SQS → Lambda (event source)" },
+        { type: "edge", from: "lambda",   to: "dynamodb", label: "Lambda → DynamoDB" },
+      ],
+    },
+    {
+      id: "image-pipeline",
+      title: "Image Processing Pipeline",
+      brief: "Uploads to S3 trigger EventBridge, Lambda processes them and writes metadata to DynamoDB.",
+      objectives: [
+        { type: "has",  svc: "s3",          label: "Add S3 (uploads bucket)" },
+        { type: "has",  svc: "eventbridge", label: "Add EventBridge" },
+        { type: "has",  svc: "lambda",      label: "Add Lambda (processor)" },
+        { type: "has",  svc: "dynamodb",    label: "Add DynamoDB (metadata)" },
+        { type: "edge", from: "eventbridge", to: "lambda",   label: "EventBridge → Lambda" },
+        { type: "edge", from: "lambda",      to: "dynamodb", label: "Lambda → DynamoDB" },
+      ],
+    },
   ];
+
+  // ───────── Architecture Insights (linter) ─────────
+  // Each rule receives the full state and returns 0..N findings.
+  // Each finding: { severity, title, body, nodeUid?, fix? }
+  const INSIGHTS = [
+    // Single point of failure on EC2
+    (s) => s.nodes.filter(n => n.svcId === "ec2" && !n.config.multiAz).map(n => ({
+      severity: "warn", nodeUid: n.uid, title: "EC2 fleet is single-AZ",
+      body: "If the AZ goes down, your app goes with it. Toggle Multi-AZ for resilience.",
+      fix: () => { n.config.multiAz = true; },
+    })),
+    (s) => s.nodes.filter(n => n.svcId === "ec2" && (n.config.count || 1) === 1).map(n => ({
+      severity: "warn", nodeUid: n.uid, title: "Only one EC2 instance",
+      body: "Production should run at least two for redundancy. Bump the count.",
+      fix: () => { n.config.count = Math.max(2, n.config.count || 1); },
+    })),
+    // RDS multi-AZ
+    (s) => s.nodes.filter(n => n.svcId === "rds" && !n.config.multiAz).map(n => ({
+      severity: "warn", nodeUid: n.uid, title: "RDS without Multi-AZ failover",
+      body: "Production databases should have a synchronous standby. Enable Multi-AZ.",
+      fix: () => { n.config.multiAz = true; },
+    })),
+    // Public ALB without WAF
+    (s) => s.nodes.filter(n => n.svcId === "alb" && n.config.scheme === "internet-facing" && !n.config.waf).map(n => ({
+      severity: "warn", nodeUid: n.uid, title: "Internet-facing ALB has no WAF",
+      body: "Public load balancers should have a WAF for L7 protection. Toggle WAF on.",
+      fix: () => { n.config.waf = true; },
+    })),
+    // S3 versioning
+    (s) => s.nodes.filter(n => n.svcId === "s3" && !n.config.versioning).map(n => ({
+      severity: "info", nodeUid: n.uid, title: "S3 versioning disabled",
+      body: "Versioning protects against accidental deletes and overwrites. Cheap insurance.",
+      fix: () => { n.config.versioning = true; },
+    })),
+    // DynamoDB PITR
+    (s) => s.nodes.filter(n => n.svcId === "dynamodb" && !n.config.pointInTime).map(n => ({
+      severity: "info", nodeUid: n.uid, title: "DynamoDB PITR disabled",
+      body: "Point-in-time recovery lets you restore to any second in the last 35 days.",
+      fix: () => { n.config.pointInTime = true; },
+    })),
+    // Public API without auth
+    (s) => s.nodes.filter(n => n.svcId === "apigw" && n.config.auth === "None").map(n => ({
+      severity: "critical", nodeUid: n.uid, title: "API Gateway has no authorizer",
+      body: "An open API costs you both money and risk. Pick JWT, Lambda, or IAM.",
+      fix: () => { n.config.auth = "JWT"; },
+    })),
+    // CloudFront in front of S3 / ALB?
+    (s) => {
+      const hasInternet = s.nodes.some(n => n.svcId === "alb" && n.config.scheme === "internet-facing")
+                       || s.nodes.some(n => n.svcId === "s3");
+      const hasCF = s.nodes.some(n => n.svcId === "cloudfront");
+      if (hasInternet && !hasCF) return [{
+        severity: "info", title: "No CloudFront in front",
+        body: "CloudFront caches at the edge, terminates TLS, and integrates with WAF + Shield. Almost always worth it.",
+      }];
+      return [];
+    },
+    // SQS without DLQ
+    (s) => s.nodes.filter(n => n.svcId === "sqs" && !n.config.dlq).map(n => ({
+      severity: "info", nodeUid: n.uid, title: "SQS without dead-letter queue",
+      body: "Without a DLQ, poisoned messages stay in the queue forever. Enable it.",
+      fix: () => { n.config.dlq = true; },
+    })),
+    // Long Lambda timeouts
+    (s) => s.nodes.filter(n => n.svcId === "lambda" && (n.config.timeout || 0) > 60).map(n => ({
+      severity: "info", nodeUid: n.uid, title: "Lambda with long timeout",
+      body: "Lambdas longer than ~60s often want Step Functions or Fargate instead — easier orchestration, no 15-min ceiling.",
+    })),
+    // Orphans
+    (s) => s.nodes.filter(n => {
+      const hasIn = s.edges.some(e => e.to === n.uid);
+      const hasOut = s.edges.some(e => e.from === n.uid);
+      return !hasIn && !hasOut && s.nodes.length > 1;
+    }).map(n => ({
+      severity: "info", nodeUid: n.uid, title: `${SVC[n.svcId].name} isn't wired to anything`,
+      body: "Drag from a port (or to a port) to connect it.",
+    })),
+  ];
+
+  function runInsights() {
+    const findings = [];
+    for (const rule of INSIGHTS) findings.push(...rule(state));
+    return findings;
+  }
 
   // ───────── State ─────────
   const state = {
@@ -1369,6 +1647,7 @@
     renderObjectives();
     updateTotalCost();
     renderInspector();
+    renderInsights();
   }
 
   function updateTotalCost() {
@@ -1868,9 +2147,10 @@
     const allMet = evaluated.every(o => o.met);
     renderObjectives();
     if (allMet) {
-      state.flowingUntil = performance.now() + 4500;
+      state.flowingUntil = performance.now() + 5500;
       setStatus("Architecture complete — data flowing now.", true);
       toast("Architecture complete!");
+      celebrate();
     } else {
       const missing = evaluated.filter(o => !o.met).length;
       setStatus(`<strong>${missing}</strong> objective${missing===1?"":"s"} still incomplete.`);
@@ -1879,10 +2159,184 @@
   }
   $("tg-validate").addEventListener("click", validate);
   $("tg-reset").addEventListener("click", () => {
-    state.nodes = []; state.edges = []; state.connectFrom = null; state.flowingUntil = 0;
+    state.nodes = []; state.edges = []; state.flowingUntil = 0;
+    closeInspector();
     setStatus("Canvas cleared.");
     render();
+    saveStateToHash();
   });
+  $("tg-share").addEventListener("click", shareDesign);
+
+  // ───────── Insights panel ─────────
+  const insightsEl = $("tg-insights");
+  $("tg-insights-toggle").addEventListener("click", () => insightsEl.classList.toggle("collapsed"));
+
+  function renderInsights() {
+    const findings = runInsights();
+    const body = $("tg-insights-body");
+    body.innerHTML = "";
+    $("tg-insights-count").textContent = findings.length;
+
+    insightsEl.classList.remove("warn", "crit", "clean");
+    if (findings.length === 0) insightsEl.classList.add("clean");
+    else if (findings.some(f => f.severity === "critical")) insightsEl.classList.add("crit");
+    else if (findings.some(f => f.severity === "warn"))     insightsEl.classList.add("warn");
+
+    if (findings.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "tg-insights-empty";
+      empty.textContent = state.nodes.length === 0
+        ? "Drop services to start. Insights appear as you build."
+        : "Looking good — no best-practice issues spotted.";
+      body.appendChild(empty);
+      return;
+    }
+
+    const sevAbbr = { info: "i", warn: "!", critical: "!" };
+    findings.forEach((f, i) => {
+      const wrap = document.createElement("div");
+      wrap.className = "tg-insight";
+      const row = document.createElement("div");
+      row.className = "tg-insight-row";
+      const sev = document.createElement("span");
+      sev.className = `tg-insight-sev tg-sev-${f.severity === "critical" ? "crit" : f.severity}`;
+      sev.textContent = sevAbbr[f.severity] || "i";
+      row.appendChild(sev);
+      const t = document.createElement("span");
+      t.className = "tg-insight-title";
+      t.textContent = f.title;
+      row.appendChild(t);
+      if (f.fix) {
+        const fix = document.createElement("button");
+        fix.className = "tg-insight-fix";
+        fix.textContent = "Fix";
+        fix.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          f.fix();
+          render();
+          saveStateToHash();
+        });
+        row.appendChild(fix);
+      }
+      wrap.appendChild(row);
+      const b = document.createElement("div");
+      b.className = "tg-insight-body";
+      b.textContent = f.body;
+      wrap.appendChild(b);
+      // hover highlights the related node
+      if (f.nodeUid != null) {
+        wrap.addEventListener("mouseenter", () => {
+          const g = svgEl.querySelector(`g.tg-node-group[data-uid="${f.nodeUid}"]`);
+          if (g) g.classList.add("tg-insight-highlight");
+        });
+        wrap.addEventListener("mouseleave", () => {
+          const g = svgEl.querySelector(`g.tg-node-group[data-uid="${f.nodeUid}"]`);
+          if (g) g.classList.remove("tg-insight-highlight");
+        });
+        wrap.addEventListener("click", () => {
+          const node = state.nodes.find(n => n.uid === f.nodeUid);
+          if (node) openInspector(node);
+        });
+      }
+      body.appendChild(wrap);
+    });
+  }
+
+  // ───────── Save / share via URL hash ─────────
+  function saveStateToHash() {
+    try {
+      const payload = {
+        s: state.scenarioId,
+        n: state.nodes.map(n => ({ u: n.uid, s: n.svcId, x: Math.round(n.x), y: Math.round(n.y), c: n.config })),
+        e: state.edges.map(e => ({ u: e.uid, f: e.from, t: e.to })),
+      };
+      const json = JSON.stringify(payload);
+      // Use base64 for compactness in URL
+      const b64 = btoa(unescape(encodeURIComponent(json)));
+      history.replaceState(null, "", "#d=" + b64);
+    } catch (_) { /* swallow */ }
+  }
+  function loadStateFromHash() {
+    const m = location.hash.match(/^#d=(.+)$/);
+    if (!m) return false;
+    try {
+      const payload = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+      if (payload.s) state.scenarioId = payload.s;
+      state.nodes = (payload.n || []).map(n => ({ uid: n.u, svcId: n.s, x: n.x, y: n.y, config: n.c || { ...(SVC[n.s].defaults || {}) } }));
+      state.edges = (payload.e || []).map(e => ({ uid: e.u, from: e.f, to: e.t }));
+      // bump uid counter past the loaded ones
+      const maxUid = Math.max(0, ...state.nodes.map(n => n.uid), ...state.edges.map(e => e.uid));
+      nextUid = maxUid + 1;
+      return true;
+    } catch (_) { return false; }
+  }
+  function shareDesign() {
+    saveStateToHash();
+    const url = location.href;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => flashShareStatus("Link copied to clipboard"))
+        .catch(() => flashShareStatus("Couldn't copy — copy from address bar"));
+    } else {
+      flashShareStatus("URL updated — copy from the address bar");
+    }
+  }
+  function flashShareStatus(msg) {
+    const el = $("tg-share-status");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(flashShareStatus._t);
+    flashShareStatus._t = setTimeout(() => el.classList.remove("show"), 2000);
+  }
+
+  // ───────── Confetti on completion ─────────
+  const confettiCanvas = $("tg-confetti");
+  const cctx = confettiCanvas.getContext("2d");
+  const confetti = [];
+  function sizeConfetti() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    confettiCanvas.width  = wrapEl.clientWidth  * dpr;
+    confettiCanvas.height = wrapEl.clientHeight * dpr;
+    cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function celebrate() {
+    sizeConfetti();
+    const colors = ["#5b9bd5", "#1a3a6e", "#00d4aa", "#ff9f6a", "#9ec8ed", "#ffaa44"];
+    const w = wrapEl.clientWidth;
+    for (let i = 0; i < 180; i++) {
+      confetti.push({
+        x: Math.random() * w,
+        y: -20,
+        vx: (Math.random() - 0.5) * 3,
+        vy: 2 + Math.random() * 4,
+        rot: Math.random() * Math.PI * 2,
+        vrot: (Math.random() - 0.5) * 0.3,
+        size: 4 + Math.random() * 6,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        born: performance.now(),
+        life: 3500 + Math.random() * 1500,
+      });
+    }
+  }
+  function tickConfetti(now) {
+    cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    if (confetti.length === 0) return;
+    for (let i = confetti.length - 1; i >= 0; i--) {
+      const p = confetti[i];
+      const age = now - p.born;
+      if (age > p.life) { confetti.splice(i, 1); continue; }
+      p.vy += 0.08; // gravity
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      cctx.save();
+      cctx.translate(p.x, p.y);
+      cctx.rotate(p.rot);
+      cctx.fillStyle = p.color;
+      cctx.globalAlpha = Math.max(0, 1 - age / p.life);
+      cctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2);
+      cctx.restore();
+    }
+  }
 
   // ───────── Particle system on canvas overlay ─────────
   const ctx = canvasEl.getContext("2d");
@@ -1891,6 +2345,7 @@
     canvasEl.width  = wrapEl.clientWidth  * dpr;
     canvasEl.height = wrapEl.clientHeight * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sizeConfetti();
   }
   window.addEventListener("resize", () => { resizeCanvas(); render(); });
 
@@ -1956,6 +2411,7 @@
       ctx.fill();
     }
     ctx.shadowBlur = 0;
+    tickConfetti(now);
   }
   function bezierAt(t, x0, y0, x1, y1, x2, y2, x3, y3) {
     const u = 1 - t;
@@ -1966,9 +2422,33 @@
 
   // ───────── Boot ─────────
   buildPalette();
-  loadScenario(state.scenarioId);
+  if (loadStateFromHash()) {
+    // Loaded from URL — set scenario and render the saved design.
+    const sc = currentScenario();
+    $("tg-scenario-title").textContent = sc.title;
+    $("tg-scenario-brief").textContent = sc.brief;
+    buildScenarioTabs();
+    setStatus("Loaded shared design.");
+    render();
+  } else {
+    loadScenario(state.scenarioId);
+  }
   resizeCanvas();
   requestAnimationFrame(tick);
+
+  // Persist state to URL on most mutations
+  ["nodes", "edges", "scenarioId"].forEach(() => {});
+  // Hook the major mutators: addNode/removeNode/removeEdge already trigger render,
+  // and we want to save after *every* render-changing mutation. Easiest: monkey-patch
+  // the array methods isn't great; instead, save on a debounced timer triggered
+  // from a render hook.
+  let _saveTimer;
+  const _origRender = render;
+  render = function () {
+    _origRender();
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(saveStateToHash, 250);
+  };
 })();
 </script>
 </body>
