@@ -351,10 +351,13 @@
     stroke-width: 1.5;
     cursor: crosshair;
     opacity: 0;
-    transition: opacity 0.15s, fill 0.15s, transform 0.15s;
+    transition: opacity 0.15s, fill 0.15s, stroke-width 0.15s;
   }
   .tg-node-group:hover .tg-port { opacity: 1; }
-  .tg-port:hover { fill: var(--accent-2); transform: scale(1.4); }
+  /* Avoid CSS transform on the port (scale flickers because SVG transforms
+     scale from the SVG origin, moving the port off the cursor). Use fill +
+     thicker stroke for emphasis instead — nothing moves, no flicker. */
+  .tg-port:hover { fill: var(--accent-2); stroke-width: 3; }
   .tg-port-active { opacity: 1 !important; fill: var(--accent-2) !important; }
 
   /* Cost badge on each node */
