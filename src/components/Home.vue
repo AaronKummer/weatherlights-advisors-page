@@ -246,7 +246,6 @@
 
       <section v-show="!embedOpen && activeTab === 'overview'" class="portal-page">
         <div class="container">
-          <div class="eyebrow">Operations</div>
           <h1 class="portal-title">Good {{ greeting }}, {{ displayHandle }}.</h1>
           <p class="portal-sub">Here's where the business stands today.</p>
           <div class="kpi-grid">
