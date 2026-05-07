@@ -131,17 +131,17 @@ export default {
       const gradient = makeToonGradient();
 
       this.balloons = [];
-      // Three balloons at different depths and offsets
+      // Two balloons drifting across the scene at different depths.
+      // x is starting offset; balloons translate from -driftRange to +driftRange and loop.
       const placements = [
-        { x: -5.0, y:  0.5, z:  0.5, scale: 1.4, palette: 0, speed: 0.35 },
-        { x:  5.5, y: -1.2, z: -2.0, scale: 1.0, palette: 1, speed: 0.45 },
-        { x: -3.5, y: -2.8, z: -1.5, scale: 0.85, palette: 3, speed: 0.55 },
+        { y:  1.4, z: -1.0, scale: 1.0, palette: 0, speed: 0.45, phase: 0,    driftRange: 11, startOffset: -7 },
+        { y: -1.6, z: -2.5, scale: 0.7, palette: 2, speed: 0.30, phase: 2.0,  driftRange: 12, startOffset:  3 },
       ];
-      placements.forEach((p, i) => {
+      placements.forEach((p) => {
         const b = makeBalloon(PALETTES[p.palette], gradient);
-        b.position.set(p.x, p.y, p.z);
+        b.position.set(p.startOffset, p.y, p.z);
         b.scale.setScalar(p.scale);
-        b.userData = { ...p, baseY: p.y, baseX: p.x, phase: i * 1.7 };
+        b.userData = { ...p, baseY: p.y };
         this.scene.add(b);
         this.balloons.push(b);
       });
@@ -175,10 +175,14 @@ export default {
 
       this.balloons.forEach((b) => {
         const u = b.userData;
-        b.position.y = u.baseY + Math.sin(t * u.speed + u.phase) * 0.35;
-        b.position.x = u.baseX + Math.cos(t * u.speed * 0.6 + u.phase) * 0.25;
-        b.rotation.z = Math.sin(t * u.speed + u.phase) * 0.08;
-        b.rotation.y = t * 0.05 + u.phase;
+        // Continuous horizontal drift: travels from -driftRange to +driftRange and wraps.
+        const span = u.driftRange * 2;
+        const traveled = (t * u.speed + u.startOffset + u.driftRange) % span;
+        b.position.x = traveled - u.driftRange;
+        // Gentle vertical bob and slight roll
+        b.position.y = u.baseY + Math.sin(t * u.speed * 1.6 + u.phase) * 0.3;
+        b.rotation.z = Math.sin(t * u.speed * 1.2 + u.phase) * 0.05;
+        b.rotation.y = t * 0.04 + u.phase;
       });
 
       this.camera.position.x = this.mouse.x * 0.6;

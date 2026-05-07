@@ -5,15 +5,15 @@ import { createVuetify } from 'vuetify'
 
 export default createVuetify({
   theme: {
-    defaultTheme: 'weatherlight',
+    defaultTheme: 'light',
     themes: {
-      weatherlight: {
+      light: {
         dark: false,
         colors: {
           primary: '#1a3a6e',
           secondary: '#5b9bd5',
           accent: '#ff9900',
-          background: '#f7fbff',
+          background: '#ffffff',
           surface: '#ffffff',
         },
       },
