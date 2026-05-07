@@ -316,6 +316,25 @@ const handleAdminStats = async (event) => {
 
 export const handler = async (event) => {
   try {
+    // Cognito triggers (e.g. PostConfirmation) — auto-assign new self-signups
+    // to the Clients group. The trigger event has a different shape from API
+    // Gateway events; detect via triggerSource and return event unchanged.
+    if (event.triggerSource) {
+      if (event.triggerSource.startsWith("PostConfirmation_")) {
+        try {
+          await cognito.send(new AdminAddUserToGroupCommand({
+            UserPoolId: event.userPoolId,
+            Username: event.userName,
+            GroupName: "Clients",
+          }));
+        } catch (err) {
+          // Don't block the user's confirmation if group assignment fails.
+          console.error("PostConfirmation: AddToGroup failed", err);
+        }
+      }
+      return event;
+    }
+
     const method = event.requestContext?.http?.method || event.httpMethod;
     const path = event.rawPath || event.path || "";
 

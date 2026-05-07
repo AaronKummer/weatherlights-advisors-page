@@ -1618,15 +1618,15 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.4rem;
-  padding-top: 0.55rem !important;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem !important;
   border-top: 1px solid #f0f4f9;
   font-weight: 600 !important;
 }
 .user-menu-icon { width: 16px; height: 16px; flex-shrink: 0; }
 .user-menu-section {
-  margin-top: 0.4rem;
-  padding-top: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
   border-top: 1px solid #f0f4f9;
 }
 .user-menu-label {
@@ -1644,8 +1644,8 @@ export default {
   font-weight: 600;
 }
 .user-menu-signout {
-  margin-top: 0.4rem;
-  padding-top: 0.6rem !important;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem !important;
   border-top: 1px solid #f0f4f9;
   color: #b3261e !important;
   font-weight: 500;
@@ -1974,7 +1974,7 @@ export default {
    fixed nav + fixed tab strip. Content scrolls inside the page if it
    doesn't fit, but the body itself never scrolls. */
 .portal-page {
-  padding: 8rem 2rem 2rem; /* clears nav (70px) + tabs (~56px) */
+  padding: 10rem 2rem 2rem; /* nav (70px) + tabs (~56px) + breathing room */
   height: 100vh;
   height: 100dvh;
   overflow-y: auto;
