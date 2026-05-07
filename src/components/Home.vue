@@ -424,11 +424,6 @@
     <div v-if="embedOpen" class="embed-overlay" @click.self="closeTool" @keydown.esc="closeTool">
       <div class="embed-window">
         <div class="embed-bar">
-          <div class="embed-traffic">
-            <span class="embed-dot embed-dot-r"></span>
-            <span class="embed-dot embed-dot-y"></span>
-            <span class="embed-dot embed-dot-g"></span>
-          </div>
           <div class="embed-title">{{ embedTitle }}</div>
           <button class="embed-close" @click="closeTool" aria-label="Close">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2007,15 +2002,10 @@ export default {
   border-bottom: 1px solid #e0eaf5;
 }
 
-.embed-traffic { display: flex; gap: 0.4rem; }
-.embed-dot { width: 12px; height: 12px; border-radius: 50%; }
-.embed-dot-r { background: #ff5f57; }
-.embed-dot-y { background: #ffbd2e; }
-.embed-dot-g { background: #28c840; }
-
 .embed-title {
   flex: 1;
-  text-align: center;
+  text-align: left;
+  padding-left: 0.4rem;
   font-size: 0.88rem;
   font-weight: 600;
   color: #1a3a6e;
