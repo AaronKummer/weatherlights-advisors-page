@@ -286,9 +286,25 @@
     fill: var(--panel);
     stroke: var(--border);
     stroke-width: 1.5;
+    transition: stroke 0.12s, stroke-width 0.12s;
   }
   html.theme-sapphire .tg-node-rect { fill: #1d242c; }
   .tg-node-rect.selected { stroke: var(--accent); stroke-width: 2.5; }
+
+  /* During a port-drag, highlight valid drop targets in green and dim invalid ones */
+  .tg-node-group.tg-target-valid .tg-node-rect {
+    stroke: var(--good) !important;
+    stroke-width: 3 !important;
+    filter: drop-shadow(0 0 10px rgba(40, 200, 120, 0.45));
+  }
+  .tg-node-group.tg-target-valid .tg-port { opacity: 1 !important; fill: var(--good) !important; stroke: var(--good) !important; }
+  .tg-node-group.tg-target-invalid { opacity: 0.42; }
+  .tg-node-group.tg-target-invalid .tg-node-rect { stroke: var(--bad) !important; stroke-dasharray: 4 4; }
+  .tg-node-group.tg-target-source .tg-node-rect {
+    stroke: var(--accent-2) !important;
+    stroke-width: 2.5 !important;
+    filter: drop-shadow(0 0 8px rgba(91, 155, 213, 0.5));
+  }
   .tg-node-label {
     font-size: 12px;
     font-weight: 600;
@@ -369,21 +385,48 @@
     letter-spacing: 0.02em;
   }
 
-  /* Connection ports (appear on node hover) */
+  /* Connection ports (always visible, more obvious during a drag) */
   .tg-port {
     fill: var(--bg);
     stroke: var(--accent-2);
     stroke-width: 1.5;
     cursor: crosshair;
-    opacity: 0;
+    opacity: 0.55;
     transition: opacity 0.15s, fill 0.15s, stroke-width 0.15s;
   }
   .tg-node-group:hover .tg-port { opacity: 1; }
-  /* Avoid CSS transform on the port (scale flickers because SVG transforms
-     scale from the SVG origin, moving the port off the cursor). Use fill +
-     thicker stroke for emphasis instead — nothing moves, no flicker. */
   .tg-port:hover { fill: var(--accent-2); stroke-width: 3; }
+  .tg-port-out { animation: tg-port-pulse 1.6s ease-in-out infinite; }
+  @keyframes tg-port-pulse {
+    0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+    50%      { filter: drop-shadow(0 0 5px var(--accent-2)); }
+  }
   .tg-port-active { opacity: 1 !important; fill: var(--accent-2) !important; }
+
+  /* Floating hint that follows the cursor during a port-drag */
+  .tg-drag-hint {
+    position: absolute;
+    pointer-events: none;
+    padding: 0.45rem 0.7rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    z-index: 30;
+    transform: translate(14px, 14px);
+    display: none;
+    max-width: 260px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+  .tg-drag-hint.show { display: block; }
+  .tg-drag-hint.valid { border-color: var(--good); color: var(--good); }
+  .tg-drag-hint.invalid { border-color: var(--bad); color: var(--bad); }
+  .tg-drag-hint .label { display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.7; margin-bottom: 0.2rem; }
 
   /* Cost badge on each node */
   .tg-cost-badge {
@@ -792,6 +835,7 @@
   <div class="tg-canvas-wrap" id="tg-canvas-wrap">
     <svg class="tg-svg" id="tg-svg"></svg>
     <canvas class="tg-canvas" id="tg-canvas"></canvas>
+    <div class="tg-drag-hint" id="tg-drag-hint"></div>
     <div class="tg-empty" id="tg-empty">
       <div class="tg-empty-icon">⌁</div>
       <div class="tg-empty-text">Drag services from the left to start designing.</div>
@@ -996,8 +1040,12 @@
   };
 
   // Friendly explanations for the most common invalid attempts.
+  const COMPUTE = new Set(["ec2", "fargate", "lambda"]);
   function explainInvalidConnection(fromSvc, toSvc) {
     const f = fromSvc.id, t = toSvc.id;
+    if (COMPUTE.has(f) && COMPUTE.has(t)) {
+      return `${fromSvc.name} and ${toSvc.name} are both compute services — they don't talk directly to each other. Either put a load balancer (ALB) or queue (SQS/EventBridge) between them, or connect both to the same downstream service (database, storage).`;
+    }
     if (f === "s3")        return `S3 is a target, not a source. Try connecting <strong>${toSvc.name} → S3</strong> instead, or use CloudFront with S3 as its origin.`;
     if (f === "rds")       return `RDS is a database — it responds to clients, it doesn't initiate connections. Wire your compute (EC2/Lambda/Fargate) → RDS instead.`;
     if (f === "ebs")       return `EBS is block storage attached to an EC2 instance, not a network source. Connect <strong>EC2 → EBS</strong> if you want to model a volume.`;
@@ -1011,6 +1059,23 @@
     if (f === "apigw" && (t === "rds" || t === "dynamodb" || t === "s3"))
       return `API Gateway invokes integrations (Lambda is most common). Connect API Gateway → Lambda → ${toSvc.name}.`;
     return `${fromSvc.name} doesn't typically connect directly to ${toSvc.name}. Add an intermediate compute service (Lambda, EC2, or Fargate).`;
+  }
+  function shortInvalidReason(fromSvc, toSvc) {
+    const f = fromSvc.id, t = toSvc.id;
+    if (COMPUTE.has(f) && COMPUTE.has(t)) return "Both are compute — needs ALB or queue between";
+    if (f === "s3")  return "S3 is a target, not a source";
+    if (f === "rds") return "RDS doesn't initiate connections";
+    if (f === "ebs") return "EBS is block storage on EC2";
+    if (f === "vpc") return "VPC isn't a traffic source";
+    if (f === "dynamodb") return "DynamoDB → Lambda only (Streams)";
+    if (f === "sqs")      return "SQS → Lambda only";
+    return "Not a typical connection";
+  }
+  function downstreamList(svcId) {
+    return Object.keys(CAN_CONNECT_TO[svcId] || {});
+  }
+  function upstreamList(svcId) {
+    return Object.entries(CAN_CONNECT_TO).filter(([_, v]) => v[svcId]).map(([k]) => k);
   }
 
   function isValidConnection(fromId, toId) {
@@ -1403,6 +1468,17 @@
     const arriving = state.pulses[n.uid] && performance.now() < state.pulses[n.uid];
     const cls = ["tg-node-group"];
     if (arriving) cls.push("arriving");
+    // Highlight as drop target during a port drag
+    if (state.portDrag) {
+      if (n.uid === state.portDrag.fromUid) {
+        cls.push("tg-target-source");
+      } else {
+        const fromNode = state.nodes.find(x => x.uid === state.portDrag.fromUid);
+        if (fromNode) {
+          cls.push(isValidConnection(fromNode.svcId, n.svcId) ? "tg-target-valid" : "tg-target-invalid");
+        }
+      }
+    }
     g.setAttribute("class", cls.join(" "));
     g.setAttribute("transform", `translate(${n.x} ${n.y})`);
     g.dataset.uid = n.uid;
@@ -1466,7 +1542,7 @@
 
     // Connection ports (right edge = output, left edge = input)
     const portR = document.createElementNS(ns, "circle");
-    portR.setAttribute("class", "tg-port");
+    portR.setAttribute("class", "tg-port tg-port-out");
     portR.setAttribute("cx", NODE_W); portR.setAttribute("cy", NODE_H / 2);
     portR.setAttribute("r", 5);
     portR.dataset.dir = "out";
@@ -1542,14 +1618,36 @@
     if (dir !== "out") return; // only allow drags from output (right) port
     const r = wrapEl.getBoundingClientRect();
     state.portDrag = { fromUid: n.uid, x: e.clientX - r.left, y: e.clientY - r.top };
+    const fromSvc = SVC[n.svcId];
+    const targets = downstreamList(fromSvc.id);
+    if (targets.length) {
+      setStatus(`Dragging from <strong>${fromSvc.name}</strong> — drop on ${targets.map(t => SVC[t].name).join(", ")}.`);
+    } else {
+      setStatus(`<strong>${fromSvc.name}</strong> isn't a typical traffic source — try dragging from a service that calls it.`);
+    }
+    showDragHint(`<span class="label">From ${fromSvc.name}</span>${targets.length ? "Hovering for valid targets…" : "No common downstream targets"}`,
+                 e.clientX - r.left, e.clientY - r.top, targets.length ? "" : "invalid");
     const onMove = (ev) => {
-      state.portDrag.x = ev.clientX - r.left;
-      state.portDrag.y = ev.clientY - r.top;
+      const x = ev.clientX - r.left, y = ev.clientY - r.top;
+      state.portDrag.x = x;
+      state.portDrag.y = y;
+      const target = topNodeAt(x, y);
+      if (target && target.uid !== state.portDrag.fromUid) {
+        const toSvc = SVC[target.svcId];
+        if (isValidConnection(fromSvc.id, toSvc.id)) {
+          showDragHint(`<span class="label">→ ${connectionLabel(fromSvc.id, toSvc.id)}</span>${fromSvc.name} → ${toSvc.name}`, x, y, "valid");
+        } else {
+          showDragHint(`<span class="label">✕ Can't connect</span>${shortInvalidReason(fromSvc, toSvc)}`, x, y, "invalid");
+        }
+      } else {
+        showDragHint(`<span class="label">From ${fromSvc.name}</span>${targets.length ? "Drop on a green-outlined service" : "No valid targets"}`, x, y, targets.length ? "" : "invalid");
+      }
       render();
     };
     const onUp = (ev) => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      hideDragHint();
       // figure out which node the cursor is over
       const target = topNodeAt(ev.clientX - r.left, ev.clientY - r.top);
       if (target && target.uid !== state.portDrag.fromUid) {
@@ -1573,6 +1671,18 @@
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
+  }
+
+  // Floating cursor hint
+  const hintEl = $("tg-drag-hint");
+  function showDragHint(html, x, y, kind = "") {
+    hintEl.innerHTML = html;
+    hintEl.className = "tg-drag-hint show " + kind;
+    hintEl.style.left = x + "px";
+    hintEl.style.top = y + "px";
+  }
+  function hideDragHint() {
+    hintEl.classList.remove("show");
   }
 
   function topNodeAt(x, y) {
@@ -1703,6 +1813,23 @@
       row.appendChild(input);
       body.appendChild(row);
     });
+
+    // Connection guide: what can connect TO this and what THIS can connect to
+    const connHeader = document.createElement("div");
+    connHeader.style.cssText = "font-size:0.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:1.1rem 0 0.4rem;";
+    connHeader.textContent = "Connections";
+    body.appendChild(connHeader);
+    const connWrap = document.createElement("div");
+    connWrap.style.cssText = "display:flex;flex-direction:column;gap:0.45rem;font-size:0.78rem;";
+    const incoming = upstreamList(svc.id);
+    const outgoing = downstreamList(svc.id);
+    const incLine = document.createElement("div");
+    incLine.innerHTML = `<span style="color:var(--muted);font-weight:700;font-size:0.7rem;letter-spacing:0.05em;text-transform:uppercase;">Inputs from</span> ${incoming.length ? incoming.map(id => '<span style="display:inline-block;background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:0.15rem 0.55rem;margin:0.15rem 0.2rem 0 0;font-weight:600;color:var(--ink-2);">'+SVC[id].name+'</span>').join("") : '<span style="opacity:0.6;font-style:italic;">none typical</span>'}`;
+    connWrap.appendChild(incLine);
+    const outLine = document.createElement("div");
+    outLine.innerHTML = `<span style="color:var(--muted);font-weight:700;font-size:0.7rem;letter-spacing:0.05em;text-transform:uppercase;">Outputs to</span> ${outgoing.length ? outgoing.map(id => '<span style="display:inline-block;background:rgba(91,155,213,0.10);border:1px solid rgba(91,155,213,0.35);border-radius:100px;padding:0.15rem 0.55rem;margin:0.15rem 0.2rem 0 0;font-weight:600;color:var(--accent);">'+SVC[id].name+'</span>').join("") : '<span style="opacity:0.6;font-style:italic;">none typical</span>'}`;
+    connWrap.appendChild(outLine);
+    body.appendChild(connWrap);
 
     if (svc.addOns?.length) {
       const h = document.createElement("div");
