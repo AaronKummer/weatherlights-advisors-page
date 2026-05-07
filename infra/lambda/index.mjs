@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID, randomBytes } from "node:crypto";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -87,6 +87,43 @@ const handleMe = async (event) => {
   return json(200, { user });
 };
 
+const isAdminClaims = (claims) => {
+  const email = (claims.email || "").toLowerCase();
+  const username = (claims["cognito:username"] || "").toLowerCase();
+  return email.startsWith("admin@") || username.startsWith("admin");
+};
+
+const handleAdminStats = async (event) => {
+  const claims = getClaims(event);
+  if (!claims) return json(401, { error: "unauthorized" });
+  if (!isAdminClaims(claims)) return json(403, { error: "forbidden" });
+
+  // Count rows in each table. With a small dataset this is fine; revisit
+  // with a counters item if either table grows past a few thousand rows.
+  const [contactsScan, usersScan] = await Promise.all([
+    ddb.send(new ScanCommand({
+      TableName: CONTACTS_TABLE,
+      ProjectionExpression: "createdAt",
+    })),
+    ddb.send(new ScanCommand({
+      TableName: USERS_TABLE,
+      ProjectionExpression: "userId",
+    })),
+  ]);
+
+  const contacts = contactsScan.Items || [];
+  contacts.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  const lastContact = contacts[0]?.createdAt
+    ? new Date(contacts[0].createdAt).toISOString().slice(0, 16).replace("T", " ") + " UTC"
+    : "";
+
+  return json(200, {
+    contacts: contacts.length,
+    users: (usersScan.Items || []).length,
+    lastContact,
+  });
+};
+
 export const handler = async (event) => {
   try {
     const method = event.requestContext?.http?.method || event.httpMethod;
@@ -96,6 +133,7 @@ export const handler = async (event) => {
 
     if (method === "POST" && path.endsWith("/contact")) return handleContact(event);
     if (method === "GET" && path.endsWith("/me")) return handleMe(event);
+    if (method === "GET" && path.endsWith("/admin/stats")) return handleAdminStats(event);
 
     return json(404, { error: "not found" });
   } catch (err) {

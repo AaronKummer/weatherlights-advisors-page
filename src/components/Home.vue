@@ -14,6 +14,15 @@
           <a href="#certs" class="nav-link">Certifications</a>
           <a href="#about" class="nav-link">About</a>
           <a @click="dialog = true" class="nav-link">Contact</a>
+          <button class="theme-toggle" @click="toggleTheme" :aria-label="'Toggle theme'" title="Toggle light/dark">
+            <svg viewBox="0 0 24 24" class="icon-sun" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+            <svg viewBox="0 0 24 24" class="icon-moon" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          </button>
           <span class="nav-divider"></span>
           <template v-if="!currentUser">
             <a @click="openLogin" class="nav-link nav-link-strong">Login</a>
@@ -33,6 +42,8 @@
       </div>
     </header>
 
+    <!-- Marketing sections — hidden once logged in -->
+    <template v-if="!currentUser">
     <section id="top" class="hero">
       <HeroBalloons class="hero-balloons" />
 
@@ -195,6 +206,150 @@
         <button class="btn-primary" @click="dialog = true">Start a conversation</button>
       </div>
     </section>
+    </template>
+
+    <!-- ════════ MEMBER PORTAL ════════ -->
+    <template v-if="currentUser">
+      <section class="portal-hero">
+        <div class="container portal-hero-inner">
+          <div>
+            <div class="eyebrow">Member Portal</div>
+            <h1 class="portal-title">Good {{ greeting }}, {{ currentUser.handle || currentUser.email }}.</h1>
+            <p class="portal-sub">{{ portalSub }}</p>
+          </div>
+          <div class="portal-stats">
+            <div class="stat-card">
+              <div class="stat-num">{{ stats.questionsAnswered }}</div>
+              <div class="stat-label">Questions answered</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">{{ stats.wargameLevel }}</div>
+              <div class="stat-label">Wargame level</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">{{ stats.flashcardsReviewed }}</div>
+              <div class="stat-label">Flashcards reviewed</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">{{ stats.lessonsViewed }}</div>
+              <div class="stat-label">Lessons viewed</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="practice" class="content-section portal-section">
+        <div class="container">
+          <div class="eyebrow">Practice Exams</div>
+          <h2 class="section-title">Every AWS certification</h2>
+          <p class="section-lede">700+ questions across 7 tracks. Pick a cert and start drilling.</p>
+          <div class="cert-picker-grid">
+            <a v-for="b in quizBanks" :key="b.code" :href="toolUrl('/quiz/index.html', { bank: b.code })" class="cert-pill">
+              <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
+              <div class="cert-pill-name">{{ b.name }}</div>
+              <div class="cert-pill-meta">{{ b.questions }} questions</div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="hands-on" class="content-section portal-section content-section-tint">
+        <div class="container">
+          <div class="eyebrow">Hands-On Training</div>
+          <h2 class="section-title">Learn by doing</h2>
+          <div class="member-grid">
+            <a :href="toolUrl('/wargame/index.html')" class="member-card">
+              <div class="member-card-tag">CTF Range</div>
+              <div class="member-card-title">Wargame</div>
+              <p>25-level terminal hacking game. Linux fundamentals, recon, crypto, lateral movement. XP, ranks, achievements.</p>
+              <div class="member-card-cta">Launch Range <span aria-hidden>→</span></div>
+            </a>
+            <a :href="toolUrl('/lessons/index.html')" class="member-card">
+              <div class="member-card-tag">Interactive</div>
+              <div class="member-card-title">AWS Lessons</div>
+              <p>38 services across 6 categories with a drag-and-drop architecture builder and inline quizzes.</p>
+              <div class="member-card-cta">Start Learning <span aria-hidden>→</span></div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="memorize" class="content-section portal-section">
+        <div class="container">
+          <div class="eyebrow">Memorize</div>
+          <h2 class="section-title">Spaced repetition</h2>
+          <a :href="toolUrl('/flashcards/index.html')" class="member-card member-card-wide">
+            <div class="member-card-tag">SM-2 Algorithm</div>
+            <div class="member-card-title">Flashcards</div>
+            <p>180 cards across AWS services and Linux commands. Review what you're forgetting before you forget it.</p>
+            <div class="member-card-cta">Open Deck <span aria-hidden>→</span></div>
+          </a>
+        </div>
+      </section>
+
+      <section id="dashboard" class="content-section portal-section content-section-tint">
+        <div class="container">
+          <div class="eyebrow">Dashboard</div>
+          <h2 class="section-title">Your progress</h2>
+          <div class="dashboard-grid">
+            <div class="dashboard-card">
+              <div class="dashboard-card-title">Quiz progress by cert</div>
+              <div class="dashboard-bars">
+                <div v-for="d in stats.quizDomains" :key="d.code" class="dashboard-bar-row">
+                  <span class="dashboard-bar-label">{{ d.code.toUpperCase() }}</span>
+                  <div class="dashboard-bar-track">
+                    <div class="dashboard-bar-fill" :style="{ width: d.pct + '%' }"></div>
+                  </div>
+                  <span class="dashboard-bar-val">{{ d.pct }}%</span>
+                </div>
+              </div>
+            </div>
+            <div class="dashboard-card">
+              <div class="dashboard-card-title">Recent activity</div>
+              <ul class="activity-list">
+                <li v-for="(a, i) in stats.activity" :key="i">
+                  <span class="activity-tool">{{ a.tool }}</span>
+                  <span class="activity-detail">{{ a.detail }}</span>
+                </li>
+                <li v-if="stats.activity.length === 0" class="activity-empty">
+                  Nothing yet. Open a tool above to get started.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="isAdmin" id="ops" class="content-section portal-section ops-section">
+        <div class="container">
+          <div class="eyebrow ops-eyebrow">Admin · Ops Tools</div>
+          <h2 class="section-title">Business analytics</h2>
+          <p class="section-lede">Real-time metrics from the WeatherLight backend.</p>
+          <div class="ops-grid">
+            <div class="ops-card">
+              <div class="ops-card-title">Contact submissions</div>
+              <div class="ops-num">{{ ops.contacts }}</div>
+              <div class="ops-meta">all time</div>
+            </div>
+            <div class="ops-card">
+              <div class="ops-card-title">Registered users</div>
+              <div class="ops-num">{{ ops.users }}</div>
+              <div class="ops-meta">all time</div>
+            </div>
+            <div class="ops-card">
+              <div class="ops-card-title">Cognito pool</div>
+              <div class="ops-num small">us-east-1_tPZ876WGD</div>
+              <div class="ops-meta">user pool</div>
+            </div>
+            <div class="ops-card">
+              <div class="ops-card-title">Last contact</div>
+              <div class="ops-num small">{{ ops.lastContact || '—' }}</div>
+              <div class="ops-meta">most recent submission</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </template>
 
     <footer class="site-footer">
       <div class="container footer-row">
@@ -403,6 +558,19 @@ export default {
       currentUser: null,
       userMenuOpen: false,
 
+      // Manual theme override: null = follow detection, 'light' | 'dark'
+      themeOverride: null,
+      // Member portal stats (computed from localStorage in computeStats)
+      stats: {
+        questionsAnswered: 0,
+        wargameLevel: 0,
+        flashcardsReviewed: 0,
+        lessonsViewed: 0,
+        quizDomains: [],
+        activity: [],
+      },
+      ops: { contacts: "—", users: "—", lastContact: "" },
+
       // Quiz banks shown in the cert picker
       quizBanks: [
         { code: "clf-c02", name: "Cloud Practitioner",            questions: 100 },
@@ -432,10 +600,34 @@ export default {
       pendingPassword: "",  // remembered between signup → verify so we can auto-login
     };
   },
+  computed: {
+    isAdmin() {
+      const e = (this.currentUser?.email || "").toLowerCase();
+      const h = (this.currentUser?.handle || "").toLowerCase();
+      return e.startsWith("admin@") || h.startsWith("admin");
+    },
+    greeting() {
+      const h = new Date().getHours();
+      if (h < 12) return "morning";
+      if (h < 18) return "afternoon";
+      return "evening";
+    },
+    portalSub() {
+      if (this.stats.questionsAnswered === 0)
+        return "Welcome to the training range. Pick a tool below to get started.";
+      return `Keep it going — ${this.stats.questionsAnswered} questions in, ${this.stats.wargameLevel} wargame ${this.stats.wargameLevel === 1 ? "level" : "levels"} cleared.`;
+    },
+  },
+  watch: {
+    currentUser: { handler() { this.computeStats(); this.loadOps(); }, immediate: false },
+  },
   async mounted() {
     window.addEventListener('scroll', this.handleScroll);
     document.addEventListener('click', this.handleOutsideClick);
+    this.applyStoredThemeOverride();
     await this.loadCurrentUser();
+    this.computeStats();
+    if (this.currentUser) this.loadOps();
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
@@ -612,6 +804,86 @@ export default {
     },
 
     onLogout() { logout(); },
+
+    // ─────────── Theme toggle ───────────
+    applyStoredThemeOverride() {
+      const v = localStorage.getItem("wl-theme");
+      if (v === "dark" || v === "light") {
+        this.themeOverride = v;
+        this.applyThemeClass();
+      }
+    },
+    applyThemeClass() {
+      const html = document.documentElement;
+      if (this.themeOverride === "dark") html.classList.add("dark-fallback");
+      else if (this.themeOverride === "light") html.classList.remove("dark-fallback");
+    },
+    toggleTheme() {
+      const isDark = document.documentElement.classList.contains("dark-fallback");
+      this.themeOverride = isDark ? "light" : "dark";
+      localStorage.setItem("wl-theme", this.themeOverride);
+      this.applyThemeClass();
+    },
+
+    // ─────────── Portal stats ───────────
+    computeStats() {
+      let answered = 0;
+      const quizDomains = [];
+      this.quizBanks.forEach((b) => {
+        try {
+          const raw = localStorage.getItem("vv-quiz-" + b.code);
+          if (!raw) { quizDomains.push({ code: b.code, pct: 0 }); return; }
+          const s = JSON.parse(raw);
+          const a = Object.keys(s.answers || s.history || {}).length || 0;
+          answered += a;
+          quizDomains.push({ code: b.code, pct: Math.min(100, Math.round((a / b.questions) * 100)) });
+        } catch { quizDomains.push({ code: b.code, pct: 0 }); }
+      });
+
+      let wgLevel = 0;
+      try {
+        const wg = JSON.parse(localStorage.getItem("wg-state") || "{}");
+        wgLevel = wg.level || 0;
+      } catch {}
+
+      let flashcardsReviewed = 0;
+      try {
+        const fc = JSON.parse(localStorage.getItem("vv-flashcards-state") || "{}");
+        flashcardsReviewed = fc.reviewed || (Array.isArray(fc.cards) ? fc.cards.filter((c) => c.reps > 0).length : 0);
+      } catch {}
+
+      let lessonsViewed = 0;
+      try {
+        const ls = JSON.parse(localStorage.getItem("vv-lessons-progress") || "{}");
+        lessonsViewed = Object.keys(ls).length;
+      } catch {}
+
+      const activity = [];
+      if (wgLevel > 0) activity.push({ tool: "Wargame", detail: `Cleared level ${wgLevel}` });
+      const topQuiz = quizDomains.slice().sort((a, b) => b.pct - a.pct)[0];
+      if (topQuiz && topQuiz.pct > 0) activity.push({ tool: "Quiz", detail: `${topQuiz.code.toUpperCase()} — ${topQuiz.pct}% answered` });
+      if (flashcardsReviewed > 0) activity.push({ tool: "Flashcards", detail: `${flashcardsReviewed} cards in rotation` });
+
+      this.stats = { questionsAnswered: answered, wargameLevel: wgLevel, flashcardsReviewed, lessonsViewed, quizDomains, activity };
+    },
+
+    async loadOps() {
+      if (!this.isAdmin) return;
+      try {
+        const tokens = getTokens();
+        if (!tokens) return;
+        const res = await fetch(`${config.apiBase}/admin/stats`, {
+          headers: { Authorization: `Bearer ${tokens.id_token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        this.ops = {
+          contacts: data.contacts ?? "—",
+          users: data.users ?? "—",
+          lastContact: data.lastContact || "",
+        };
+      } catch (err) { console.warn("loadOps failed", err); }
+    },
     validateEmail() {
       this.emailErrors = [];
       const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -705,6 +977,26 @@ export default {
   height: 22px;
   background: #e5edf5;
 }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #e5edf5;
+  background: transparent;
+  color: #4a5e7e;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  padding: 0;
+}
+.theme-toggle:hover { border-color: #5b9bd5; color: #1a3a6e; background: #f7fbff; }
+.theme-toggle .icon-sun,
+.theme-toggle .icon-moon { width: 16px; height: 16px; }
+.theme-toggle .icon-sun { display: block; }
+.theme-toggle .icon-moon { display: none; }
 
 .nav-cta {
   padding: 0.55rem 1.15rem;
@@ -964,6 +1256,185 @@ export default {
 .cert-pill-meta {
   font-size: 0.82rem;
   color: #6b7c93;
+}
+
+/* ───────── Member portal ───────── */
+.portal-hero {
+  padding: 8rem 2rem 3rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7fd 100%);
+  border-bottom: 1px solid #e0eaf5;
+}
+.portal-hero-inner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3rem;
+  align-items: center;
+}
+.portal-title {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 700;
+  color: #1a3a6e;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.6rem;
+  line-height: 1.15;
+}
+.portal-sub {
+  font-size: 1.05rem;
+  color: #4a5e7e;
+  line-height: 1.6;
+  max-width: 520px;
+}
+.portal-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+}
+.stat-card {
+  padding: 1.1rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  border-radius: 10px;
+  min-width: 130px;
+}
+.stat-num {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  line-height: 1;
+  margin-bottom: 0.35rem;
+}
+.stat-label {
+  font-size: 0.78rem;
+  color: #6b7c93;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.portal-section { padding: 4rem 2rem; }
+.member-card-wide { max-width: 100%; }
+
+.dashboard-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.5rem;
+}
+.dashboard-card {
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+.dashboard-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.01em;
+}
+.dashboard-bars { display: flex; flex-direction: column; gap: 0.6rem; }
+.dashboard-bar-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 50px;
+  align-items: center;
+  gap: 0.85rem;
+}
+.dashboard-bar-label {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  letter-spacing: 0.05em;
+}
+.dashboard-bar-track {
+  height: 8px;
+  background: #eef3f9;
+  border-radius: 100px;
+  overflow: hidden;
+}
+.dashboard-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5b9bd5 0%, #1a3a6e 100%);
+  border-radius: 100px;
+  transition: width 0.4s ease;
+}
+.dashboard-bar-val {
+  text-align: right;
+  font-size: 0.82rem;
+  color: #4a5e7e;
+  font-weight: 600;
+}
+
+.activity-list { list-style: none; padding: 0; }
+.activity-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid #f0f4f9;
+}
+.activity-list li:last-child { border-bottom: none; }
+.activity-tool {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(91, 155, 213, 0.12);
+  border-radius: 100px;
+  padding: 0.25rem 0.6rem;
+  min-width: 88px;
+  text-align: center;
+}
+.activity-detail { color: #4a5e7e; font-size: 0.92rem; }
+.activity-empty { color: #6b7c93; font-style: italic; padding: 0.7rem 0; }
+
+.ops-section {
+  background: linear-gradient(180deg, #fff7ed 0%, #fff 100%);
+  border-top: 2px solid #ffe1bf;
+}
+.ops-eyebrow { color: #c2570a !important; }
+.ops-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.ops-card {
+  background: #ffffff;
+  border: 1px solid #ffe1bf;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.ops-card-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c2570a;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.85rem;
+}
+.ops-num {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.ops-num.small {
+  font-size: 0.9rem;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  word-break: break-all;
+}
+.ops-meta {
+  font-size: 0.78rem;
+  color: #6b7c93;
+}
+
+@media (max-width: 800px) {
+  .portal-hero-inner { grid-template-columns: 1fr; gap: 2rem; }
+  .dashboard-grid { grid-template-columns: 1fr; }
 }
 
 .member-card {

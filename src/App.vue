@@ -194,6 +194,55 @@ html.dark-fallback .cert-pill-code { color: #00d4aa !important; }
 html.dark-fallback .cert-pill-name { color: #ffffff !important; }
 html.dark-fallback .cert-pill-meta { color: #8b949e !important; }
 
+/* Theme toggle — dark variant: show moon, hide sun */
+html.dark-fallback .theme-toggle { border-color: rgba(255, 255, 255, 0.1) !important; color: #c9d1d9 !important; }
+html.dark-fallback .theme-toggle:hover { border-color: rgba(0, 212, 170, 0.4) !important; color: #00d4aa !important; background: rgba(0, 212, 170, 0.05) !important; }
+html.dark-fallback .theme-toggle .icon-sun { display: none !important; }
+html.dark-fallback .theme-toggle .icon-moon { display: block !important; }
+
+/* Portal hero */
+html.dark-fallback .portal-hero {
+  background: linear-gradient(180deg, #0a0a0f 0%, #0d1015 100%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+}
+html.dark-fallback .portal-title { color: #ffffff !important; }
+html.dark-fallback .portal-sub { color: #8b949e !important; }
+html.dark-fallback .stat-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .stat-num { color: #ffffff !important; }
+html.dark-fallback .stat-label { color: #8b949e !important; }
+
+/* Dashboard cards */
+html.dark-fallback .dashboard-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .dashboard-card-title { color: #ffffff !important; }
+html.dark-fallback .dashboard-bar-label { color: #00d4aa !important; }
+html.dark-fallback .dashboard-bar-track { background: rgba(255, 255, 255, 0.06) !important; }
+html.dark-fallback .dashboard-bar-fill { background: linear-gradient(90deg, #00d4aa 0%, #008f76 100%) !important; }
+html.dark-fallback .dashboard-bar-val { color: #c9d1d9 !important; }
+html.dark-fallback .activity-list li { border-bottom-color: rgba(255, 255, 255, 0.05) !important; }
+html.dark-fallback .activity-tool { color: #00d4aa !important; background: rgba(0, 212, 170, 0.12) !important; }
+html.dark-fallback .activity-detail { color: #c9d1d9 !important; }
+html.dark-fallback .activity-empty { color: #8b949e !important; }
+
+/* Ops section in dark mode: keep the warm accent but darken bg */
+html.dark-fallback .ops-section {
+  background: linear-gradient(180deg, #1a0f00 0%, #0a0a0f 100%) !important;
+  border-top-color: #5a3a0f !important;
+}
+html.dark-fallback .ops-eyebrow { color: #ffaa44 !important; }
+html.dark-fallback .ops-card {
+  background: linear-gradient(135deg, rgba(255, 170, 68, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 170, 68, 0.2) !important;
+}
+html.dark-fallback .ops-card-title { color: #ffaa44 !important; }
+html.dark-fallback .ops-num { color: #ffffff !important; }
+html.dark-fallback .ops-meta { color: #8b949e !important; }
+
 /* Footer */
 html.dark-fallback .site-footer { background: #0a0a0f !important; border-top-color: rgba(255, 255, 255, 0.05) !important; }
 html.dark-fallback .footer-brand { color: #ffffff !important; }
