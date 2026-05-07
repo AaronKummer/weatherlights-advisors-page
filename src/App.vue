@@ -190,10 +190,20 @@ html.dark-fallback .footer-links a:hover { color: #00d4aa !important; }
 html.dark-fallback .footer-copy { color: #484f58 !important; }
 
 /* Modal */
-html.dark-fallback .modal-card { background: #161b22 !important; border-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark-fallback .modal-card {
+  background: #161b22 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #c9d1d9 !important;
+}
+html.dark-fallback .modal-card .v-card-text,
+html.dark-fallback .modal-card .v-card-text * {
+  color: #c9d1d9 !important;
+}
+html.dark-fallback .modal-card .v-card-text strong { color: #ffffff !important; }
 html.dark-fallback .modal-title { color: #ffffff !important; border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
 html.dark-fallback .modal-intro { color: #8b949e !important; }
 html.dark-fallback .modal-actions { border-top-color: rgba(255, 255, 255, 0.06) !important; }
+html.dark-fallback .modal-actions .v-btn { color: #c9d1d9 !important; }
 html.dark-fallback .btn-send { background: linear-gradient(135deg, #00d4aa, #00a888) !important; color: #0a0a0f !important; }
 html.dark-fallback .v-field { background: #0d1117 !important; }
 html.dark-fallback .v-field__outline { color: #30363d !important; }
