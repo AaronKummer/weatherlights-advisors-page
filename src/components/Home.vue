@@ -210,7 +210,18 @@
 
     <!-- ════════ MEMBER PORTAL ════════ -->
     <template v-if="currentUser">
-      <section class="portal-hero">
+      <nav class="portal-tabs" :class="{ scrolled: isScrolled }">
+        <div class="container portal-tabs-inner">
+          <button v-for="t in tabs" :key="t.id"
+                  v-show="!t.adminOnly || isAdmin"
+                  :class="['portal-tab', { active: activeTab === t.id }]"
+                  @click="activeTab = t.id">
+            {{ t.label }}
+          </button>
+        </div>
+      </nav>
+
+      <section v-show="activeTab === 'overview'" class="portal-page">
         <div class="container">
           <div class="eyebrow">Operations</div>
           <h1 class="portal-title">Good {{ greeting }}, {{ displayHandle }}.</h1>
@@ -222,10 +233,20 @@
               <div class="kpi-sub">{{ k.sub }}</div>
             </div>
           </div>
+          <div class="overview-feed">
+            <div class="finance-card-title">Recent activity</div>
+            <ul class="feed-list">
+              <li v-for="(f, i) in feed.slice(0, 4)" :key="i" class="feed-item">
+                <span class="feed-tag">{{ f.tag }}</span>
+                <span class="feed-text">{{ f.text }}</span>
+                <span class="feed-when">{{ f.when }}</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
-      <section id="clientele" class="content-section portal-section content-section-tint">
+      <section v-show="activeTab === 'clients'" id="clientele" class="portal-page">
         <div class="container">
           <div class="eyebrow">Clientele</div>
           <h2 class="section-title">Active engagements</h2>
@@ -242,7 +263,7 @@
         </div>
       </section>
 
-      <section id="revenue" class="content-section portal-section">
+      <section v-show="activeTab === 'financials'" id="revenue" class="portal-page">
         <div class="container">
           <div class="eyebrow">Financials</div>
           <h2 class="section-title">Revenue &amp; AWS spend</h2>
@@ -275,25 +296,13 @@
         </div>
       </section>
 
-      <section id="feed" class="content-section portal-section content-section-tint">
-        <div class="container">
-          <div class="eyebrow">Recent Activity</div>
-          <h2 class="section-title">What's happening across the book</h2>
-          <ul class="feed-list">
-            <li v-for="(f, i) in feed" :key="i" class="feed-item">
-              <span class="feed-tag">{{ f.tag }}</span>
-              <span class="feed-text">{{ f.text }}</span>
-              <span class="feed-when">{{ f.when }}</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section id="practice" class="content-section portal-section">
+      <section v-show="activeTab === 'training'" id="training" class="portal-page">
         <div class="container">
           <div class="eyebrow">Training Tools</div>
-          <h2 class="section-title">Practice exams</h2>
-          <p class="section-lede">700+ questions across 7 AWS certs — sharpen up between client calls.</p>
+          <h2 class="section-title">Sharpen up</h2>
+          <p class="section-lede">Practice exams, hands-on labs, and spaced-repetition flashcards.</p>
+
+          <h3 class="finance-card-title training-h3">Practice Exams</h3>
           <div class="cert-picker-grid">
             <a v-for="b in quizBanks" :key="b.code" @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#" class="cert-pill">
               <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
@@ -301,44 +310,32 @@
               <div class="cert-pill-meta">{{ b.questions }} questions</div>
             </a>
           </div>
-        </div>
-      </section>
 
-      <section id="hands-on" class="content-section portal-section content-section-tint">
-        <div class="container">
-          <div class="eyebrow">Hands-On Training</div>
-          <h2 class="section-title">Learn by doing</h2>
-          <div class="member-grid">
+          <h3 class="finance-card-title training-h3">Hands-On &amp; Memorize</h3>
+          <div class="training-tools-grid">
             <a @click.prevent="openTool('/wargame/index.html', 'WeatherLight Wargame')" href="#" class="member-card">
               <div class="member-card-tag">CTF Range</div>
               <div class="member-card-title">Wargame</div>
-              <p>25-level terminal hacking game. Linux fundamentals, recon, crypto, lateral movement. XP, ranks, achievements.</p>
-              <div class="member-card-cta">Launch Range <span aria-hidden>→</span></div>
+              <p>25-level terminal hacking game. Linux, recon, crypto, lateral movement.</p>
+              <div class="member-card-cta">Launch <span aria-hidden>→</span></div>
             </a>
             <a @click.prevent="openTool('/lessons/index.html', 'AWS Lessons')" href="#" class="member-card">
               <div class="member-card-tag">Interactive</div>
               <div class="member-card-title">AWS Lessons</div>
-              <p>38 services across 6 categories with a drag-and-drop architecture builder and inline quizzes.</p>
-              <div class="member-card-cta">Start Learning <span aria-hidden>→</span></div>
+              <p>38 services with a drag-and-drop architecture builder and inline quizzes.</p>
+              <div class="member-card-cta">Start <span aria-hidden>→</span></div>
+            </a>
+            <a @click.prevent="openTool('/flashcards/index.html', 'Flashcards')" href="#" class="member-card">
+              <div class="member-card-tag">SM-2</div>
+              <div class="member-card-title">Flashcards</div>
+              <p>180 cards across AWS services and Linux. Spaced repetition.</p>
+              <div class="member-card-cta">Open <span aria-hidden>→</span></div>
             </a>
           </div>
         </div>
       </section>
 
-      <section id="memorize" class="content-section portal-section">
-        <div class="container">
-          <div class="eyebrow">Memorize</div>
-          <h2 class="section-title">Spaced repetition</h2>
-          <a @click.prevent="openTool('/flashcards/index.html', 'Flashcards')" href="#" class="member-card member-card-wide">
-            <div class="member-card-tag">SM-2 Algorithm</div>
-            <div class="member-card-title">Flashcards</div>
-            <p>180 cards across AWS services and Linux commands. Review what you're forgetting before you forget it.</p>
-            <div class="member-card-cta">Open Deck <span aria-hidden>→</span></div>
-          </a>
-        </div>
-      </section>
-
-      <section v-if="isAdmin" id="ops" class="content-section portal-section ops-section">
+      <section v-show="activeTab === 'ops' && isAdmin" id="ops" class="portal-page ops-section">
         <div class="container">
           <div class="eyebrow ops-eyebrow">Admin · Ops Tools</div>
           <h2 class="section-title">Business analytics</h2>
@@ -602,6 +599,15 @@ export default {
       embedOpen: false,
       embedSrc: "",
       embedTitle: "",
+      // Active portal tab (post-login navigation)
+      activeTab: "overview",
+      tabs: [
+        { id: "overview",   label: "Overview" },
+        { id: "clients",    label: "Clients" },
+        { id: "financials", label: "Financials" },
+        { id: "training",   label: "Training" },
+        { id: "ops",        label: "Ops", adminOnly: true },
+      ],
       // Member portal stats (computed from localStorage in computeStats)
       stats: {
         questionsAnswered: 0,
@@ -1380,16 +1386,70 @@ export default {
 }
 
 /* ───────── Member portal ───────── */
-.portal-hero {
-  padding: 8rem 2rem 4rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f0f7fd 100%);
+/* Portal tabs (sticky below the fixed nav, only when logged in) */
+.portal-tabs {
+  position: sticky;
+  top: 70px;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid #e0eaf5;
-  scroll-snap-align: start;
-  min-height: 100vh;
-  min-height: 100dvh;
+}
+.portal-tabs-inner {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.portal-tabs-inner::-webkit-scrollbar { display: none; }
+.portal-tab {
+  flex-shrink: 0;
+  padding: 0.55rem 1.1rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  color: #4a5e7e;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.portal-tab:hover { background: #f0f7fd; color: #1a3a6e; }
+.portal-tab.active {
+  background: #1a3a6e;
+  color: #ffffff;
+  border-color: #1a3a6e;
+}
+
+/* Each tab is a single page filling the viewport — no scroll-snap, no
+   hopping between sections. Content is centered when shorter than the
+   viewport, scrolls within when taller. */
+.portal-page {
+  padding: 3rem 2rem 4rem;
+  min-height: calc(100vh - 70px - 60px);
+  min-height: calc(100dvh - 70px - 60px);
+  background: #ffffff;
+}
+
+.training-h3 {
+  margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 1rem;
+  color: #2c5aa0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.training-tools-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+.overview-feed {
+  margin-top: 3rem;
+  max-width: 760px;
 }
 .portal-hero-inner {
   display: grid;
@@ -1571,15 +1631,6 @@ export default {
 @media (max-width: 800px) {
   .finance-grid { grid-template-columns: 1fr; }
   .feed-item { grid-template-columns: 1fr; gap: 0.3rem; }
-}
-.portal-section {
-  padding: 7rem 2rem 5rem;
-  scroll-snap-align: start;
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 .member-card-wide { max-width: 100%; }
 

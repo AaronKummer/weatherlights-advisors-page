@@ -211,6 +211,20 @@ html.dark-fallback .theme-toggle:hover { border-color: rgba(0, 212, 170, 0.4) !i
 html.dark-fallback .theme-toggle .icon-sun { display: none !important; }
 html.dark-fallback .theme-toggle .icon-moon { display: block !important; }
 
+/* Portal tabs */
+html.dark-fallback .portal-tabs {
+  background: rgba(10, 10, 15, 0.92) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+html.dark-fallback .portal-tab { color: #8b949e !important; }
+html.dark-fallback .portal-tab:hover { background: rgba(0, 212, 170, 0.08) !important; color: #ffffff !important; }
+html.dark-fallback .portal-tab.active {
+  background: rgba(0, 212, 170, 0.15) !important;
+  color: #00d4aa !important;
+  border-color: rgba(0, 212, 170, 0.4) !important;
+}
+html.dark-fallback .portal-page { background: #0a0a0f !important; }
+
 /* Portal hero */
 html.dark-fallback .portal-hero {
   background: linear-gradient(180deg, #0a0a0f 0%, #0d1015 100%) !important;
