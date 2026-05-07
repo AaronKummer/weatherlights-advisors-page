@@ -16,6 +16,13 @@
             <a href="#about" class="nav-link">About</a>
             <a @click="dialog = true" class="nav-link">Contact</a>
           </template>
+          <div v-if="currentUser && isAdmin && !impersonatedAs" class="nav-view-chips">
+            <button v-for="v in viewOptions" :key="v.id"
+                    :class="['nav-chip', { active: viewAs === v.id }]"
+                    @click="setViewAs(v.id)">
+              {{ v.shortLabel || v.label }}
+            </button>
+          </div>
           <button class="theme-toggle" @click="toggleTheme" :aria-label="'Toggle theme'" title="Toggle light/dark">
             <svg viewBox="0 0 24 24" class="icon-sun" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="4"/>
@@ -229,7 +236,12 @@
 
     <!-- ════════ MEMBER PORTAL ════════ -->
     <template v-if="currentUser">
-      <nav class="portal-tabs" :class="{ scrolled: isScrolled }">
+      <div v-if="impersonatedAs" class="impersonation-banner">
+        <span class="impersonation-dot"></span>
+        <span>Impersonating <strong>{{ impersonatedAs.email }}</strong> · viewing as <strong>{{ viewAs }}</strong></span>
+        <button @click="stopImpersonation" class="impersonation-stop">Stop</button>
+      </div>
+      <nav class="portal-tabs" :class="{ scrolled: isScrolled, hasBanner: impersonatedAs }">
         <div class="container portal-tabs-inner">
           <button v-for="t in tabs" :key="t.id"
                   v-show="!t.adminOnly || isAdmin"
@@ -501,6 +513,7 @@
                 </td>
                 <td><span class="status-text" :class="{ disabled: !u.enabled }">{{ u.enabled ? u.status : 'DISABLED' }}</span></td>
                 <td class="users-table-actions">
+                  <button class="btn-link" @click="viewAsUser(u)">View as</button>
                   <button class="btn-link" @click="openEditUser(u)">Edit</button>
                   <button class="btn-link btn-danger" @click="deleteUser(u)">Delete</button>
                 </td>
@@ -878,10 +891,13 @@ export default {
       // "View as" — admin can preview the site as a client or an AWS rep.
       // Internal is the real admin experience; the others are stubs for now.
       viewAs: "internal",
+      // Impersonation — when set, the entire portal renders as if the
+      // listed user was logged in. UI-only; the actual JWT is unchanged.
+      impersonatedAs: null, // {email, displayName, role} | null
       viewOptions: [
-        { id: "internal", label: "Internal (admin)" },
-        { id: "client",   label: "Client" },
-        { id: "rep",      label: "AWS Partner Rep" },
+        { id: "internal", label: "Internal (admin)", shortLabel: "Internal" },
+        { id: "client",   label: "Client",           shortLabel: "Client view" },
+        { id: "rep",      label: "AWS Partner Rep",  shortLabel: "Rep view" },
       ],
       tabsByView: {
         internal: [
@@ -1002,6 +1018,7 @@ export default {
     // Always strip the unique-suffix dash from handles before display.
     // Storage keeps the full handle for uniqueness; users only ever see the prefix.
     displayHandle() {
+      if (this.impersonatedAs) return this.impersonatedAs.displayName;
       if (!this.currentUser) return "";
       const h = this.currentUser.handle || "";
       if (h) return h.split("-")[0];
@@ -1009,6 +1026,9 @@ export default {
       return email.split("@")[0] || "user";
     },
     isAdmin() {
+      // Real admin (for showing the impersonation controls / view chips / etc).
+      // Impersonation does NOT change isAdmin — it changes viewAs only — so an
+      // admin previewing as a client still sees the "Stop impersonating" banner.
       const e = (this.currentUser?.email || "").toLowerCase();
       const h = (this.currentUser?.handle || "").toLowerCase();
       return e.startsWith("admin@") || h.startsWith("admin");
@@ -1060,8 +1080,25 @@ export default {
     },
     goToUsers() {
       this.viewAs = "internal";
+      this.impersonatedAs = null;
       this.userMenuOpen = false;
       this.goToTab("users");
+    },
+    viewAsUser(u) {
+      const roleToView = { Admins: "internal", Clients: "client", Reps: "rep" };
+      this.impersonatedAs = {
+        email: u.email,
+        displayName: (u.displayName || u.email.split("@")[0]).split("-")[0],
+        role: u.role || "Clients",
+      };
+      this.viewAs = roleToView[u.role] || "client";
+      this.activeTab = this.tabsByView[this.viewAs][0].id;
+      if (this.embedOpen) this.closeTool();
+    },
+    stopImpersonation() {
+      this.impersonatedAs = null;
+      this.viewAs = "internal";
+      this.activeTab = this.tabsByView.internal[0].id;
     },
     // Allow short usernames like "admin" — auto-append @weatherlightadvisors.com.
     // If the input already looks like an email (has @), pass through unchanged.
@@ -1517,6 +1554,75 @@ export default {
   height: 22px;
   background: #e5edf5;
 }
+
+.nav-view-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding-right: 0.6rem;
+  border-right: 1px solid #e5edf5;
+  margin-right: 0.6rem;
+}
+.nav-chip {
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  color: #6b7c93;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.nav-chip:hover { background: #f0f7fd; color: #1a3a6e; }
+.nav-chip.active { background: #1a3a6e; color: #ffffff; border-color: #1a3a6e; }
+
+.impersonation-banner {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: linear-gradient(90deg, #ffaa44 0%, #ff7b3a 100%);
+  color: #2a1500;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  padding: 0 1rem;
+  box-shadow: 0 2px 8px rgba(255, 170, 68, 0.25);
+}
+.impersonation-banner strong { font-weight: 700; }
+.impersonation-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2a1500;
+  animation: imp-pulse 1.5s ease-in-out infinite;
+}
+@keyframes imp-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+}
+.impersonation-stop {
+  margin-left: 0.5rem;
+  padding: 0.3rem 0.85rem;
+  background: rgba(0, 0, 0, 0.15);
+  color: #2a1500;
+  border: none;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.impersonation-stop:hover { background: rgba(0, 0, 0, 0.25); }
+.portal-tabs.hasBanner { top: 108px; }
+.portal-tabs.hasBanner ~ .portal-page { padding-top: 11.5rem; }
 
 .theme-toggle {
   display: inline-flex;

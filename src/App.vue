@@ -246,6 +246,22 @@ html.dark-fallback .cert-pill-code { color: #00d4aa !important; }
 html.dark-fallback .cert-pill-name { color: #ffffff !important; }
 html.dark-fallback .cert-pill-meta { color: #8b949e !important; }
 
+/* Nav view chips — dark variant */
+html.dark-fallback .nav-view-chips { border-right-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark-fallback .nav-chip { color: #8b949e !important; }
+html.dark-fallback .nav-chip:hover { background: rgba(0, 212, 170, 0.08) !important; color: #ffffff !important; }
+html.dark-fallback .nav-chip.active { background: rgba(0, 212, 170, 0.15) !important; color: #00d4aa !important; border-color: rgba(0, 212, 170, 0.4) !important; }
+
+/* Impersonation banner — slightly cooler in dark mode but still warm enough to read */
+html.dark-fallback .impersonation-banner {
+  background: linear-gradient(90deg, #b86a00 0%, #8a3d00 100%) !important;
+  color: #ffe8c4 !important;
+  box-shadow: 0 2px 8px rgba(255, 170, 68, 0.15) !important;
+}
+html.dark-fallback .impersonation-dot { background: #ffe8c4 !important; }
+html.dark-fallback .impersonation-stop { background: rgba(255, 232, 196, 0.15) !important; color: #ffe8c4 !important; }
+html.dark-fallback .impersonation-stop:hover { background: rgba(255, 232, 196, 0.25) !important; }
+
 /* Theme toggle — dark variant: show moon, hide sun */
 html.dark-fallback .theme-toggle { border-color: rgba(255, 255, 255, 0.1) !important; color: #c9d1d9 !important; }
 html.dark-fallback .theme-toggle:hover { border-color: rgba(0, 212, 170, 0.4) !important; color: #00d4aa !important; background: rgba(0, 212, 170, 0.05) !important; }

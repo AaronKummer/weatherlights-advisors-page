@@ -222,12 +222,24 @@
   .tg-node-delete-x { stroke: #ffffff; stroke-width: 2; stroke-linecap: round; }
 
   /* Connections */
+  .tg-link-glow {
+    fill: none;
+    stroke: var(--accent-2);
+    stroke-width: 8;
+    opacity: 0.18;
+    filter: blur(4px);
+    pointer-events: none;
+  }
   .tg-link {
     fill: none;
     stroke: var(--accent-2);
     stroke-width: 2.4;
     stroke-dasharray: 6 8;
     animation: dash 1.2s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(91, 155, 213, 0.5));
+  }
+  html.theme-sapphire .tg-link {
+    filter: drop-shadow(0 0 6px rgba(0, 212, 170, 0.6));
   }
   @keyframes dash {
     to { stroke-dashoffset: -28; }
@@ -235,13 +247,258 @@
   .tg-link-hit {
     fill: none;
     stroke: transparent;
-    stroke-width: 14;
+    stroke-width: 16;
     cursor: pointer;
   }
-  .tg-link-hit:hover + .tg-link {
+  .tg-link-hit:hover ~ .tg-link {
     stroke: var(--bad);
     stroke-dasharray: none;
   }
+  .tg-link-hit:hover ~ .tg-link-glow {
+    stroke: var(--bad);
+    opacity: 0.35;
+  }
+
+  /* Connection ports (appear on node hover) */
+  .tg-port {
+    fill: var(--bg);
+    stroke: var(--accent-2);
+    stroke-width: 1.5;
+    cursor: crosshair;
+    opacity: 0;
+    transition: opacity 0.15s, fill 0.15s, transform 0.15s;
+  }
+  .tg-node-group:hover .tg-port { opacity: 1; }
+  .tg-port:hover { fill: var(--accent-2); transform: scale(1.4); }
+  .tg-port-active { opacity: 1 !important; fill: var(--accent-2) !important; }
+
+  /* Cost badge on each node */
+  .tg-cost-badge {
+    pointer-events: none;
+  }
+  .tg-cost-badge-bg { fill: var(--bg); stroke: var(--border); stroke-width: 1; }
+  .tg-cost-badge-text { font-size: 9px; font-weight: 700; fill: var(--ink-2); text-anchor: middle; dominant-baseline: central; }
+
+  /* Pulsing arrival glow on a node when a particle reaches it */
+  .tg-node-pulse {
+    fill: var(--accent-2);
+    opacity: 0;
+  }
+  .tg-node-group.arriving .tg-node-pulse {
+    animation: nodepulse 0.6s ease-out;
+  }
+  @keyframes nodepulse {
+    0%   { opacity: 0.4; r: 4; }
+    100% { opacity: 0;   r: 80; }
+  }
+
+  /* Inspector panel — slides in over the right rail when a node is selected */
+  .tg-inspector {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 280px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 1.25rem 1rem;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+  }
+  .tg-inspector.open { transform: translateX(0); }
+  .tg-inspector-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.1rem;
+  }
+  .tg-inspector-icon {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tg-inspector-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .tg-inspector-cat {
+    font-size: 0.74rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .tg-inspector-close {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .tg-inspector-close:hover { background: var(--bg); color: var(--ink); }
+
+  .tg-prop {
+    margin-bottom: 0.95rem;
+  }
+  .tg-prop-label {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.3rem;
+  }
+  .tg-prop-input,
+  .tg-prop-select {
+    width: 100%;
+    padding: 0.55rem 0.65rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.88rem;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .tg-prop-input:focus,
+  .tg-prop-select:focus {
+    outline: none;
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.18);
+  }
+  .tg-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .tg-toggle-track {
+    width: 36px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 100px;
+    position: relative;
+    transition: background 0.15s;
+  }
+  .tg-toggle-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.15s;
+  }
+  .tg-toggle.on .tg-toggle-track { background: var(--accent); }
+  .tg-toggle.on .tg-toggle-knob { transform: translateX(16px); }
+  .tg-toggle-text { font-size: 0.88rem; color: var(--ink); }
+
+  .tg-add-row {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .tg-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--ink-2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .tg-add-btn:hover { border-color: var(--accent-2); color: var(--ink); background: rgba(91, 155, 213, 0.05); }
+  .tg-add-btn-plus {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+  html.theme-sapphire .tg-add-btn-plus { color: #0a0a0f; }
+
+  .tg-cost-summary {
+    margin-top: auto;
+    padding: 1rem 0.9rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-align: center;
+  }
+  .tg-cost-summary-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+  }
+  .tg-cost-summary-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .tg-cost-summary-sub { font-size: 0.72rem; color: var(--muted); }
+
+  .tg-inspector-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 1rem;
+  }
+  .tg-mini-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .tg-mini-btn:hover { border-color: var(--accent-2); color: var(--ink); }
+  .tg-mini-btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+
+  /* Total cost in header */
+  .tg-total-cost {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    color: var(--ink-2);
+    font-weight: 600;
+  }
+  .tg-total-cost strong { color: var(--ink); }
 
   /* Objectives panel */
   .tg-objectives {
@@ -375,6 +632,9 @@
     <div class="tg-title"><span class="pre">⌁</span> AWS Training Ground</div>
     <div class="tg-scenarios" id="tg-scenarios"></div>
     <div class="tg-status" id="tg-status">Drag a service onto the canvas to begin.</div>
+    <div class="tg-total-cost" id="tg-total-cost" style="display: none;">
+      <span>~</span><strong id="tg-total-cost-value">$0</strong><span style="opacity:0.7;">/mo</span>
+    </div>
   </header>
 
   <aside class="tg-palette" id="tg-palette"></aside>
@@ -385,8 +645,29 @@
     <div class="tg-empty" id="tg-empty">
       <div class="tg-empty-icon">⌁</div>
       <div class="tg-empty-text">Drag services from the left to start designing.</div>
-      <div class="tg-empty-hint">Click a service to start a connection, then click another to wire it up.</div>
+      <div class="tg-empty-hint">Click a service to inspect it. Drag from a port (the dots on its edges) to another service to wire them up.</div>
     </div>
+
+    <aside class="tg-inspector" id="tg-inspector">
+      <div class="tg-inspector-head">
+        <div class="tg-inspector-icon" id="tg-insp-icon"></div>
+        <div>
+          <div class="tg-inspector-cat" id="tg-insp-cat"></div>
+          <div class="tg-inspector-name" id="tg-insp-name"></div>
+        </div>
+        <button class="tg-inspector-close" id="tg-insp-close" aria-label="Close">×</button>
+      </div>
+      <div id="tg-insp-body"></div>
+      <div class="tg-cost-summary" id="tg-insp-cost-summary" style="display:none;">
+        <div class="tg-cost-summary-label">Estimated cost</div>
+        <div class="tg-cost-summary-value" id="tg-insp-cost-value">~$0</div>
+        <div class="tg-cost-summary-sub">per month, light traffic</div>
+      </div>
+      <div class="tg-inspector-actions">
+        <button class="tg-mini-btn" id="tg-insp-duplicate">Duplicate</button>
+        <button class="tg-mini-btn danger" id="tg-insp-delete">Delete</button>
+      </div>
+    </aside>
   </div>
 
   <aside class="tg-objectives">
@@ -410,26 +691,137 @@
   const theme = params.get("theme") || "weatherlight";
   if (theme === "sapphire") document.documentElement.classList.add("theme-sapphire");
 
-  // ───────── Service catalog ─────────
+  // ───────── Service catalog + per-service config schema ─────────
+  // Each service has an optional `props` array (rendered in the inspector),
+  // an optional `cost(config)` fn (rough monthly $ estimate), and an
+  // optional `addOns` array (one-click "+ Add associated resource" buttons).
   const SERVICES = [
     // Compute
-    { id: "ec2",       name: "EC2",          cat: "Compute",     color: "#ec7211", abbr: "EC2" },
-    { id: "lambda",    name: "Lambda",       cat: "Compute",     color: "#fa7e14", abbr: "λ" },
-    { id: "fargate",   name: "Fargate",      cat: "Compute",     color: "#fa6818", abbr: "FAR" },
+    { id: "ec2", name: "EC2", cat: "Compute", color: "#ec7211", abbr: "EC2",
+      defaults: { instanceType: "t3.small", count: 2, multiAz: true },
+      props: [
+        { id: "instanceType", label: "Instance type", type: "select",
+          options: ["t3.micro","t3.small","t3.medium","m5.large","m5.xlarge","c5.xlarge"] },
+        { id: "count", label: "Instance count", type: "number", min: 1, max: 50 },
+        { id: "multiAz", label: "Multi-AZ", type: "toggle" },
+      ],
+      cost: (c) => ({ "t3.micro":7.5,"t3.small":15,"t3.medium":30,"m5.large":70,"m5.xlarge":140,"c5.xlarge":124 }[c.instanceType] || 15) * (c.count||1) * (c.multiAz ? 1.05 : 1),
+      addOns: [ { id: "alb", label: "+ Load balancer (ALB)" }, { id: "rds", label: "+ Database (RDS)" } ],
+    },
+    { id: "lambda", name: "Lambda", cat: "Compute", color: "#fa7e14", abbr: "λ",
+      defaults: { memory: 512, timeout: 30, reserved: false },
+      props: [
+        { id: "memory", label: "Memory (MB)", type: "select", options: [128,256,512,1024,2048,4096,10240] },
+        { id: "timeout", label: "Timeout (s)", type: "number", min: 1, max: 900 },
+        { id: "reserved", label: "Reserved concurrency", type: "toggle" },
+      ],
+      cost: (c) => Math.round(0.0000166667 * c.memory * 1000 * 30 * 100) / 100, // ~$ for 1M invocs/mo light
+      addOns: [ { id: "dynamodb", label: "+ DynamoDB table" }, { id: "sqs", label: "+ SQS queue (event source)" }, { id: "eventbridge", label: "+ EventBridge rule" } ],
+    },
+    { id: "fargate", name: "Fargate", cat: "Compute", color: "#fa6818", abbr: "FAR",
+      defaults: { vcpu: 0.5, memory: 1024, count: 2 },
+      props: [
+        { id: "vcpu", label: "vCPU", type: "select", options: [0.25, 0.5, 1, 2, 4] },
+        { id: "memory", label: "Memory (MB)", type: "select", options: [512, 1024, 2048, 4096, 8192] },
+        { id: "count", label: "Task count", type: "number", min: 1, max: 50 },
+      ],
+      cost: (c) => Math.round((c.vcpu * 29 + c.memory * 0.0033) * c.count),
+    },
     // Storage
-    { id: "s3",        name: "S3",           cat: "Storage",     color: "#3f8624", abbr: "S3" },
-    { id: "ebs",       name: "EBS",          cat: "Storage",     color: "#5a9c39", abbr: "EBS" },
+    { id: "s3", name: "S3", cat: "Storage", color: "#3f8624", abbr: "S3",
+      defaults: { storageClass: "Standard", versioning: false, replication: false, sizeGB: 100 },
+      props: [
+        { id: "storageClass", label: "Storage class", type: "select",
+          options: ["Standard","Intelligent-Tiering","Standard-IA","One Zone-IA","Glacier Instant","Glacier Flexible","Glacier Deep Archive"] },
+        { id: "sizeGB", label: "Size (GB)", type: "number", min: 1, max: 1000000 },
+        { id: "versioning", label: "Versioning", type: "toggle" },
+        { id: "replication", label: "Cross-region replication", type: "toggle" },
+      ],
+      cost: (c) => Math.round((c.sizeGB / 1000) * ({"Standard":23,"Intelligent-Tiering":25,"Standard-IA":12.5,"One Zone-IA":10,"Glacier Instant":4,"Glacier Flexible":3.6,"Glacier Deep Archive":1}[c.storageClass] || 23) * (c.replication?2:1)),
+      addOns: [ { id: "cloudfront", label: "+ CloudFront distribution" } ],
+    },
+    { id: "ebs", name: "EBS", cat: "Storage", color: "#5a9c39", abbr: "EBS",
+      defaults: { volumeType: "gp3", sizeGB: 100 },
+      props: [
+        { id: "volumeType", label: "Volume type", type: "select", options: ["gp3","gp2","io2","st1","sc1"] },
+        { id: "sizeGB", label: "Size (GB)", type: "number", min: 1, max: 16384 },
+      ],
+      cost: (c) => Math.round(c.sizeGB * ({"gp3":0.08,"gp2":0.10,"io2":0.125,"st1":0.045,"sc1":0.015}[c.volumeType] || 0.10)),
+    },
     // Database
-    { id: "rds",       name: "RDS",          cat: "Database",    color: "#3b48cc", abbr: "RDS" },
-    { id: "dynamodb",  name: "DynamoDB",     cat: "Database",    color: "#3148c6", abbr: "DDB" },
+    { id: "rds", name: "RDS", cat: "Database", color: "#3b48cc", abbr: "RDS",
+      defaults: { engine: "postgres", instance: "db.t3.medium", multiAz: true, storageGB: 100 },
+      props: [
+        { id: "engine", label: "Engine", type: "select", options: ["postgres","mysql","mariadb","oracle","sqlserver","aurora-postgres","aurora-mysql"] },
+        { id: "instance", label: "Instance", type: "select", options: ["db.t3.medium","db.t3.large","db.m5.large","db.m5.xlarge","db.r5.large","db.r5.xlarge"] },
+        { id: "storageGB", label: "Storage (GB)", type: "number", min: 20, max: 10000 },
+        { id: "multiAz", label: "Multi-AZ", type: "toggle" },
+      ],
+      cost: (c) => Math.round((({"db.t3.medium":50,"db.t3.large":100,"db.m5.large":140,"db.m5.xlarge":280,"db.r5.large":175,"db.r5.xlarge":350}[c.instance] || 100) + c.storageGB * 0.115) * (c.multiAz ? 2 : 1)),
+    },
+    { id: "dynamodb", name: "DynamoDB", cat: "Database", color: "#3148c6", abbr: "DDB",
+      defaults: { mode: "On-Demand", globalTables: false, pointInTime: false },
+      props: [
+        { id: "mode", label: "Capacity mode", type: "select", options: ["On-Demand","Provisioned"] },
+        { id: "pointInTime", label: "Point-in-time recovery", type: "toggle" },
+        { id: "globalTables", label: "Global Tables", type: "toggle" },
+      ],
+      cost: (c) => (c.mode === "On-Demand" ? 25 : 8) + (c.pointInTime ? 5 : 0) + (c.globalTables ? 30 : 0),
+    },
     // Networking
-    { id: "cloudfront",name: "CloudFront",   cat: "Networking",  color: "#bf2b2b", abbr: "CF" },
-    { id: "alb",       name: "ALB",          cat: "Networking",  color: "#bf2b2b", abbr: "ALB" },
-    { id: "apigw",     name: "API Gateway",  cat: "Networking",  color: "#bf2b2b", abbr: "API" },
-    { id: "vpc",       name: "VPC",          cat: "Networking",  color: "#a13030", abbr: "VPC" },
+    { id: "cloudfront", name: "CloudFront", cat: "Networking", color: "#bf2b2b", abbr: "CF",
+      defaults: { priceClass: "100", waf: false },
+      props: [
+        { id: "priceClass", label: "Price class", type: "select", options: ["100 (US/EU)","200 (+Asia)","All edges"] },
+        { id: "waf", label: "Attach AWS WAF", type: "toggle" },
+      ],
+      cost: (c) => 12 + (c.waf ? 20 : 0),
+    },
+    { id: "alb", name: "ALB", cat: "Networking", color: "#bf2b2b", abbr: "ALB",
+      defaults: { scheme: "internet-facing", waf: false },
+      props: [
+        { id: "scheme", label: "Scheme", type: "select", options: ["internet-facing","internal"] },
+        { id: "waf", label: "Attach AWS WAF", type: "toggle" },
+      ],
+      cost: (c) => 22 + (c.waf ? 20 : 0),
+      addOns: [ { id: "ec2", label: "+ EC2 fleet (target group)" } ],
+    },
+    { id: "apigw", name: "API Gateway", cat: "Networking", color: "#bf2b2b", abbr: "API",
+      defaults: { type: "HTTP", auth: "JWT", throttle: 10000 },
+      props: [
+        { id: "type", label: "API type", type: "select", options: ["HTTP","REST","WebSocket"] },
+        { id: "auth", label: "Authorizer", type: "select", options: ["None","JWT","Lambda","IAM"] },
+        { id: "throttle", label: "Throttle (req/s)", type: "number", min: 1, max: 10000 },
+      ],
+      cost: (c) => c.type === "REST" ? 35 : 10,
+      addOns: [ { id: "lambda", label: "+ Lambda backend" } ],
+    },
+    { id: "vpc", name: "VPC", cat: "Networking", color: "#a13030", abbr: "VPC",
+      defaults: { cidr: "10.0.0.0/16", azs: 3, natGateways: 1 },
+      props: [
+        { id: "cidr", label: "CIDR block", type: "text" },
+        { id: "azs", label: "AZs", type: "number", min: 1, max: 6 },
+        { id: "natGateways", label: "NAT Gateways", type: "number", min: 0, max: 6 },
+      ],
+      cost: (c) => c.natGateways * 33, // NAT cost dominates
+    },
     // Integration
-    { id: "sqs",       name: "SQS",          cat: "Integration", color: "#cc4d8a", abbr: "SQS" },
-    { id: "eventbridge",name:"EventBridge",  cat: "Integration", color: "#bf3b8a", abbr: "EVB" },
+    { id: "sqs", name: "SQS", cat: "Integration", color: "#cc4d8a", abbr: "SQS",
+      defaults: { type: "Standard", dlq: false, fifo: false },
+      props: [
+        { id: "type", label: "Queue type", type: "select", options: ["Standard","FIFO"] },
+        { id: "dlq", label: "Dead-letter queue", type: "toggle" },
+      ],
+      cost: () => 1,
+    },
+    { id: "eventbridge", name: "EventBridge", cat: "Integration", color: "#bf3b8a", abbr: "EVB",
+      defaults: { bus: "default", schemaDiscovery: false },
+      props: [
+        { id: "bus", label: "Bus name", type: "text" },
+        { id: "schemaDiscovery", label: "Schema discovery", type: "toggle" },
+      ],
+      cost: () => 2,
+    },
   ];
   const SVC = Object.fromEntries(SERVICES.map(s => [s.id, s]));
 
@@ -490,13 +882,15 @@
   // ───────── State ─────────
   const state = {
     scenarioId: SCENARIOS[0].id,
-    nodes: [],          // {uid, svcId, x, y}
+    nodes: [],          // {uid, svcId, x, y, config}
     edges: [],          // {uid, from: nodeUid, to: nodeUid}
-    connectFrom: null,  // nodeUid currently picked as connection source
+    selectedNodeUid: null, // node currently shown in inspector
     drag: null,
-    flowingUntil: 0,    // timestamp when celebratory flow stops
+    portDrag: null,     // {fromUid, x, y} when dragging from a port
+    flowingUntil: 0,
+    pulses: {},         // nodeUid -> timestamp until which it pulses
   };
-  const NODE_W = 120, NODE_H = 56;
+  const NODE_W = 130, NODE_H = 60;
 
   // ───────── DOM refs ─────────
   const $ = (id) => document.getElementById(id);
@@ -546,8 +940,9 @@
     state.scenarioId = id;
     state.nodes = [];
     state.edges = [];
-    state.connectFrom = null;
+    state.selectedNodeUid = null;
     state.flowingUntil = 0;
+    closeInspector();
     const sc = currentScenario();
     $("tg-scenario-title").textContent = sc.title;
     $("tg-scenario-brief").textContent = sc.brief;
@@ -616,32 +1011,57 @@
 
     // edges first so nodes overlay them
     state.edges.forEach(e => drawEdge(e));
+    drawDragWire();
     state.nodes.forEach(n => drawNode(n));
     renderObjectives();
+    updateTotalCost();
+    renderInspector();
+  }
+
+  function updateTotalCost() {
+    const total = state.nodes.reduce((acc, n) => {
+      const svc = SVC[n.svcId];
+      if (!svc.cost) return acc;
+      return acc + svc.cost(n.config || svc.defaults || {});
+    }, 0);
+    const el = $("tg-total-cost");
+    if (state.nodes.length === 0) { el.style.display = "none"; return; }
+    el.style.display = "";
+    $("tg-total-cost-value").textContent = `$${Math.round(total)}`;
   }
 
   function nodeCenter(n) {
     return { x: n.x + NODE_W / 2, y: n.y + NODE_H / 2 };
   }
 
+  function edgePath(a, b) {
+    const dx = b.x - a.x;
+    const cx1 = a.x + dx * 0.5, cy1 = a.y;
+    const cx2 = a.x + dx * 0.5, cy2 = b.y;
+    return `M ${a.x} ${a.y} C ${cx1} ${cy1} ${cx2} ${cy2} ${b.x} ${b.y}`;
+  }
+
   function drawEdge(e) {
     const from = state.nodes.find(n => n.uid === e.from);
     const to   = state.nodes.find(n => n.uid === e.to);
     if (!from || !to) return;
-    const a = nodeCenter(from);
-    const b = nodeCenter(to);
-    const dx = b.x - a.x;
-    const cx1 = a.x + dx * 0.5, cy1 = a.y;
-    const cx2 = a.x + dx * 0.5, cy2 = b.y;
-    const d = `M ${a.x} ${a.y} C ${cx1} ${cy1} ${cx2} ${cy2} ${b.x} ${b.y}`;
+    const a = { x: from.x + NODE_W, y: from.y + NODE_H / 2 };       // right port of source
+    const b = { x: to.x, y: to.y + NODE_H / 2 };                     // left port of target
+    const d = edgePath(a, b);
 
     const ns = "http://www.w3.org/2000/svg";
+    // glow underlay
+    const glow = document.createElementNS(ns, "path");
+    glow.setAttribute("d", d);
+    glow.setAttribute("class", "tg-link-glow");
+    svgEl.appendChild(glow);
+    // hit area for delete
     const hit = document.createElementNS(ns, "path");
     hit.setAttribute("d", d);
     hit.setAttribute("class", "tg-link-hit");
     hit.addEventListener("click", () => removeEdge(e.uid));
     svgEl.appendChild(hit);
-
+    // visible animated dashed stroke
     const path = document.createElementNS(ns, "path");
     path.setAttribute("d", d);
     path.setAttribute("class", "tg-link");
@@ -650,16 +1070,42 @@
     svgEl.appendChild(path);
   }
 
+  function drawDragWire() {
+    if (!state.portDrag) return;
+    const ns = "http://www.w3.org/2000/svg";
+    const from = state.nodes.find(n => n.uid === state.portDrag.fromUid);
+    if (!from) return;
+    const a = { x: from.x + NODE_W, y: from.y + NODE_H / 2 };
+    const b = { x: state.portDrag.x, y: state.portDrag.y };
+    const d = edgePath(a, b);
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("class", "tg-link");
+    path.setAttribute("opacity", "0.6");
+    svgEl.appendChild(path);
+  }
+
   function drawNode(n) {
     const ns = "http://www.w3.org/2000/svg";
     const svc = SVC[n.svcId];
     const g = document.createElementNS(ns, "g");
-    g.setAttribute("class", "tg-node-group" + (state.connectFrom === n.uid ? " connecting" : ""));
+    const arriving = state.pulses[n.uid] && performance.now() < state.pulses[n.uid];
+    const cls = ["tg-node-group"];
+    if (arriving) cls.push("arriving");
+    g.setAttribute("class", cls.join(" "));
     g.setAttribute("transform", `translate(${n.x} ${n.y})`);
     g.dataset.uid = n.uid;
 
+    // Pulse aura (only animates when arriving class is on)
+    const pulse = document.createElementNS(ns, "circle");
+    pulse.setAttribute("class", "tg-node-pulse");
+    pulse.setAttribute("cx", NODE_W / 2);
+    pulse.setAttribute("cy", NODE_H / 2);
+    pulse.setAttribute("r", 4);
+    g.appendChild(pulse);
+
     const rect = document.createElementNS(ns, "rect");
-    rect.setAttribute("class", "tg-node-rect");
+    rect.setAttribute("class", "tg-node-rect" + (state.selectedNodeUid === n.uid ? " selected" : ""));
     rect.setAttribute("width", NODE_W);
     rect.setAttribute("height", NODE_H);
     rect.setAttribute("rx", 10);
@@ -668,7 +1114,7 @@
 
     // Icon block
     const iconBg = document.createElementNS(ns, "rect");
-    iconBg.setAttribute("x", 10); iconBg.setAttribute("y", 14);
+    iconBg.setAttribute("x", 10); iconBg.setAttribute("y", 16);
     iconBg.setAttribute("width", 28); iconBg.setAttribute("height", 28);
     iconBg.setAttribute("rx", 6);
     iconBg.setAttribute("fill", svc.color);
@@ -676,16 +1122,52 @@
 
     const iconTxt = document.createElementNS(ns, "text");
     iconTxt.setAttribute("class", "tg-node-icon-text");
-    iconTxt.setAttribute("x", 24); iconTxt.setAttribute("y", 28);
+    iconTxt.setAttribute("x", 24); iconTxt.setAttribute("y", 30);
     iconTxt.textContent = svc.abbr;
     g.appendChild(iconTxt);
 
     // Label
     const label = document.createElementNS(ns, "text");
     label.setAttribute("class", "tg-node-label");
-    label.setAttribute("x", 48); label.setAttribute("y", 33);
+    label.setAttribute("x", 48); label.setAttribute("y", 30);
     label.textContent = svc.name;
     g.appendChild(label);
+
+    // Cost badge below the label
+    if (svc.cost) {
+      const costNum = Math.round(svc.cost(n.config || svc.defaults || {}));
+      const badge = document.createElementNS(ns, "g");
+      badge.setAttribute("class", "tg-cost-badge");
+      badge.setAttribute("transform", `translate(48 41)`);
+      const bg = document.createElementNS(ns, "rect");
+      bg.setAttribute("class", "tg-cost-badge-bg");
+      bg.setAttribute("x", 0); bg.setAttribute("y", 0);
+      bg.setAttribute("width", 50); bg.setAttribute("height", 12);
+      bg.setAttribute("rx", 6);
+      badge.appendChild(bg);
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("class", "tg-cost-badge-text");
+      txt.setAttribute("x", 25); txt.setAttribute("y", 7);
+      txt.textContent = `~$${costNum}/mo`;
+      badge.appendChild(txt);
+      g.appendChild(badge);
+    }
+
+    // Connection ports (right edge = output, left edge = input)
+    const portR = document.createElementNS(ns, "circle");
+    portR.setAttribute("class", "tg-port");
+    portR.setAttribute("cx", NODE_W); portR.setAttribute("cy", NODE_H / 2);
+    portR.setAttribute("r", 5);
+    portR.dataset.dir = "out";
+    portR.addEventListener("pointerdown", (e) => onPortPointerDown(e, n, "out"));
+    g.appendChild(portR);
+
+    const portL = document.createElementNS(ns, "circle");
+    portL.setAttribute("class", "tg-port");
+    portL.setAttribute("cx", 0); portL.setAttribute("cy", NODE_H / 2);
+    portL.setAttribute("r", 5);
+    portL.dataset.dir = "in";
+    g.appendChild(portL);
 
     // Delete handle (top-right)
     const del = document.createElementNS(ns, "g");
@@ -709,7 +1191,7 @@
     del.addEventListener("click", (e) => { e.stopPropagation(); removeNode(n.uid); });
     g.appendChild(del);
 
-    // Drag + click-to-connect
+    // Drag + click for inspector
     g.addEventListener("pointerdown", (e) => onNodePointerDown(e, n));
     svgEl.appendChild(g);
   }
@@ -717,6 +1199,7 @@
   // ───────── Node interactions ─────────
   function onNodePointerDown(e, n) {
     e.preventDefault();
+    e.stopPropagation();
     const start = { x: e.clientX, y: e.clientY, nodeX: n.x, nodeY: n.y, moved: false };
     state.drag = { uid: n.uid, ...start };
     const onMove = (ev) => {
@@ -735,41 +1218,57 @@
       window.removeEventListener("pointerup", onUp);
       const wasDragged = state.drag?.moved;
       state.drag = null;
-      if (!wasDragged) onNodeClick(n);
+      if (!wasDragged) openInspector(n);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
   }
 
-  function onNodeClick(n) {
-    if (state.connectFrom == null) {
-      state.connectFrom = n.uid;
-      setStatus(`Connecting from <strong>${SVC[n.svcId].name}</strong>… click another service to wire it up.`);
+  // Drag-from-port to create a connection
+  function onPortPointerDown(e, n, dir) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dir !== "out") return; // only allow drags from output (right) port
+    const r = wrapEl.getBoundingClientRect();
+    state.portDrag = { fromUid: n.uid, x: e.clientX - r.left, y: e.clientY - r.top };
+    const onMove = (ev) => {
+      state.portDrag.x = ev.clientX - r.left;
+      state.portDrag.y = ev.clientY - r.top;
       render();
-      return;
-    }
-    if (state.connectFrom === n.uid) {
-      // cancel
-      state.connectFrom = null;
-      setStatus("Connection cancelled.");
+    };
+    const onUp = (ev) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      // figure out which node the cursor is over
+      const target = topNodeAt(ev.clientX - r.left, ev.clientY - r.top);
+      if (target && target.uid !== state.portDrag.fromUid) {
+        const exists = state.edges.some(e => e.from === state.portDrag.fromUid && e.to === target.uid);
+        if (!exists) {
+          state.edges.push({ uid: uid(), from: state.portDrag.fromUid, to: target.uid });
+          const fromSvc = SVC[state.nodes.find(x => x.uid === state.portDrag.fromUid).svcId].name;
+          setStatus(`Wired ${fromSvc} → ${SVC[target.svcId].name}.`, true);
+        }
+      }
+      state.portDrag = null;
       render();
-      return;
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  function topNodeAt(x, y) {
+    // search in reverse (last drawn = topmost)
+    for (let i = state.nodes.length - 1; i >= 0; i--) {
+      const n = state.nodes[i];
+      if (x >= n.x && x <= n.x + NODE_W && y >= n.y && y <= n.y + NODE_H) return n;
     }
-    // Create connection
-    const exists = state.edges.some(e => e.from === state.connectFrom && e.to === n.uid);
-    if (!exists) {
-      state.edges.push({ uid: uid(), from: state.connectFrom, to: n.uid });
-      const fromSvc = SVC[state.nodes.find(x => x.uid === state.connectFrom).svcId].name;
-      setStatus(`Wired ${fromSvc} → ${SVC[n.svcId].name}.`, true);
-    }
-    state.connectFrom = null;
-    render();
+    return null;
   }
 
   function removeNode(uid) {
     state.nodes = state.nodes.filter(n => n.uid !== uid);
     state.edges = state.edges.filter(e => e.from !== uid && e.to !== uid);
-    if (state.connectFrom === uid) state.connectFrom = null;
+    if (state.selectedNodeUid === uid) closeInspector();
     render();
   }
   function removeEdge(uid) {
@@ -786,9 +1285,136 @@
     const r = wrapEl.getBoundingClientRect();
     const x = Math.max(0, Math.min(r.width - NODE_W, e.clientX - r.left - NODE_W / 2));
     const y = Math.max(0, Math.min(r.height - NODE_H, e.clientY - r.top - NODE_H / 2));
-    state.nodes.push({ uid: uid(), svcId, x, y });
-    render();
+    addNode(svcId, x, y);
   });
+
+  function addNode(svcId, x, y) {
+    const svc = SVC[svcId];
+    const node = { uid: uid(), svcId, x, y, config: { ...(svc.defaults || {}) } };
+    state.nodes.push(node);
+    render();
+    return node;
+  }
+
+  // ───────── Inspector ─────────
+  const insp = $("tg-inspector");
+  function openInspector(n) {
+    state.selectedNodeUid = n.uid;
+    insp.classList.add("open");
+    render();
+  }
+  function closeInspector() {
+    state.selectedNodeUid = null;
+    insp.classList.remove("open");
+  }
+  $("tg-insp-close").addEventListener("click", closeInspector);
+  $("tg-insp-delete").addEventListener("click", () => {
+    if (state.selectedNodeUid != null) {
+      const u = state.selectedNodeUid;
+      closeInspector();
+      removeNode(u);
+    }
+  });
+  $("tg-insp-duplicate").addEventListener("click", () => {
+    const n = state.nodes.find(x => x.uid === state.selectedNodeUid);
+    if (!n) return;
+    const dup = addNode(n.svcId, Math.min(wrapEl.clientWidth - NODE_W, n.x + 24), Math.min(wrapEl.clientHeight - NODE_H, n.y + 24));
+    dup.config = { ...n.config };
+    openInspector(dup);
+  });
+
+  function renderInspector() {
+    if (state.selectedNodeUid == null) return;
+    const n = state.nodes.find(x => x.uid === state.selectedNodeUid);
+    if (!n) { closeInspector(); return; }
+    const svc = SVC[n.svcId];
+    $("tg-insp-icon").textContent = svc.abbr;
+    $("tg-insp-icon").style.background = svc.color;
+    $("tg-insp-name").textContent = svc.name;
+    $("tg-insp-cat").textContent = svc.cat;
+
+    const body = $("tg-insp-body");
+    body.innerHTML = "";
+
+    (svc.props || []).forEach(p => {
+      const row = document.createElement("div");
+      row.className = "tg-prop";
+      const label = document.createElement("label");
+      label.className = "tg-prop-label";
+      label.textContent = p.label;
+      row.appendChild(label);
+
+      let input;
+      if (p.type === "select") {
+        input = document.createElement("select");
+        input.className = "tg-prop-select";
+        p.options.forEach(opt => {
+          const o = document.createElement("option");
+          o.value = String(opt); o.textContent = String(opt);
+          if (String(n.config[p.id]) === String(opt)) o.selected = true;
+          input.appendChild(o);
+        });
+        input.addEventListener("change", () => {
+          const raw = input.value;
+          n.config[p.id] = isFinite(+raw) && /^-?\d+(\.\d+)?$/.test(raw) ? +raw : raw;
+          render();
+        });
+      } else if (p.type === "number") {
+        input = document.createElement("input");
+        input.type = "number"; input.className = "tg-prop-input";
+        if (p.min != null) input.min = p.min;
+        if (p.max != null) input.max = p.max;
+        input.value = n.config[p.id];
+        input.addEventListener("input", () => {
+          let v = +input.value; if (p.min != null) v = Math.max(p.min, v); if (p.max != null) v = Math.min(p.max, v);
+          n.config[p.id] = v; render();
+        });
+      } else if (p.type === "toggle") {
+        const wrap = document.createElement("div");
+        wrap.className = "tg-toggle" + (n.config[p.id] ? " on" : "");
+        wrap.innerHTML = '<span class="tg-toggle-track"><span class="tg-toggle-knob"></span></span><span class="tg-toggle-text">' + (n.config[p.id] ? "Enabled" : "Disabled") + '</span>';
+        wrap.addEventListener("click", () => { n.config[p.id] = !n.config[p.id]; render(); });
+        input = wrap;
+      } else { // text
+        input = document.createElement("input");
+        input.type = "text"; input.className = "tg-prop-input";
+        input.value = n.config[p.id] || "";
+        input.addEventListener("input", () => { n.config[p.id] = input.value; render(); });
+      }
+      row.appendChild(input);
+      body.appendChild(row);
+    });
+
+    if (svc.addOns?.length) {
+      const h = document.createElement("div");
+      h.style.cssText = "font-size:0.74rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:1.1rem 0 0.4rem;";
+      h.textContent = "Add associated";
+      body.appendChild(h);
+      const wrap = document.createElement("div");
+      wrap.className = "tg-add-row";
+      svc.addOns.forEach(addOn => {
+        const b = document.createElement("button");
+        b.className = "tg-add-btn";
+        b.innerHTML = `<span class="tg-add-btn-plus">+</span><span>${addOn.label.replace(/^\+\s*/, "")}</span>`;
+        b.addEventListener("click", () => {
+          // Place the new node nearby and auto-wire to/from this node based on direction.
+          const newNode = addNode(addOn.id, Math.min(wrapEl.clientWidth - NODE_W, n.x + 200), n.y);
+          state.edges.push({ uid: uid(), from: n.uid, to: newNode.uid });
+          render();
+        });
+        wrap.appendChild(b);
+      });
+      body.appendChild(wrap);
+    }
+
+    if (svc.cost) {
+      const cost = Math.round(svc.cost(n.config));
+      $("tg-insp-cost-summary").style.display = "";
+      $("tg-insp-cost-value").textContent = `~$${cost}`;
+    } else {
+      $("tg-insp-cost-summary").style.display = "none";
+    }
+  }
 
   // ───────── Validate / animated celebration ─────────
   function validate() {
@@ -855,9 +1481,18 @@
       if (!from || !to) { particles.splice(i, 1); continue; }
       const elapsed = now - p.born;
       const t = elapsed / p.dur;
-      if (t >= 1) { particles.splice(i, 1); continue; }
-      const a = nodeCenter(from);
-      const b = nodeCenter(to);
+      if (t >= 1) {
+        // particle reached the target — pulse the destination node
+        state.pulses[p.toUid] = now + 600;
+        const g = svgEl.querySelector(`g.tg-node-group[data-uid="${p.toUid}"]`);
+        if (g) {
+          g.classList.remove("arriving"); void g.getBoundingClientRect(); g.classList.add("arriving");
+        }
+        particles.splice(i, 1);
+        continue;
+      }
+      const a = { x: from.x + NODE_W, y: from.y + NODE_H / 2 };
+      const b = { x: to.x, y: to.y + NODE_H / 2 };
       const dx = b.x - a.x;
       const cx1 = a.x + dx * 0.5, cy1 = a.y;
       const cx2 = a.x + dx * 0.5, cy2 = b.y;
