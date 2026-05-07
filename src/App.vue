@@ -83,7 +83,7 @@ html.dark-fallback .wl-logo polygon { fill: #00d4aa !important; }
 html.dark-fallback .wl-logo text tspan[fill="#1a3a6e"] { fill: #ffffff !important; }
 html.dark-fallback .wl-logo text tspan[fill="#5b9bd5"] { fill: #00d4aa !important; }
 html.dark-fallback .wl-logo text[fill="#6b7c93"] { fill: #8b949e !important; }
-html.dark-fallback .wl-logo line { stroke: #00d4aa !important; }
+html.dark-fallback .wl-logo line { display: none !important; }
 
 /* Hero text + buttons */
 html.dark-fallback .hero-title { color: #ffffff !important; }
