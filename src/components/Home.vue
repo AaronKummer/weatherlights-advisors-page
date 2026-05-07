@@ -412,10 +412,29 @@
             </svg>
           </a>
 
+          <div class="path-picker">
+            <div class="path-picker-head">
+              <span class="path-picker-label">Your path</span>
+              <span class="path-picker-tagline">{{ paths.find(p => p.id === selectedPath)?.tagline }}</span>
+            </div>
+            <div class="path-pills">
+              <button v-for="p in paths" :key="p.id"
+                      :class="['path-pill', { active: selectedPath === p.id }]"
+                      @click="setPath(p.id)">
+                {{ p.label }}
+              </button>
+            </div>
+          </div>
+
           <h3 class="finance-card-title training-h3">Practice Exams</h3>
           <div class="cert-picker-grid">
-            <a v-for="b in quizBanks" :key="b.code" @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#" class="cert-pill">
-              <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
+            <a v-for="b in quizBanks" :key="b.code"
+               @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#"
+               :class="['cert-pill', { 'off-path': !isPathCert(b.code) }]">
+              <div class="cert-pill-row">
+                <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
+                <span v-if="isPathCert(b.code) && selectedPath !== 'explorer'" class="cert-pill-tag">On path</span>
+              </div>
               <div class="cert-pill-name">{{ b.name }}</div>
               <div class="cert-pill-meta">{{ b.questions }} questions</div>
             </a>
@@ -1018,13 +1037,26 @@ export default {
 
       // Quiz banks shown in the cert picker
       quizBanks: [
-        { code: "clf-c02", name: "Cloud Practitioner",            questions: 100 },
-        { code: "saa-c03", name: "Solutions Architect Associate", questions: 200 },
-        { code: "dea-c01", name: "Data Engineer Associate",       questions: 60  },
-        { code: "dop-c02", name: "DevOps Engineer Pro",           questions: 120 },
+        { code: "clf-c02", name: "Cloud Practitioner",            questions: 60  },
+        { code: "saa-c03", name: "Solutions Architect Associate", questions: 80  },
+        { code: "dea-c01", name: "Data Engineer Associate",       questions: 70  },
+        { code: "dop-c02", name: "DevOps Engineer Pro",           questions: 80  },
         { code: "sap-c02", name: "Solutions Architect Pro",       questions: 80  },
-        { code: "ans-c01", name: "Advanced Networking",           questions: 60  },
+        { code: "ans-c01", name: "Advanced Networking",           questions: 80  },
         { code: "scs-c02", name: "Security Specialty",            questions: 80  },
+      ],
+
+      // Certification paths — pick one to highlight relevant certs and tools.
+      // Each path lists certs in study order, the foundational entry point
+      // (always CLF for newcomers), and a description.
+      selectedPath: "explorer",
+      paths: [
+        { id: "explorer",  label: "Explorer",            tagline: "All certs visible — pick as you go", certs: ["clf-c02","saa-c03","dea-c01","dop-c02","sap-c02","ans-c01","scs-c02"] },
+        { id: "architect", label: "Solutions Architect", tagline: "Build resilient, scalable AWS systems",     certs: ["clf-c02","saa-c03","sap-c02"] },
+        { id: "devops",    label: "DevOps Engineer",     tagline: "Automation, CI/CD, observability at scale", certs: ["clf-c02","saa-c03","dop-c02"] },
+        { id: "security",  label: "Security Specialist", tagline: "IAM, threat detection, data protection",    certs: ["clf-c02","saa-c03","scs-c02"] },
+        { id: "data",      label: "Data Engineer",       tagline: "Pipelines, lakehouses, analytics on AWS",   certs: ["clf-c02","dea-c01","sap-c02"] },
+        { id: "networking",label: "Networking Specialist", tagline: "VPC design, hybrid, edge",                certs: ["clf-c02","saa-c03","ans-c01"] },
       ],
 
       // Auth modals
@@ -1085,6 +1117,10 @@ export default {
     document.addEventListener('click', this.handleOutsideClick);
     document.addEventListener('keydown', this.handleEsc);
     this.applyStoredThemeOverride();
+    try {
+      const p = localStorage.getItem("wl-path");
+      if (p && this.paths.some(x => x.id === p)) this.selectedPath = p;
+    } catch (_) {}
     await this.loadCurrentUser();
     this.computeStats();
     if (this.currentUser) this.loadOps();
@@ -1103,6 +1139,14 @@ export default {
       if (this.embedOpen) this.closeTool();
       this.activeTab = id;
       if (id === "users" && this.isAdmin && !this.userList.length) this.loadUsers();
+    },
+    setPath(id) {
+      this.selectedPath = id;
+      try { localStorage.setItem("wl-path", id); } catch (_) {}
+    },
+    isPathCert(code) {
+      const path = this.paths.find(p => p.id === this.selectedPath);
+      return !path || path.id === "explorer" || path.certs.includes(code);
     },
     setViewAs(id) {
       this.viewAs = id;
@@ -2115,6 +2159,54 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.85rem;
 }
+.path-picker {
+  margin: 1rem 0 2rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f0f7fd 0%, #ffffff 100%);
+  border: 1px solid #d8e6f3;
+  border-radius: 12px;
+}
+.path-picker-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+.path-picker-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b7c93;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.path-picker-tagline {
+  font-size: 0.88rem;
+  color: #4a5e7e;
+  font-style: italic;
+}
+.path-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.path-pill {
+  padding: 0.45rem 0.95rem;
+  background: #ffffff;
+  border: 1px solid #d8e6f3;
+  border-radius: 100px;
+  color: #4a5e7e;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.path-pill:hover { background: #eef5fc; color: #1a3a6e; }
+.path-pill.active {
+  background: #1a3a6e;
+  color: #ffffff;
+  border-color: #1a3a6e;
+}
+
 .cert-pill {
   display: block;
   padding: 1rem 1.15rem;
@@ -2123,7 +2215,21 @@ export default {
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s, filter 0.15s;
+}
+.cert-pill.off-path { opacity: 0.45; filter: grayscale(0.5); }
+.cert-pill.off-path:hover { opacity: 0.8; filter: none; }
+.cert-pill-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.cert-pill-tag {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1a8a4f;
+  background: rgba(40, 200, 120, 0.12);
+  border-radius: 100px;
+  padding: 0.15rem 0.5rem;
 }
 .cert-pill:hover {
   transform: translateY(-2px);

@@ -255,6 +255,24 @@ html.dark-fallback .cert-pill:hover { border-color: rgba(0, 212, 170, 0.4) !impo
 html.dark-fallback .cert-pill-code { color: #00d4aa !important; }
 html.dark-fallback .cert-pill-name { color: #ffffff !important; }
 html.dark-fallback .cert-pill-meta { color: #8b949e !important; }
+html.dark-fallback .path-picker {
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(0, 212, 170, 0.2) !important;
+}
+html.dark-fallback .path-picker-label { color: #8b949e !important; }
+html.dark-fallback .path-picker-tagline { color: #c9d1d9 !important; }
+html.dark-fallback .path-pill {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #8b949e !important;
+}
+html.dark-fallback .path-pill:hover { background: rgba(0, 212, 170, 0.08) !important; color: #ffffff !important; }
+html.dark-fallback .path-pill.active {
+  background: rgba(0, 212, 170, 0.15) !important;
+  color: #00d4aa !important;
+  border-color: rgba(0, 212, 170, 0.4) !important;
+}
+html.dark-fallback .cert-pill-tag { background: rgba(40, 200, 120, 0.18) !important; color: #4cdb8c !important; }
 
 /* Nav view chips — dark variant */
 html.dark-fallback .nav-view-chips { border-right-color: rgba(255, 255, 255, 0.08) !important; }
