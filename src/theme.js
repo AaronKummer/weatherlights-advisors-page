@@ -25,6 +25,16 @@ export function isDarkReaderActive() {
 }
 
 export function applyDarkFallback() {
+  // Tell Dark Reader to stop processing — we're taking over with our own
+  // deliberate dark theme. Without this, DR would keep re-inverting on top
+  // of our sapphire-nexus styles and produce a mess.
+  if (!document.querySelector('meta[name="darkreader-lock"]')) {
+    const meta = document.createElement("meta");
+    meta.name = "darkreader-lock";
+    document.head.appendChild(meta);
+  }
+  document.documentElement.setAttribute("data-darkreader-ignore", "");
+  document.body.setAttribute("data-darkreader-ignore", "");
   document.documentElement.classList.add("dark-fallback");
 }
 
