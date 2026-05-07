@@ -30,8 +30,8 @@
           </template>
           <template v-else>
             <div class="user-pill" @click.stop="userMenuOpen = !userMenuOpen">
-              <span class="user-avatar">{{ (currentUser.handle || currentUser.email || '?').charAt(0).toUpperCase() }}</span>
-              <span class="user-handle">{{ currentUser.handle || currentUser.email }}</span>
+              <span class="user-avatar">{{ (displayHandle || '?').charAt(0).toUpperCase() }}</span>
+              <span class="user-handle">{{ displayHandle }}</span>
               <div v-if="userMenuOpen" class="user-menu">
                 <div class="user-menu-email">{{ currentUser.email }}</div>
                 <button @click="onLogout">Sign out</button>
@@ -78,7 +78,7 @@
     <section v-if="currentUser" id="members" class="content-section members-section">
       <div class="container">
         <div class="eyebrow">Members</div>
-        <h2 class="section-title">Welcome aboard, {{ currentUser.handle || currentUser.email }}.</h2>
+        <h2 class="section-title">Welcome aboard, {{ displayHandle }}.</h2>
         <p class="section-lede">
           Your training range is open: practice exams for every AWS certification, hands-on AWS lessons,
           spaced-repetition flashcards, and a 25-level hacking wargame.
@@ -213,7 +213,7 @@
       <section class="portal-hero">
         <div class="container">
           <div class="eyebrow">Operations</div>
-          <h1 class="portal-title">Good {{ greeting }}, {{ currentUser.handle || currentUser.email }}.</h1>
+          <h1 class="portal-title">Good {{ greeting }}, {{ displayHandle }}.</h1>
           <p class="portal-sub">Here's where the business stands today.</p>
           <div class="kpi-grid">
             <div v-for="k in kpis" :key="k.label" class="kpi-card">
@@ -685,6 +685,15 @@ export default {
     };
   },
   computed: {
+    // Always strip the unique-suffix dash from handles before display.
+    // Storage keeps the full handle for uniqueness; users only ever see the prefix.
+    displayHandle() {
+      if (!this.currentUser) return "";
+      const h = this.currentUser.handle || "";
+      if (h) return h.split("-")[0];
+      const email = this.currentUser.email || "";
+      return email.split("@")[0] || "user";
+    },
     isAdmin() {
       const e = (this.currentUser?.email || "").toLowerCase();
       const h = (this.currentUser?.handle || "").toLowerCase();
