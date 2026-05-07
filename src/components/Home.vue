@@ -36,6 +36,15 @@
               <span class="user-handle">{{ displayHandle }}</span>
               <div v-if="userMenuOpen" class="user-menu">
                 <div class="user-menu-email">{{ currentUser.email }}</div>
+                <button v-if="isAdmin" class="user-menu-shortcut" @click="goToUsers">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="user-menu-icon">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Manage users
+                </button>
                 <div v-if="isAdmin" class="user-menu-section">
                   <div class="user-menu-label">View as</div>
                   <button v-for="v in viewOptions" :key="v.id"
@@ -396,47 +405,52 @@
               <div class="ops-meta">most recent submission</div>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div class="users-panel">
-            <div class="users-panel-head">
-              <h3 class="finance-card-title" style="margin: 0;">User management</h3>
-              <div class="users-panel-actions">
-                <button class="btn-secondary btn-sm" @click="loadUsers" :disabled="userListLoading">
-                  {{ userListLoading ? "Loading…" : "Refresh" }}
-                </button>
-                <button class="btn-primary btn-sm" @click="openCreateUser">+ New user</button>
-              </div>
+      <section v-show="!embedOpen && activeTab === 'users' && isAdmin" id="users" class="portal-page">
+        <div class="container">
+          <div class="users-panel-head" style="margin-bottom: 2rem;">
+            <div>
+              <h2 class="section-title" style="margin-bottom: 0.5rem;">User management</h2>
+              <p class="section-lede" style="margin: 0;">Create, edit, or remove members. Assign them to a role group.</p>
             </div>
-            <p v-if="userListError" class="auth-error" style="margin-bottom: 1rem;">{{ userListError }}</p>
-            <p v-if="!userList.length && !userListLoading" class="users-empty">
-              No users loaded yet — click <em>Refresh</em> to fetch from Cognito.
-            </p>
-            <table v-if="userList.length" class="users-table">
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Display name</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th class="users-table-actions"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="u in userList" :key="u.username">
-                  <td>{{ u.email }}</td>
-                  <td>{{ u.displayName || '—' }}</td>
-                  <td>
-                    <span class="role-pill" :class="'role-' + (u.role || '').toLowerCase()">{{ u.role || '—' }}</span>
-                  </td>
-                  <td><span class="status-text" :class="{ disabled: !u.enabled }">{{ u.enabled ? u.status : 'DISABLED' }}</span></td>
-                  <td class="users-table-actions">
-                    <button class="btn-link" @click="openEditUser(u)">Edit</button>
-                    <button class="btn-link btn-danger" @click="deleteUser(u)">Delete</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="users-panel-actions">
+              <button class="btn-secondary btn-sm" @click="loadUsers" :disabled="userListLoading">
+                {{ userListLoading ? "Loading…" : "Refresh" }}
+              </button>
+              <button class="btn-primary btn-sm" @click="openCreateUser">+ New user</button>
+            </div>
           </div>
+          <p v-if="userListError" class="auth-error" style="margin-bottom: 1rem;">{{ userListError }}</p>
+          <p v-if="!userList.length && !userListLoading" class="users-empty">
+            No users loaded yet — click <em>Refresh</em>.
+          </p>
+          <table v-if="userList.length" class="users-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Display name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th class="users-table-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="u in userList" :key="u.username">
+                <td>{{ u.email }}</td>
+                <td>{{ u.displayName || '—' }}</td>
+                <td>
+                  <span class="role-pill" :class="'role-' + (u.role || '').toLowerCase()">{{ u.role || '—' }}</span>
+                </td>
+                <td><span class="status-text" :class="{ disabled: !u.enabled }">{{ u.enabled ? u.status : 'DISABLED' }}</span></td>
+                <td class="users-table-actions">
+                  <button class="btn-link" @click="openEditUser(u)">Edit</button>
+                  <button class="btn-link btn-danger" @click="deleteUser(u)">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
       </template>
@@ -819,7 +833,8 @@ export default {
           { id: "clients",    label: "Clients" },
           { id: "financials", label: "Financials" },
           { id: "training",   label: "Training" },
-          { id: "ops",        label: "Ops", adminOnly: true },
+          { id: "users",      label: "Users", adminOnly: true },
+          { id: "ops",        label: "Ops",   adminOnly: true },
         ],
         client: [
           { id: "overview",     label: "My Engagement" },
@@ -979,13 +994,18 @@ export default {
       // If a tool is open, leaving via a tab click should close it.
       if (this.embedOpen) this.closeTool();
       this.activeTab = id;
-      if (id === "ops" && this.isAdmin && !this.userList.length) this.loadUsers();
+      if (id === "users" && this.isAdmin && !this.userList.length) this.loadUsers();
     },
     setViewAs(id) {
       this.viewAs = id;
       this.activeTab = this.tabsByView[id][0].id;
       this.userMenuOpen = false;
       if (this.embedOpen) this.closeTool();
+    },
+    goToUsers() {
+      this.viewAs = "internal";
+      this.userMenuOpen = false;
+      this.goToTab("users");
     },
     // Allow short usernames like "admin" — auto-append @weatherlightadvisors.com.
     // If the input already looks like an email (has @), pass through unchanged.
@@ -1538,6 +1558,16 @@ export default {
   cursor: pointer;
 }
 .user-menu button:hover { background: #f5f8fc; }
+.user-menu-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  padding-top: 0.55rem !important;
+  border-top: 1px solid #f0f4f9;
+  font-weight: 600 !important;
+}
+.user-menu-icon { width: 16px; height: 16px; flex-shrink: 0; }
 .user-menu-section {
   margin-top: 0.4rem;
   padding-top: 0.5rem;
@@ -1566,11 +1596,6 @@ export default {
 }
 
 /* User management table */
-.users-panel {
-  margin-top: 2.5rem;
-  padding-top: 2rem;
-  border-top: 1px solid #e0eaf5;
-}
 .users-panel-head {
   display: flex;
   justify-content: space-between;

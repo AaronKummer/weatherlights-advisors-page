@@ -147,6 +147,7 @@ html.dark-fallback .user-menu { background: #161b22 !important; border-color: rg
 html.dark-fallback .user-menu-email { color: #8b949e !important; border-bottom-color: rgba(255, 255, 255, 0.06) !important; }
 html.dark-fallback .user-menu button { color: #c9d1d9 !important; }
 html.dark-fallback .user-menu button:hover { background: rgba(0, 212, 170, 0.1) !important; color: #00d4aa !important; }
+html.dark-fallback .user-menu-shortcut { border-top-color: rgba(255, 255, 255, 0.06) !important; }
 html.dark-fallback .user-menu-section { border-top-color: rgba(255, 255, 255, 0.06) !important; }
 html.dark-fallback .user-menu-label { color: #8b949e !important; }
 html.dark-fallback .view-pick.active { background: rgba(0, 212, 170, 0.15) !important; color: #00d4aa !important; }
