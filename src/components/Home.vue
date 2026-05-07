@@ -366,7 +366,7 @@
       </section>
     </template>
 
-    <footer class="site-footer">
+    <footer v-if="!currentUser" class="site-footer">
       <div class="container footer-row">
         <div class="footer-brand">
           <WeatherLogo class="nav-logo-mark" />
@@ -1386,13 +1386,15 @@ export default {
 }
 
 /* ───────── Member portal ───────── */
-/* Portal tabs (sticky below the fixed nav, only when logged in) */
+/* Portal tabs — fixed below the nav, always visible, never overlap content */
 .portal-tabs {
-  position: sticky;
+  position: fixed;
   top: 70px;
+  left: 0;
+  right: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid #e0eaf5;
 }
 .portal-tabs-inner {
@@ -1423,13 +1425,14 @@ export default {
   border-color: #1a3a6e;
 }
 
-/* Each tab is a single page filling the viewport — no scroll-snap, no
-   hopping between sections. Content is centered when shorter than the
-   viewport, scrolls within when taller. */
+/* Each tab is a single page that exactly fills the viewport below the
+   fixed nav + fixed tab strip. Content scrolls inside the page if it
+   doesn't fit, but the body itself never scrolls. */
 .portal-page {
-  padding: 3rem 2rem 4rem;
-  min-height: calc(100vh - 70px - 60px);
-  min-height: calc(100dvh - 70px - 60px);
+  padding: 8rem 2rem 2rem; /* clears nav (70px) + tabs (~56px) */
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
   background: #ffffff;
 }
 
