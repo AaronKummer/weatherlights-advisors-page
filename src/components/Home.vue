@@ -3,7 +3,7 @@
     <header class="nav-header" :class="{ scrolled: isScrolled }">
       <div class="nav-container">
         <a href="#top" class="nav-logo">
-          <img :src="logoUrl" alt="WeatherLight Advisors" class="logo-img" />
+          <WeatherLogo class="nav-logo-mark" />
           <span class="logo-text">
             <span class="logo-weather">Weather</span><span class="logo-light">Light</span>
             <span class="logo-sub">ADVISORS</span>
@@ -175,7 +175,7 @@
     <footer class="site-footer">
       <div class="container footer-row">
         <div class="footer-brand">
-          <img :src="logoUrl" alt="" class="logo-img" />
+          <WeatherLogo class="nav-logo-mark" />
           <span><span class="logo-weather">Weather</span><span class="logo-light">Light</span> Advisors</span>
         </div>
         <div class="footer-links">
@@ -341,11 +341,10 @@ export default {
   color: #1a3a6e;
 }
 
-.logo-img {
-  width: 38px;
-  height: 38px;
-  object-fit: contain;
-  background: transparent;
+.nav-logo-mark {
+  width: 42px;
+  height: auto;
+  flex-shrink: 0;
 }
 
 .logo-text { display: flex; flex-direction: column; line-height: 1; }
@@ -760,7 +759,7 @@ export default {
   color: #1a3a6e;
   font-weight: 600;
 }
-.footer-brand .logo-img { width: 32px; height: 32px; }
+.footer-brand .nav-logo-mark { width: 32px; }
 
 .footer-links { display: flex; gap: 1.5rem; }
 .footer-links a {

@@ -1,14 +1,5 @@
 <template>
   <svg :viewBox="`0 0 240 ${withText ? 220 : 110}`" xmlns="http://www.w3.org/2000/svg" class="wl-logo" :aria-label="withText ? 'WeatherLight Advisors' : 'WeatherLight'">
-    <!-- Soft halo behind the W -->
-    <defs>
-      <radialGradient id="wl-halo" cx="50%" cy="42%" r="55%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
-        <stop offset="60%" stop-color="#ffffff" stop-opacity="0.0"/>
-      </radialGradient>
-    </defs>
-    <ellipse cx="120" cy="55" rx="120" ry="60" fill="url(#wl-halo)"/>
-
     <!-- Arc above the W -->
     <path
       d="M 70 28 A 50 32 0 0 1 170 28"
