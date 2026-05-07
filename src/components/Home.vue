@@ -10,10 +10,12 @@
           </span>
         </a>
         <nav class="nav-links">
-          <a href="#services" class="nav-link">Services</a>
-          <a href="#certs" class="nav-link">Certifications</a>
-          <a href="#about" class="nav-link">About</a>
-          <a @click="dialog = true" class="nav-link">Contact</a>
+          <template v-if="!currentUser">
+            <a href="#services" class="nav-link">Services</a>
+            <a href="#certs" class="nav-link">Certifications</a>
+            <a href="#about" class="nav-link">About</a>
+            <a @click="dialog = true" class="nav-link">Contact</a>
+          </template>
           <button class="theme-toggle" @click="toggleTheme" :aria-label="'Toggle theme'" title="Toggle light/dark">
             <svg viewBox="0 0 24 24" class="icon-sun" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="4"/>
@@ -23,7 +25,7 @@
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
             </svg>
           </button>
-          <span class="nav-divider"></span>
+          <span v-if="!currentUser" class="nav-divider"></span>
           <template v-if="!currentUser">
             <a @click="openLogin" class="nav-link nav-link-strong">Login</a>
             <a @click="openSignup" class="nav-cta">Sign Up</a>
