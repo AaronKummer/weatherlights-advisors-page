@@ -364,12 +364,13 @@ html.dark-fallback .auth-switch { color: #8b949e !important; }
 html.dark-fallback .auth-switch a { color: #00d4aa !important; }
 html.dark-fallback .auth-switch span { color: rgba(255, 255, 255, 0.15) !important; }
 
-/* Embedded tool modal — dark variant */
-html.dark-fallback .embed-overlay { background: rgba(0, 0, 0, 0.7) !important; }
-html.dark-fallback .embed-window { background: #0a0a0f !important; border-color: rgba(255, 255, 255, 0.08) !important; }
-html.dark-fallback .embed-bar { background: linear-gradient(180deg, #0d1015 0%, #0a0a0f 100%) !important; border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+/* Embedded tool window (inline) — dark variant */
+html.dark-fallback .embed-window { background: #0d1015 !important; border-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark-fallback .embed-bar { background: linear-gradient(180deg, #161b22 0%, #0d1015 100%) !important; border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark-fallback .embed-back { border-color: rgba(255, 255, 255, 0.1) !important; color: #c9d1d9 !important; }
+html.dark-fallback .embed-back:hover { background: rgba(0, 212, 170, 0.08) !important; border-color: rgba(0, 212, 170, 0.4) !important; color: #00d4aa !important; }
 html.dark-fallback .embed-title { color: #c9d1d9 !important; }
 html.dark-fallback .embed-close { color: #8b949e !important; }
 html.dark-fallback .embed-close:hover { background: rgba(255, 255, 255, 0.05) !important; color: #ffffff !important; }
-html.dark-fallback .embed-frame { background: #0a0a0f !important; }
+html.dark-fallback .embed-frame { background: #0d1015 !important; }
 </style>

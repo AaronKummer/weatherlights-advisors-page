@@ -221,7 +221,30 @@
         </div>
       </nav>
 
-      <section v-show="activeTab === 'overview'" class="portal-page">
+      <!-- When a tool is open, it takes over the portal-page area inline.
+           Nav + tabs stay visible above; the iframe lives in a window
+           contained within the page. -->
+      <section v-if="embedOpen" class="portal-page embed-page">
+        <div class="embed-window">
+          <div class="embed-bar">
+            <button class="embed-back" @click="closeTool" aria-label="Back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+              <span>Back</span>
+            </button>
+            <div class="embed-title">{{ embedTitle }}</div>
+            <button class="embed-close" @click="closeTool" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <iframe :src="embedSrc" class="embed-frame" :title="embedTitle"></iframe>
+        </div>
+      </section>
+
+      <section v-show="!embedOpen && activeTab === 'overview'" class="portal-page">
         <div class="container">
           <div class="eyebrow">Operations</div>
           <h1 class="portal-title">Good {{ greeting }}, {{ displayHandle }}.</h1>
@@ -246,7 +269,7 @@
         </div>
       </section>
 
-      <section v-show="activeTab === 'clients'" id="clientele" class="portal-page">
+      <section v-show="!embedOpen && activeTab === 'clients'" id="clientele" class="portal-page">
         <div class="container">
           <div class="eyebrow">Clientele</div>
           <h2 class="section-title">Active engagements</h2>
@@ -263,7 +286,7 @@
         </div>
       </section>
 
-      <section v-show="activeTab === 'financials'" id="revenue" class="portal-page">
+      <section v-show="!embedOpen && activeTab === 'financials'" id="revenue" class="portal-page">
         <div class="container">
           <div class="eyebrow">Financials</div>
           <h2 class="section-title">Revenue &amp; AWS spend</h2>
@@ -296,7 +319,7 @@
         </div>
       </section>
 
-      <section v-show="activeTab === 'training'" id="training" class="portal-page">
+      <section v-show="!embedOpen && activeTab === 'training'" id="training" class="portal-page">
         <div class="container">
           <div class="eyebrow">Training Tools</div>
           <h2 class="section-title">Sharpen up</h2>
@@ -335,7 +358,7 @@
         </div>
       </section>
 
-      <section v-show="activeTab === 'ops' && isAdmin" id="ops" class="portal-page ops-section">
+      <section v-show="!embedOpen && activeTab === 'ops' && isAdmin" id="ops" class="portal-page ops-section">
         <div class="container">
           <div class="eyebrow ops-eyebrow">Admin · Ops Tools</div>
           <h2 class="section-title">Business analytics</h2>
@@ -420,20 +443,6 @@
       </v-card>
     </v-dialog>
 
-    <!-- ───────── Embedded tool modal ───────── -->
-    <div v-if="embedOpen" class="embed-overlay" @click.self="closeTool" @keydown.esc="closeTool">
-      <div class="embed-window">
-        <div class="embed-bar">
-          <div class="embed-title">{{ embedTitle }}</div>
-          <button class="embed-close" @click="closeTool" aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <iframe :src="embedSrc" class="embed-frame" :title="embedTitle"></iframe>
-      </div>
-    </div>
 
     <!-- ───────── Login ───────── -->
     <v-dialog v-model="loginOpen" max-width="440px" persistent>
@@ -742,19 +751,22 @@ export default {
       return `${v.toLowerCase()}@weatherlightadvisors.com`;
     },
     toolUrl(path, extra = {}) {
-      const params = new URLSearchParams({ theme: "weatherlight", brand: "WeatherLight Advisors", ...extra });
+      // Match the tool's theme to the parent site's theme. The tools support
+      // 'weatherlight' (light navy) and 'sapphire' (dark teal) — same look as
+      // the parent in each mode.
+      const isDark = document.documentElement.classList.contains("dark-fallback");
+      const theme = isDark ? "sapphire" : "weatherlight";
+      const params = new URLSearchParams({ theme, brand: "WeatherLight Advisors", ...extra });
       return `${path}?${params.toString()}`;
     },
     openTool(path, title, extra = {}) {
       this.embedSrc = this.toolUrl(path, extra);
       this.embedTitle = title;
       this.embedOpen = true;
-      document.body.style.overflow = "hidden";
     },
     closeTool() {
       this.embedOpen = false;
       this.embedSrc = "";
-      document.body.style.overflow = "";
       // Refresh portal stats since the user may have made progress in the iframe.
       this.computeStats();
     },
@@ -933,6 +945,14 @@ export default {
       this.themeOverride = isDark ? "light" : "dark";
       localStorage.setItem("wl-theme", this.themeOverride);
       this.applyThemeClass();
+      // If a tool is currently open, reload its iframe with the new theme.
+      if (this.embedOpen && this.embedSrc) {
+        try {
+          const url = new URL(this.embedSrc, window.location.origin);
+          url.searchParams.set("theme", this.themeOverride === "dark" ? "sapphire" : "weatherlight");
+          this.embedSrc = url.pathname + url.search;
+        } catch (_) { /* leave as-is on parse error */ }
+      }
     },
 
     // ─────────── Portal stats ───────────
@@ -1965,56 +1985,56 @@ export default {
 .modal-actions { padding: 1rem 1.5rem !important; border-top: 1px solid #f0f4f9; }
 .btn-send { background: #1a3a6e !important; color: #fff !important; }
 
-/* ───────── Embedded tool modal ───────── */
-.embed-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(10, 20, 40, 0.55);
-  backdrop-filter: blur(8px);
-  padding: 2.5vh 2.5vw;
-  animation: fadeIn 0.18s ease;
-}
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.embed-window {
-  width: 100%;
-  max-width: 1280px;
-  height: 95vh;
-  background: #ffffff;
-  border-radius: 14px;
-  overflow: hidden;
+/* ───────── Embedded tool window (inline, takes over the active tab area) ───────── */
+.embed-page {
   display: flex;
   flex-direction: column;
-  box-shadow: 0 32px 80px rgba(10, 20, 40, 0.45);
-  border: 1px solid rgba(26, 58, 110, 0.1);
 }
-
+.embed-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(26, 58, 110, 0.08);
+  min-height: 0;
+}
 .embed-bar {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.7rem 1rem;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
   background: linear-gradient(180deg, #f7fbff 0%, #eef5fc 100%);
   border-bottom: 1px solid #e0eaf5;
 }
-
+.embed-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem 0.4rem 0.65rem;
+  background: transparent;
+  border: 1px solid #d8e6f3;
+  border-radius: 6px;
+  color: #1a3a6e;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.embed-back:hover { background: #ffffff; border-color: #5b9bd5; }
+.embed-back svg { width: 14px; height: 14px; }
 .embed-title {
   flex: 1;
-  text-align: left;
-  padding-left: 0.4rem;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: #1a3a6e;
   letter-spacing: -0.005em;
 }
-
 .embed-close {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   color: #4a5e7e;
@@ -2026,18 +2046,13 @@ export default {
   transition: background 0.15s, color 0.15s;
 }
 .embed-close:hover { background: rgba(26, 58, 110, 0.08); color: #1a3a6e; }
-.embed-close svg { width: 18px; height: 18px; }
-
+.embed-close svg { width: 16px; height: 16px; }
 .embed-frame {
   flex: 1;
   width: 100%;
   border: 0;
   background: #ffffff;
-}
-
-@media (max-width: 700px) {
-  .embed-overlay { padding: 0; }
-  .embed-window { height: 100vh; max-width: 100vw; border-radius: 0; }
+  min-height: 0;
 }
 
 /* ───────── Auth modals ───────── */
