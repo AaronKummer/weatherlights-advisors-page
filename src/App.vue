@@ -199,4 +199,30 @@ html.dark-fallback .v-field { background: #0d1117 !important; }
 html.dark-fallback .v-field__outline { color: #30363d !important; }
 html.dark-fallback .v-label { color: #8b949e !important; }
 html.dark-fallback .v-field__input { color: #c9d1d9 !important; }
+
+/* Auth modal overrides for dark fallback */
+html.dark-fallback .auth-label { color: #8b949e !important; }
+html.dark-fallback .auth-input {
+  background: #0d1117 !important;
+  border-color: #30363d !important;
+  color: #c9d1d9 !important;
+}
+html.dark-fallback .auth-input:focus {
+  border-color: #00d4aa !important;
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.2) !important;
+}
+html.dark-fallback .auth-hint { color: #8b949e !important; }
+html.dark-fallback .auth-hint strong { color: #c9d1d9 !important; }
+html.dark-fallback .auth-error {
+  background: rgba(255, 64, 64, 0.08) !important;
+  border-color: rgba(255, 64, 64, 0.3) !important;
+  color: #ff6b6b !important;
+}
+html.dark-fallback .auth-submit {
+  background: linear-gradient(135deg, #00d4aa 0%, #00a888 100%) !important;
+  color: #0a0a0f !important;
+}
+html.dark-fallback .auth-switch { color: #8b949e !important; }
+html.dark-fallback .auth-switch a { color: #00d4aa !important; }
+html.dark-fallback .auth-switch span { color: rgba(255, 255, 255, 0.15) !important; }
 </style>

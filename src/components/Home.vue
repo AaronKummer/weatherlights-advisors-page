@@ -16,8 +16,8 @@
           <a @click="dialog = true" class="nav-link">Contact</a>
           <span class="nav-divider"></span>
           <template v-if="!currentUser">
-            <a @click="onLogin" class="nav-link nav-link-strong">Login</a>
-            <a @click="onSignup" class="nav-cta">Sign Up</a>
+            <a @click="openLogin" class="nav-link nav-link-strong">Login</a>
+            <a @click="openSignup" class="nav-cta">Sign Up</a>
           </template>
           <template v-else>
             <div class="user-pill" @click.stop="userMenuOpen = !userMenuOpen">
@@ -54,7 +54,7 @@
           and teams who want to ship on AWS with confidence.
         </p>
         <div class="hero-cta">
-          <button class="btn-primary" @click="onSignup">Sign Up</button>
+          <button class="btn-primary" @click="openSignup">Sign Up</button>
           <button class="btn-secondary" @click="dialog = true">Talk to us</button>
         </div>
       </div>
@@ -225,22 +225,150 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- ───────── Login ───────── -->
+    <v-dialog v-model="loginOpen" max-width="440px" persistent>
+      <v-card class="modal-card auth-card">
+        <v-card-title class="modal-title">Welcome back</v-card-title>
+        <v-card-text class="modal-body">
+          <form @submit.prevent="submitLogin" class="auth-form">
+            <label class="auth-label">Email</label>
+            <input class="auth-input" type="email" autocomplete="email" v-model.trim="loginForm.email" autofocus />
+            <label class="auth-label">Password</label>
+            <input class="auth-input" type="password" autocomplete="current-password" v-model="loginForm.password" />
+            <p v-if="authError" class="auth-error">{{ authError }}</p>
+            <button class="auth-submit" type="submit" :disabled="authBusy">
+              {{ authBusy ? "Signing in…" : "Sign in" }}
+            </button>
+            <div class="auth-switch">
+              <a @click="openForgot">Forgot password?</a>
+              <span>·</span>
+              <a @click="openSignup">Create an account</a>
+            </div>
+          </form>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-btn variant="text" @click="closeAllAuth">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- ───────── Sign Up ───────── -->
+    <v-dialog v-model="signupOpen" max-width="440px" persistent>
+      <v-card class="modal-card auth-card">
+        <v-card-title class="modal-title">Create your account</v-card-title>
+        <v-card-text class="modal-body">
+          <form @submit.prevent="submitSignup" class="auth-form">
+            <label class="auth-label">Email</label>
+            <input class="auth-input" type="email" autocomplete="email" v-model.trim="signupForm.email" autofocus />
+            <label class="auth-label">Password</label>
+            <input class="auth-input" type="password" autocomplete="new-password" v-model="signupForm.password" />
+            <label class="auth-label">Confirm password</label>
+            <input class="auth-input" type="password" autocomplete="new-password" v-model="signupForm.confirm" />
+            <p class="auth-hint">8+ characters with at least one letter and one number.</p>
+            <p v-if="authError" class="auth-error">{{ authError }}</p>
+            <button class="auth-submit" type="submit" :disabled="authBusy">
+              {{ authBusy ? "Creating…" : "Create account" }}
+            </button>
+            <div class="auth-switch">
+              Already have an account? <a @click="openLogin">Sign in</a>
+            </div>
+          </form>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-btn variant="text" @click="closeAllAuth">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- ───────── Verify email code ───────── -->
+    <v-dialog v-model="verifyOpen" max-width="440px" persistent>
+      <v-card class="modal-card auth-card">
+        <v-card-title class="modal-title">Verify your email</v-card-title>
+        <v-card-text class="modal-body">
+          <p class="auth-hint">We sent a 6-digit code to <strong>{{ verifyForm.email }}</strong>. Enter it below to activate your account.</p>
+          <form @submit.prevent="submitVerify" class="auth-form">
+            <label class="auth-label">Verification code</label>
+            <input class="auth-input auth-code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" v-model.trim="verifyForm.code" autofocus />
+            <p v-if="authError" class="auth-error">{{ authError }}</p>
+            <button class="auth-submit" type="submit" :disabled="authBusy">
+              {{ authBusy ? "Verifying…" : "Verify" }}
+            </button>
+            <div class="auth-switch">
+              Didn't get it? <a @click="resendVerifyCode">Resend code</a>
+            </div>
+          </form>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-btn variant="text" @click="closeAllAuth">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- ───────── Forgot password (request) ───────── -->
+    <v-dialog v-model="forgotOpen" max-width="440px" persistent>
+      <v-card class="modal-card auth-card">
+        <v-card-title class="modal-title">Reset password</v-card-title>
+        <v-card-text class="modal-body">
+          <p class="auth-hint">Enter your email and we'll send you a code to reset your password.</p>
+          <form @submit.prevent="submitForgot" class="auth-form">
+            <label class="auth-label">Email</label>
+            <input class="auth-input" type="email" autocomplete="email" v-model.trim="forgotForm.email" autofocus />
+            <p v-if="authError" class="auth-error">{{ authError }}</p>
+            <button class="auth-submit" type="submit" :disabled="authBusy">
+              {{ authBusy ? "Sending…" : "Send reset code" }}
+            </button>
+            <div class="auth-switch">
+              <a @click="openLogin">Back to sign in</a>
+            </div>
+          </form>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-btn variant="text" @click="closeAllAuth">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- ───────── Forgot password (confirm + new password) ───────── -->
+    <v-dialog v-model="forgotResetOpen" max-width="440px" persistent>
+      <v-card class="modal-card auth-card">
+        <v-card-title class="modal-title">Set a new password</v-card-title>
+        <v-card-text class="modal-body">
+          <p class="auth-hint">We sent a code to <strong>{{ forgotResetForm.email }}</strong>. Enter the code and choose a new password.</p>
+          <form @submit.prevent="submitForgotReset" class="auth-form">
+            <label class="auth-label">Code</label>
+            <input class="auth-input auth-code" type="text" inputmode="numeric" maxlength="6" v-model.trim="forgotResetForm.code" autofocus />
+            <label class="auth-label">New password</label>
+            <input class="auth-input" type="password" autocomplete="new-password" v-model="forgotResetForm.password" />
+            <label class="auth-label">Confirm new password</label>
+            <input class="auth-input" type="password" autocomplete="new-password" v-model="forgotResetForm.confirm" />
+            <p v-if="authError" class="auth-error">{{ authError }}</p>
+            <button class="auth-submit" type="submit" :disabled="authBusy">
+              {{ authBusy ? "Resetting…" : "Reset and sign in" }}
+            </button>
+          </form>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-btn variant="text" @click="closeAllAuth">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
 <script>
 import axios from "axios";
-import logo from "@/assets/logo.jpg";
 import HeroBalloons from "./HeroBalloons.vue";
 import WeatherLogo from "./WeatherLogo.vue";
 import { config } from "@/config";
-import { startLogin, startSignup, logout, getTokens, decodeIdToken, fetchMe } from "@/auth";
+import { loginWithPassword, logout, getTokens, decodeIdToken, fetchMe } from "@/auth";
+import * as cognito from "@/cognito";
+import { describeError } from "@/cognito";
 
 export default {
   components: { HeroBalloons, WeatherLogo },
   data() {
     return {
-      logoUrl: logo,
       dialog: false,
       successDialog: false,
       isScrolled: false,
@@ -250,6 +378,23 @@ export default {
       sending: false,
       currentUser: null,
       userMenuOpen: false,
+
+      // Auth modals
+      loginOpen: false,
+      signupOpen: false,
+      verifyOpen: false,
+      forgotOpen: false,
+      forgotResetOpen: false,
+
+      // Auth forms
+      authBusy: false,
+      authError: "",
+      loginForm: { email: "", password: "" },
+      signupForm: { email: "", password: "", confirm: "" },
+      verifyForm: { email: "", code: "" },
+      forgotForm: { email: "" },
+      forgotResetForm: { email: "", code: "", password: "", confirm: "" },
+      pendingPassword: "",  // remembered between signup → verify so we can auto-login
     };
   },
   async mounted() {
@@ -264,6 +409,7 @@ export default {
   methods: {
     handleScroll() { this.isScrolled = window.scrollY > 8; },
     handleOutsideClick(e) { if (!e.target.closest('.user-pill')) this.userMenuOpen = false; },
+
     async loadCurrentUser() {
       const tokens = getTokens();
       if (!tokens) return;
@@ -274,8 +420,149 @@ export default {
         if (me?.user) this.currentUser = me.user;
       } catch (err) { console.warn("fetchMe failed", err); }
     },
-    onLogin() { startLogin(); },
-    onSignup() { startSignup(); },
+
+    // Modal openers
+    openLogin() {
+      this.closeAllAuth();
+      this.authError = "";
+      this.loginOpen = true;
+    },
+    openSignup() {
+      this.closeAllAuth();
+      this.authError = "";
+      this.signupOpen = true;
+    },
+    openForgot() {
+      this.closeAllAuth();
+      this.authError = "";
+      this.forgotForm.email = this.loginForm.email;
+      this.forgotOpen = true;
+    },
+    closeAllAuth() {
+      this.loginOpen = false;
+      this.signupOpen = false;
+      this.verifyOpen = false;
+      this.forgotOpen = false;
+      this.forgotResetOpen = false;
+      this.authError = "";
+    },
+
+    // Submissions
+    async submitLogin() {
+      this.authError = "";
+      const { email, password } = this.loginForm;
+      if (!email || !password) { this.authError = "Email and password are required."; return; }
+      this.authBusy = true;
+      try {
+        await loginWithPassword(email, password);
+        await this.loadCurrentUser();
+        this.closeAllAuth();
+        this.loginForm = { email: "", password: "" };
+      } catch (err) {
+        if (err.code && err.code.includes("UserNotConfirmedException")) {
+          // Pivot into verify flow
+          this.verifyForm.email = email;
+          this.pendingPassword = password;
+          this.closeAllAuth();
+          this.verifyOpen = true;
+          this.authError = "Your email isn't verified yet. Enter the code we sent.";
+          try { await cognito.resendCode({ email }); } catch (_) {}
+        } else {
+          this.authError = describeError(err);
+        }
+      } finally {
+        this.authBusy = false;
+      }
+    },
+    async submitSignup() {
+      this.authError = "";
+      const { email, password, confirm } = this.signupForm;
+      if (!email || !password) { this.authError = "Email and password are required."; return; }
+      if (password.length < 8) { this.authError = "Password must be at least 8 characters."; return; }
+      if (password !== confirm) { this.authError = "Passwords don't match."; return; }
+      this.authBusy = true;
+      try {
+        await cognito.signUp({ email, password });
+        this.verifyForm.email = email;
+        this.pendingPassword = password;
+        this.closeAllAuth();
+        this.verifyOpen = true;
+        this.signupForm = { email: "", password: "", confirm: "" };
+      } catch (err) {
+        this.authError = describeError(err);
+      } finally {
+        this.authBusy = false;
+      }
+    },
+    async submitVerify() {
+      this.authError = "";
+      const { email, code } = this.verifyForm;
+      if (!code) { this.authError = "Enter the 6-digit code from your email."; return; }
+      this.authBusy = true;
+      try {
+        await cognito.confirmSignUp({ email, code });
+        // Auto-login with remembered password
+        if (this.pendingPassword) {
+          await loginWithPassword(email, this.pendingPassword);
+          await this.loadCurrentUser();
+          this.pendingPassword = "";
+        }
+        this.closeAllAuth();
+        this.verifyForm = { email: "", code: "" };
+      } catch (err) {
+        this.authError = describeError(err);
+      } finally {
+        this.authBusy = false;
+      }
+    },
+    async resendVerifyCode() {
+      this.authError = "";
+      this.authBusy = true;
+      try {
+        await cognito.resendCode({ email: this.verifyForm.email });
+        this.authError = "New code sent. Check your email.";
+      } catch (err) {
+        this.authError = describeError(err);
+      } finally {
+        this.authBusy = false;
+      }
+    },
+    async submitForgot() {
+      this.authError = "";
+      const { email } = this.forgotForm;
+      if (!email) { this.authError = "Email is required."; return; }
+      this.authBusy = true;
+      try {
+        await cognito.forgotPassword({ email });
+        this.forgotResetForm.email = email;
+        this.closeAllAuth();
+        this.forgotResetOpen = true;
+      } catch (err) {
+        this.authError = describeError(err);
+      } finally {
+        this.authBusy = false;
+      }
+    },
+    async submitForgotReset() {
+      this.authError = "";
+      const { email, code, password, confirm } = this.forgotResetForm;
+      if (!code || !password) { this.authError = "Code and new password are required."; return; }
+      if (password.length < 8) { this.authError = "Password must be at least 8 characters."; return; }
+      if (password !== confirm) { this.authError = "Passwords don't match."; return; }
+      this.authBusy = true;
+      try {
+        await cognito.confirmForgotPassword({ email, code, password });
+        await loginWithPassword(email, password);
+        await this.loadCurrentUser();
+        this.closeAllAuth();
+        this.forgotResetForm = { email: "", code: "", password: "", confirm: "" };
+      } catch (err) {
+        this.authError = describeError(err);
+      } finally {
+        this.authBusy = false;
+      }
+    },
+
     onLogout() { logout(); },
     validateEmail() {
       this.emailErrors = [];
@@ -787,6 +1074,86 @@ export default {
 .modal-intro { color: #4a5e7e; margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.6; }
 .modal-actions { padding: 1rem 1.5rem !important; border-top: 1px solid #f0f4f9; }
 .btn-send { background: #1a3a6e !important; color: #fff !important; }
+
+/* ───────── Auth modals ───────── */
+.auth-card { border-radius: 12px !important; }
+.auth-form { display: flex; flex-direction: column; }
+.auth-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4a5e7e;
+  margin-bottom: 0.4rem;
+  margin-top: 0.85rem;
+  letter-spacing: 0.01em;
+}
+.auth-label:first-child { margin-top: 0; }
+.auth-input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #d8e2ee;
+  border-radius: 8px;
+  font-size: 0.96rem;
+  color: #1a3a6e;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+.auth-input:focus {
+  border-color: #5b9bd5;
+  box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.18);
+}
+.auth-code {
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.5em;
+  text-align: center;
+  padding-left: 0.75rem;
+}
+.auth-hint {
+  color: #6b7c93;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+.auth-error {
+  margin-top: 0.85rem;
+  padding: 0.6rem 0.85rem;
+  background: #fef0f0;
+  border: 1px solid #f5c6c6;
+  color: #b3261e;
+  font-size: 0.88rem;
+  border-radius: 6px;
+}
+.auth-submit {
+  margin-top: 1.25rem;
+  padding: 0.8rem 1rem;
+  background: linear-gradient(135deg, #1a3a6e 0%, #2c5aa0 100%);
+  color: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.auth-submit:hover:not(:disabled) { transform: translateY(-1px); }
+.auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-switch {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: #6b7c93;
+}
+.auth-switch a {
+  color: #2c5aa0;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.auth-switch a:hover { text-decoration: underline; }
+.auth-switch span { margin: 0 0.5rem; color: #cfdcec; }
 
 @media (max-width: 900px) {
   .service-grid { grid-template-columns: 1fr; }
