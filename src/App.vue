@@ -136,6 +136,7 @@ html.dark-fallback .nav-cta:hover { background: rgba(0, 212, 170, 0.2) !importan
 html.dark-fallback .nav-divider { background: rgba(255, 255, 255, 0.08) !important; }
 html.dark-fallback .logo-weather { color: #ffffff !important; }
 html.dark-fallback .logo-light { color: #00d4aa !important; }
+html.dark-fallback .logo-advisors { color: #c9d1d9 !important; }
 html.dark-fallback .logo-sub { color: #8b949e !important; }
 
 /* User pill */

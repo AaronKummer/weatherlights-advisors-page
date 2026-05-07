@@ -4,9 +4,8 @@
       <div class="nav-container">
         <a href="#top" class="nav-logo">
           <WeatherLogo class="nav-logo-mark" />
-          <span class="logo-text">
-            <span class="logo-weather">Weather</span><span class="logo-light">Light</span>
-            <span class="logo-sub">ADVISORS</span>
+          <span class="logo-wordmark">
+            <span class="logo-weather">Weather</span><span class="logo-light">Light</span><span class="logo-advisors"> Advisors</span>
           </span>
         </a>
         <nav class="nav-links">
@@ -1531,10 +1530,17 @@ export default {
   flex-shrink: 0;
 }
 
-.logo-text { display: flex; flex-direction: column; line-height: 1; }
-.logo-weather { color: #1a3a6e; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
-.logo-light { color: #5b9bd5; font-weight: 700; font-size: 1rem; letter-spacing: -0.01em; }
-.logo-sub { color: #6b7c93; font-size: 0.6rem; letter-spacing: 0.22em; margin-top: 2px; }
+.logo-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+.logo-weather { color: #1a3a6e; }
+.logo-light { color: #5b9bd5; }
+.logo-advisors { color: #4a5e7e; font-weight: 500; }
 
 .nav-links { display: flex; gap: 1.5rem; align-items: center; }
 

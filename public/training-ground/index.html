@@ -344,6 +344,23 @@
     opacity: 0.35;
   }
 
+  /* Edge protocol label */
+  .tg-edge-label { pointer-events: none; }
+  .tg-edge-label-bg {
+    fill: var(--bg);
+    stroke: var(--accent-2);
+    stroke-width: 1;
+    opacity: 0.95;
+  }
+  .tg-edge-label-text {
+    font-size: 9px;
+    font-weight: 700;
+    fill: var(--ink-2);
+    text-anchor: middle;
+    dominant-baseline: central;
+    letter-spacing: 0.02em;
+  }
+
   /* Connection ports (appear on node hover) */
   .tg-port {
     fill: var(--bg);
@@ -585,8 +602,32 @@
     font-size: 0.8rem;
     color: var(--ink-2);
     font-weight: 600;
+    cursor: help;
+    position: relative;
   }
   .tg-total-cost strong { color: var(--ink); }
+  .tg-total-cost::after {
+    content: "Estimates only — actual AWS pricing varies by region, traffic, reservations, and data transfer. Not a quote.";
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 280px;
+    padding: 0.7rem 0.85rem;
+    background: var(--panel);
+    color: var(--ink-2);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.4;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s;
+    z-index: 50;
+  }
+  .tg-total-cost:hover::after { opacity: 1; transform: translateY(0); }
 
   /* Objectives panel */
   .tg-objectives {
@@ -691,19 +732,24 @@
     top: 80px;
     left: 50%;
     transform: translateX(-50%) translateY(-20px);
-    padding: 0.7rem 1.5rem;
+    padding: 0.85rem 1.5rem;
     background: var(--good);
     color: #ffffff;
-    font-weight: 700;
-    border-radius: 100px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    font-weight: 600;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
     opacity: 0;
     transition: opacity 0.25s, transform 0.25s;
     z-index: 100;
     pointer-events: none;
+    max-width: min(560px, calc(100vw - 2rem));
+    text-align: center;
   }
   .tg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-  .tg-toast.error { background: var(--bad); }
+  .tg-toast.error { background: linear-gradient(135deg, #b86a00, #8a3d00); }
+  .tg-toast strong { color: #fffbe8; }
 
   @media (max-width: 920px) {
     .tg-app { grid-template-columns: 64px 1fr; grid-template-rows: 56px 1fr; }
@@ -920,6 +966,51 @@
     },
   ];
   const SVC = Object.fromEntries(SERVICES.map(s => [s.id, s]));
+
+  // ───────── Connection rules ─────────
+  // For each service, what can it connect TO downstream? Labels are the
+  // protocol/data-type that travels over that wire — surfaced as a small
+  // tag on the connection line.
+  const CAN_CONNECT_TO = {
+    cloudfront:  { s3: "Origin", alb: "Origin", apigw: "Origin", ec2: "Origin" },
+    alb:         { ec2: "HTTP", fargate: "HTTP", lambda: "Invoke" },
+    apigw:       { lambda: "Invoke", ec2: "HTTP", fargate: "HTTP", sqs: "Send", eventbridge: "PutEvents" },
+    lambda:      { dynamodb: "DDB", rds: "SQL", s3: "Read/Write", sqs: "Send", eventbridge: "PutEvents", lambda: "Invoke" },
+    ec2:         { rds: "SQL", s3: "Read/Write", dynamodb: "DDB", sqs: "Send", eventbridge: "PutEvents", ebs: "Block" },
+    fargate:     { rds: "SQL", s3: "Read/Write", dynamodb: "DDB", sqs: "Send", eventbridge: "PutEvents" },
+    sqs:         { lambda: "Trigger" },
+    eventbridge: { lambda: "Trigger", sqs: "Send" },
+    dynamodb:    { lambda: "Stream" },
+    s3:          {}, // S3 is a target, not a source
+    rds:         {}, // databases respond, don't initiate
+    ebs:         {},
+    vpc:         {},
+  };
+
+  // Friendly explanations for the most common invalid attempts.
+  function explainInvalidConnection(fromSvc, toSvc) {
+    const f = fromSvc.id, t = toSvc.id;
+    if (f === "s3")        return `S3 is a target, not a source. Try connecting <strong>${toSvc.name} → S3</strong> instead, or use CloudFront with S3 as its origin.`;
+    if (f === "rds")       return `RDS is a database — it responds to clients, it doesn't initiate connections. Wire your compute (EC2/Lambda/Fargate) → RDS instead.`;
+    if (f === "ebs")       return `EBS is block storage attached to an EC2 instance, not a network source. Connect <strong>EC2 → EBS</strong> if you want to model a volume.`;
+    if (f === "vpc")       return `VPC is a network boundary, not a source of traffic. Drop services inside a VPC; don't wire from the VPC itself.`;
+    if (f === "dynamodb" && t !== "lambda") return `DynamoDB only emits outbound traffic via Streams (to Lambda). Try <strong>DynamoDB → Lambda</strong>.`;
+    if (f === "sqs" && t !== "lambda")      return `SQS messages are usually consumed by a Lambda event-source mapping. Try <strong>SQS → Lambda</strong>.`;
+    if (f === "alb" && (t === "rds" || t === "dynamodb" || t === "s3"))
+      return `ALB distributes HTTP/TCP traffic — it doesn't talk to databases or storage directly. Wire <strong>ALB → EC2/Fargate/Lambda → ${toSvc.name}</strong>.`;
+    if (f === "cloudfront" && (t === "rds" || t === "dynamodb"))
+      return `CloudFront serves origins (S3, ALB, API Gateway, custom HTTP). Databases sit behind compute; connect through API Gateway or ALB.`;
+    if (f === "apigw" && (t === "rds" || t === "dynamodb" || t === "s3"))
+      return `API Gateway invokes integrations (Lambda is most common). Connect API Gateway → Lambda → ${toSvc.name}.`;
+    return `${fromSvc.name} doesn't typically connect directly to ${toSvc.name}. Add an intermediate compute service (Lambda, EC2, or Fargate).`;
+  }
+
+  function isValidConnection(fromId, toId) {
+    return !!(CAN_CONNECT_TO[fromId] && CAN_CONNECT_TO[fromId][toId]);
+  }
+  function connectionLabel(fromId, toId) {
+    return CAN_CONNECT_TO[fromId]?.[toId] || "";
+  }
 
   // ───────── Scenarios ─────────
   // Each scenario has objectives that the validator checks against the live graph.
@@ -1173,11 +1264,12 @@
   function setStatus(msg, ok=false) {
     statusEl.innerHTML = ok ? `<span class="ok">${msg}</span>` : msg;
   }
-  function toast(msg, error=false) {
-    toastEl.textContent = msg;
+  function toast(msg, error=false, durationMs=1800) {
+    toastEl.innerHTML = msg; // allow <strong> in connection-rejection messages
     toastEl.classList.toggle("error", !!error);
     toastEl.classList.add("show");
-    setTimeout(() => toastEl.classList.remove("show"), 1800);
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => toastEl.classList.remove("show"), durationMs);
   }
 
   // ───────── Render ─────────
@@ -1256,6 +1348,29 @@
     path.setAttribute("marker-end", "url(#arrow)");
     path.dataset.edgeUid = e.uid;
     svgEl.appendChild(path);
+
+    // Protocol label at midpoint
+    const label = connectionLabel(from.svcId, to.svcId);
+    if (label) {
+      const mid = bezierAt(0.5, a.x, a.y, a.x + (b.x - a.x) * 0.5, a.y, a.x + (b.x - a.x) * 0.5, b.y, b.x, b.y);
+      const padding = 6;
+      const charW = 6.2;
+      const w = label.length * charW + padding * 2;
+      const labelG = document.createElementNS(ns, "g");
+      labelG.setAttribute("class", "tg-edge-label");
+      labelG.setAttribute("transform", `translate(${mid.x - w/2} ${mid.y - 8})`);
+      const bg = document.createElementNS(ns, "rect");
+      bg.setAttribute("width", w); bg.setAttribute("height", 16);
+      bg.setAttribute("rx", 8);
+      bg.setAttribute("class", "tg-edge-label-bg");
+      labelG.appendChild(bg);
+      const txt = document.createElementNS(ns, "text");
+      txt.setAttribute("class", "tg-edge-label-text");
+      txt.setAttribute("x", w/2); txt.setAttribute("y", 8);
+      txt.textContent = label;
+      labelG.appendChild(txt);
+      svgEl.appendChild(labelG);
+    }
   }
 
   function drawDragWire() {
@@ -1430,11 +1545,19 @@
       // figure out which node the cursor is over
       const target = topNodeAt(ev.clientX - r.left, ev.clientY - r.top);
       if (target && target.uid !== state.portDrag.fromUid) {
+        const fromNode = state.nodes.find(x => x.uid === state.portDrag.fromUid);
+        const fromSvc = SVC[fromNode.svcId];
+        const toSvc = SVC[target.svcId];
         const exists = state.edges.some(e => e.from === state.portDrag.fromUid && e.to === target.uid);
-        if (!exists) {
+        if (exists) {
+          // already wired
+        } else if (!isValidConnection(fromSvc.id, toSvc.id)) {
+          // Reject + explain why
+          toast(explainInvalidConnection(fromSvc, toSvc), true, 4500);
+          setStatus(`Couldn't wire ${fromSvc.name} → ${toSvc.name}.`);
+        } else {
           state.edges.push({ uid: uid(), from: state.portDrag.fromUid, to: target.uid });
-          const fromSvc = SVC[state.nodes.find(x => x.uid === state.portDrag.fromUid).svcId].name;
-          setStatus(`Wired ${fromSvc} → ${SVC[target.svcId].name}.`, true);
+          setStatus(`Wired <strong>${fromSvc.name}</strong> → <strong>${toSvc.name}</strong> · ${connectionLabel(fromSvc.id, toSvc.id)}`, true);
         }
       }
       state.portDrag = null;
