@@ -58,14 +58,21 @@ const ensureUser = async (claims) => {
   const existing = await ddb.send(new GetCommand({ TableName: USERS_TABLE, Key: { userId } }));
   if (existing.Item) return existing.Item;
 
-  const googleName = claims.name || claims["cognito:username"] || (claims.email ? claims.email.split("@")[0] : "user");
+  // Prefer human-readable signals over Cognito's internal sub UUID (which
+  // is what cognito:username resolves to when the pool uses email as the
+  // sign-in attribute and would produce an ugly handle).
+  const emailPrefix = claims.email ? claims.email.split("@")[0] : "";
+  const cognitoName = claims["cognito:username"] || "";
+  const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cognitoName);
+  const sourceName = claims.name || emailPrefix || (looksLikeUuid ? "user" : cognitoName) || "user";
   const suffix = randomBytes(2).toString("hex");
-  const handle = `${slugify(googleName)}-${suffix}`;
+  const handle = `${slugify(sourceName)}-${suffix}`;
+  const displayName = claims.name || emailPrefix || "user";
   const item = {
     userId,
     email: claims.email || null,
     handle,
-    displayName: googleName,
+    displayName,
     provider: claims["identities"]?.[0]?.providerName || "cognito",
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
