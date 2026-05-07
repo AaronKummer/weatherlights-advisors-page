@@ -218,6 +218,22 @@ html.dark-fallback .member-card-title { color: #ffffff !important; }
 html.dark-fallback .member-card p { color: #8b949e !important; }
 html.dark-fallback .member-card-cta { color: #00d4aa !important; }
 
+/* Training Ground hero card — dark variant */
+html.dark-fallback .tg-hero-card {
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.08) 0%, rgba(0, 212, 170, 0.02) 100%) !important;
+  border-color: rgba(0, 212, 170, 0.25) !important;
+}
+html.dark-fallback .tg-hero-card:hover { border-color: rgba(0, 212, 170, 0.5) !important; box-shadow: 0 16px 40px rgba(0, 212, 170, 0.15) !important; }
+html.dark-fallback .tg-hero-tag { color: #00d4aa !important; }
+html.dark-fallback .tg-hero-title { color: #ffffff !important; }
+html.dark-fallback .tg-hero-desc { color: #c9d1d9 !important; }
+html.dark-fallback .tg-hero-cta { background: linear-gradient(135deg, #00d4aa, #00a888) !important; color: #0a0a0f !important; }
+html.dark-fallback .tg-hero-card:hover .tg-hero-cta { background: linear-gradient(135deg, #00f0c2, #00b599) !important; }
+html.dark-fallback .tg-hero-preview {
+  background: #161b22 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* Cert picker — dark fallback */
 html.dark-fallback .cert-picker { border-top-color: rgba(255, 255, 255, 0.06) !important; }
 html.dark-fallback .cert-picker-title { color: #ffffff !important; }

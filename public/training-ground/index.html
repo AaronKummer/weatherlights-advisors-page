@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="darkreader-lock" />
+<title>AWS Training Ground · WeatherLight Advisors</title>
+<style>
+  :root {
+    --bg: #f7fbff;
+    --panel: #ffffff;
+    --ink: #1a3a6e;
+    --ink-2: #4a5e7e;
+    --muted: #6b7c93;
+    --border: #d8e6f3;
+    --border-soft: #eef3f9;
+    --accent: #2c5aa0;
+    --accent-2: #5b9bd5;
+    --good: #1a8a4f;
+    --bad: #b3261e;
+    --warn: #b86a00;
+    --grid: rgba(91, 155, 213, 0.08);
+    --node-shadow: 0 8px 24px rgba(26, 58, 110, 0.12);
+  }
+  html.theme-sapphire {
+    --bg: #0a0a0f;
+    --panel: #161b22;
+    --ink: #ffffff;
+    --ink-2: #c9d1d9;
+    --muted: #8b949e;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-soft: rgba(255, 255, 255, 0.04);
+    --accent: #00d4aa;
+    --accent-2: #00d4aa;
+    --good: #4cdb8c;
+    --bad: #ff7b6b;
+    --warn: #ffaa44;
+    --grid: rgba(0, 212, 170, 0.06);
+    --node-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  .tg-app {
+    display: grid;
+    grid-template-columns: 220px 1fr 280px;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+    height: 100dvh;
+  }
+  .tg-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 1.25rem;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .tg-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-right: 1.5rem;
+  }
+  .tg-title .pre { color: var(--accent); }
+  .tg-scenarios {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .tg-scenario-pill {
+    padding: 0.4rem 0.85rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    color: var(--ink-2);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .tg-scenario-pill:hover { background: var(--border-soft); color: var(--ink); }
+  .tg-scenario-pill.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
+  html.theme-sapphire .tg-scenario-pill.active { color: #0a0a0f; }
+  .tg-status {
+    margin-left: auto;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .tg-status .ok { color: var(--good); font-weight: 600; }
+
+  /* Palette */
+  .tg-palette {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 1rem 0.85rem;
+  }
+  .tg-palette h3 {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+    margin-top: 1rem;
+  }
+  .tg-palette h3:first-child { margin-top: 0; }
+  .tg-service {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 0.7rem;
+    margin-bottom: 0.4rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
+  }
+  .tg-service:hover { border-color: var(--accent-2); box-shadow: 0 4px 12px rgba(91, 155, 213, 0.12); transform: translateY(-1px); }
+  .tg-service:active { cursor: grabbing; }
+  .tg-service-icon {
+    width: 26px; height: 26px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #ffffff;
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+  }
+  .tg-service-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* Canvas */
+  .tg-canvas-wrap {
+    position: relative;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--bg);
+    overflow: hidden;
+  }
+  .tg-svg, .tg-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .tg-canvas { pointer-events: none; }
+  .tg-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    text-align: center;
+    pointer-events: none;
+    gap: 0.5rem;
+  }
+  .tg-empty-icon {
+    font-size: 2.4rem;
+    opacity: 0.3;
+  }
+  .tg-empty-text { font-size: 0.92rem; max-width: 320px; line-height: 1.5; }
+  .tg-empty-hint { font-size: 0.78rem; opacity: 0.7; }
+
+  /* SVG nodes */
+  .tg-node-group { cursor: grab; }
+  .tg-node-group.dragging { cursor: grabbing; }
+  .tg-node-group.connecting { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+    50% { filter: drop-shadow(0 0 8px var(--accent-2)); }
+  }
+  .tg-node-rect {
+    fill: var(--panel);
+    stroke: var(--border);
+    stroke-width: 1.5;
+  }
+  html.theme-sapphire .tg-node-rect { fill: #1d242c; }
+  .tg-node-rect.selected { stroke: var(--accent); stroke-width: 2.5; }
+  .tg-node-label {
+    font-size: 12px;
+    font-weight: 600;
+    fill: var(--ink);
+    pointer-events: none;
+  }
+  .tg-node-icon-bg { rx: 5; }
+  .tg-node-icon-text {
+    font-size: 9px;
+    font-weight: 800;
+    fill: #ffffff;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+  }
+  .tg-node-delete {
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .tg-node-group:hover .tg-node-delete { opacity: 0.6; }
+  .tg-node-delete:hover { opacity: 1 !important; }
+  .tg-node-delete-circle { fill: var(--bad); }
+  .tg-node-delete-x { stroke: #ffffff; stroke-width: 2; stroke-linecap: round; }
+
+  /* Connections */
+  .tg-link {
+    fill: none;
+    stroke: var(--accent-2);
+    stroke-width: 2.4;
+    stroke-dasharray: 6 8;
+    animation: dash 1.2s linear infinite;
+  }
+  @keyframes dash {
+    to { stroke-dashoffset: -28; }
+  }
+  .tg-link-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 14;
+    cursor: pointer;
+  }
+  .tg-link-hit:hover + .tg-link {
+    stroke: var(--bad);
+    stroke-dasharray: none;
+  }
+
+  /* Objectives panel */
+  .tg-objectives {
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: 1rem 1rem 1.25rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .tg-objectives h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+  .tg-objectives p.brief {
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    line-height: 1.55;
+    margin-bottom: 1rem;
+  }
+  .tg-objectives h3 {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 1rem 0 0.5rem;
+  }
+  .tg-objective-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .tg-objective {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .tg-objective.met {
+    border-color: rgba(40, 200, 120, 0.35);
+    color: var(--good);
+    background: rgba(40, 200, 120, 0.06);
+  }
+  .tg-obj-mark {
+    flex-shrink: 0;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: #ffffff;
+    font-weight: 800;
+  }
+  .tg-objective.met .tg-obj-mark { background: var(--good); border-color: var(--good); }
+  .tg-objective.met .tg-obj-mark::before { content: "✓"; }
+
+  .tg-actions {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 1rem;
+  }
+  .tg-btn {
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  .tg-btn-primary { background: var(--accent); color: #ffffff; }
+  html.theme-sapphire .tg-btn-primary { color: #0a0a0f; }
+  .tg-btn-primary:hover { filter: brightness(1.1); }
+  .tg-btn-primary:active { transform: translateY(1px); }
+  .tg-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tg-btn-ghost {
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--border);
+  }
+  .tg-btn-ghost:hover { background: var(--bg); color: var(--ink); }
+
+  .tg-toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    padding: 0.7rem 1.5rem;
+    background: var(--good);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 100px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .tg-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .tg-toast.error { background: var(--bad); }
+
+  @media (max-width: 920px) {
+    .tg-app { grid-template-columns: 64px 1fr; grid-template-rows: 56px 1fr; }
+    .tg-objectives { display: none; }
+    .tg-service-name { display: none; }
+    .tg-palette { padding: 0.6rem 0.4rem; }
+    .tg-service { justify-content: center; padding: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="tg-app">
+  <header class="tg-header">
+    <div class="tg-title"><span class="pre">⌁</span> AWS Training Ground</div>
+    <div class="tg-scenarios" id="tg-scenarios"></div>
+    <div class="tg-status" id="tg-status">Drag a service onto the canvas to begin.</div>
+  </header>
+
+  <aside class="tg-palette" id="tg-palette"></aside>
+
+  <div class="tg-canvas-wrap" id="tg-canvas-wrap">
+    <svg class="tg-svg" id="tg-svg"></svg>
+    <canvas class="tg-canvas" id="tg-canvas"></canvas>
+    <div class="tg-empty" id="tg-empty">
+      <div class="tg-empty-icon">⌁</div>
+      <div class="tg-empty-text">Drag services from the left to start designing.</div>
+      <div class="tg-empty-hint">Click a service to start a connection, then click another to wire it up.</div>
+    </div>
+  </div>
+
+  <aside class="tg-objectives">
+    <h2 id="tg-scenario-title">Build a Static Website</h2>
+    <p class="brief" id="tg-scenario-brief">Serve static assets globally with low latency. Pick the right two services and wire them together.</p>
+    <h3>Objectives</h3>
+    <ul class="tg-objective-list" id="tg-objective-list"></ul>
+    <div class="tg-actions">
+      <button class="tg-btn tg-btn-primary" id="tg-validate">Validate &amp; Run</button>
+      <button class="tg-btn tg-btn-ghost" id="tg-reset">Reset canvas</button>
+    </div>
+  </aside>
+</div>
+
+<div class="tg-toast" id="tg-toast"></div>
+
+<script>
+(function () {
+  // ───────── Theme ─────────
+  const params = new URLSearchParams(location.search);
+  const theme = params.get("theme") || "weatherlight";
+  if (theme === "sapphire") document.documentElement.classList.add("theme-sapphire");
+
+  // ───────── Service catalog ─────────
+  const SERVICES = [
+    // Compute
+    { id: "ec2",       name: "EC2",          cat: "Compute",     color: "#ec7211", abbr: "EC2" },
+    { id: "lambda",    name: "Lambda",       cat: "Compute",     color: "#fa7e14", abbr: "λ" },
+    { id: "fargate",   name: "Fargate",      cat: "Compute",     color: "#fa6818", abbr: "FAR" },
+    // Storage
+    { id: "s3",        name: "S3",           cat: "Storage",     color: "#3f8624", abbr: "S3" },
+    { id: "ebs",       name: "EBS",          cat: "Storage",     color: "#5a9c39", abbr: "EBS" },
+    // Database
+    { id: "rds",       name: "RDS",          cat: "Database",    color: "#3b48cc", abbr: "RDS" },
+    { id: "dynamodb",  name: "DynamoDB",     cat: "Database",    color: "#3148c6", abbr: "DDB" },
+    // Networking
+    { id: "cloudfront",name: "CloudFront",   cat: "Networking",  color: "#bf2b2b", abbr: "CF" },
+    { id: "alb",       name: "ALB",          cat: "Networking",  color: "#bf2b2b", abbr: "ALB" },
+    { id: "apigw",     name: "API Gateway",  cat: "Networking",  color: "#bf2b2b", abbr: "API" },
+    { id: "vpc",       name: "VPC",          cat: "Networking",  color: "#a13030", abbr: "VPC" },
+    // Integration
+    { id: "sqs",       name: "SQS",          cat: "Integration", color: "#cc4d8a", abbr: "SQS" },
+    { id: "eventbridge",name:"EventBridge",  cat: "Integration", color: "#bf3b8a", abbr: "EVB" },
+  ];
+  const SVC = Object.fromEntries(SERVICES.map(s => [s.id, s]));
+
+  // ───────── Scenarios ─────────
+  // Each scenario has objectives that the validator checks against the live graph.
+  // type 'has': requires a node of svcId. type 'edge': requires a connection from→to.
+  const SCENARIOS = [
+    {
+      id: "static-site",
+      title: "Build a Static Website",
+      brief: "Serve static assets globally with low latency. Two services, one connection.",
+      objectives: [
+        { type: "has",  svc: "s3",         label: "Add an S3 bucket" },
+        { type: "has",  svc: "cloudfront", label: "Add a CloudFront distribution" },
+        { type: "edge", from: "cloudfront", to: "s3", label: "Wire CloudFront to S3 (origin)" },
+      ],
+    },
+    {
+      id: "serverless-api",
+      title: "Build a Serverless API",
+      brief: "REST API at the edge, compute on demand, NoSQL for state. Three-hop chain.",
+      objectives: [
+        { type: "has",  svc: "apigw",    label: "Add API Gateway" },
+        { type: "has",  svc: "lambda",   label: "Add Lambda" },
+        { type: "has",  svc: "dynamodb", label: "Add DynamoDB" },
+        { type: "edge", from: "apigw",    to: "lambda",   label: "API Gateway invokes Lambda" },
+        { type: "edge", from: "lambda",   to: "dynamodb", label: "Lambda reads/writes DynamoDB" },
+      ],
+    },
+    {
+      id: "three-tier",
+      title: "Three-Tier Web App",
+      brief: "Edge cache, load balancer, compute fleet, relational database.",
+      objectives: [
+        { type: "has",  svc: "cloudfront", label: "Add CloudFront" },
+        { type: "has",  svc: "alb",        label: "Add ALB" },
+        { type: "has",  svc: "ec2",        label: "Add EC2" },
+        { type: "has",  svc: "rds",        label: "Add RDS" },
+        { type: "edge", from: "cloudfront", to: "alb", label: "CloudFront → ALB" },
+        { type: "edge", from: "alb",        to: "ec2", label: "ALB → EC2" },
+        { type: "edge", from: "ec2",        to: "rds", label: "EC2 → RDS" },
+      ],
+    },
+    {
+      id: "event-driven",
+      title: "Event-Driven Pipeline",
+      brief: "API Gateway captures events, EventBridge routes them, two Lambda consumers handle work.",
+      objectives: [
+        { type: "has",  svc: "apigw",       label: "Add API Gateway" },
+        { type: "has",  svc: "eventbridge", label: "Add EventBridge" },
+        { type: "has",  svc: "lambda",      label: "Add at least one Lambda" },
+        { type: "edge", from: "apigw",       to: "eventbridge", label: "API Gateway → EventBridge" },
+        { type: "edge", from: "eventbridge", to: "lambda",      label: "EventBridge → Lambda" },
+      ],
+    },
+  ];
+
+  // ───────── State ─────────
+  const state = {
+    scenarioId: SCENARIOS[0].id,
+    nodes: [],          // {uid, svcId, x, y}
+    edges: [],          // {uid, from: nodeUid, to: nodeUid}
+    connectFrom: null,  // nodeUid currently picked as connection source
+    drag: null,
+    flowingUntil: 0,    // timestamp when celebratory flow stops
+  };
+  const NODE_W = 120, NODE_H = 56;
+
+  // ───────── DOM refs ─────────
+  const $ = (id) => document.getElementById(id);
+  const svgEl    = $("tg-svg");
+  const canvasEl = $("tg-canvas");
+  const wrapEl   = $("tg-canvas-wrap");
+  const emptyEl  = $("tg-empty");
+  const paletteEl = $("tg-palette");
+  const objListEl = $("tg-objective-list");
+  const scenariosEl = $("tg-scenarios");
+  const statusEl = $("tg-status");
+  const toastEl  = $("tg-toast");
+
+  // ───────── Build palette + scenario tabs ─────────
+  function buildPalette() {
+    const cats = [...new Set(SERVICES.map(s => s.cat))];
+    paletteEl.innerHTML = "";
+    cats.forEach(cat => {
+      const h = document.createElement("h3"); h.textContent = cat; paletteEl.appendChild(h);
+      SERVICES.filter(s => s.cat === cat).forEach(s => {
+        const el = document.createElement("div");
+        el.className = "tg-service";
+        el.draggable = true;
+        el.dataset.svc = s.id;
+        el.innerHTML = `<span class="tg-service-icon" style="background:${s.color}">${s.abbr}</span><span class="tg-service-name">${s.name}</span>`;
+        el.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", s.id);
+        });
+        paletteEl.appendChild(el);
+      });
+    });
+  }
+  function buildScenarioTabs() {
+    scenariosEl.innerHTML = "";
+    SCENARIOS.forEach(sc => {
+      const b = document.createElement("button");
+      b.className = "tg-scenario-pill" + (sc.id === state.scenarioId ? " active" : "");
+      b.textContent = sc.title;
+      b.addEventListener("click", () => loadScenario(sc.id));
+      scenariosEl.appendChild(b);
+    });
+  }
+
+  // ───────── Scenario lifecycle ─────────
+  function currentScenario() { return SCENARIOS.find(s => s.id === state.scenarioId); }
+  function loadScenario(id) {
+    state.scenarioId = id;
+    state.nodes = [];
+    state.edges = [];
+    state.connectFrom = null;
+    state.flowingUntil = 0;
+    const sc = currentScenario();
+    $("tg-scenario-title").textContent = sc.title;
+    $("tg-scenario-brief").textContent = sc.brief;
+    buildScenarioTabs();
+    renderObjectives();
+    render();
+    setStatus("Drag a service onto the canvas to begin.");
+  }
+
+  // ───────── Validation ─────────
+  function evaluateObjectives() {
+    const sc = currentScenario();
+    return sc.objectives.map(obj => {
+      let met = false;
+      if (obj.type === "has") {
+        met = state.nodes.some(n => n.svcId === obj.svc);
+      } else if (obj.type === "edge") {
+        // any edge from a node of svc=from to a node of svc=to
+        met = state.edges.some(e => {
+          const from = state.nodes.find(n => n.uid === e.from);
+          const to = state.nodes.find(n => n.uid === e.to);
+          return from && to && from.svcId === obj.from && to.svcId === obj.to;
+        });
+      }
+      return { ...obj, met };
+    });
+  }
+  function renderObjectives() {
+    const evaluated = evaluateObjectives();
+    objListEl.innerHTML = "";
+    evaluated.forEach(o => {
+      const li = document.createElement("li");
+      li.className = "tg-objective" + (o.met ? " met" : "");
+      li.innerHTML = `<span class="tg-obj-mark"></span><span>${o.label}</span>`;
+      objListEl.appendChild(li);
+    });
+  }
+
+  // ───────── Status / toast ─────────
+  function setStatus(msg, ok=false) {
+    statusEl.innerHTML = ok ? `<span class="ok">${msg}</span>` : msg;
+  }
+  function toast(msg, error=false) {
+    toastEl.textContent = msg;
+    toastEl.classList.toggle("error", !!error);
+    toastEl.classList.add("show");
+    setTimeout(() => toastEl.classList.remove("show"), 1800);
+  }
+
+  // ───────── Render ─────────
+  let nextUid = 1;
+  function uid() { return nextUid++; }
+
+  function render() {
+    emptyEl.style.display = state.nodes.length === 0 ? "" : "none";
+
+    // SVG: clear + redraw
+    svgEl.innerHTML = "";
+    // marker for arrowheads
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    defs.innerHTML = `
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent-2)"/>
+      </marker>`;
+    svgEl.appendChild(defs);
+
+    // edges first so nodes overlay them
+    state.edges.forEach(e => drawEdge(e));
+    state.nodes.forEach(n => drawNode(n));
+    renderObjectives();
+  }
+
+  function nodeCenter(n) {
+    return { x: n.x + NODE_W / 2, y: n.y + NODE_H / 2 };
+  }
+
+  function drawEdge(e) {
+    const from = state.nodes.find(n => n.uid === e.from);
+    const to   = state.nodes.find(n => n.uid === e.to);
+    if (!from || !to) return;
+    const a = nodeCenter(from);
+    const b = nodeCenter(to);
+    const dx = b.x - a.x;
+    const cx1 = a.x + dx * 0.5, cy1 = a.y;
+    const cx2 = a.x + dx * 0.5, cy2 = b.y;
+    const d = `M ${a.x} ${a.y} C ${cx1} ${cy1} ${cx2} ${cy2} ${b.x} ${b.y}`;
+
+    const ns = "http://www.w3.org/2000/svg";
+    const hit = document.createElementNS(ns, "path");
+    hit.setAttribute("d", d);
+    hit.setAttribute("class", "tg-link-hit");
+    hit.addEventListener("click", () => removeEdge(e.uid));
+    svgEl.appendChild(hit);
+
+    const path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("class", "tg-link");
+    path.setAttribute("marker-end", "url(#arrow)");
+    path.dataset.edgeUid = e.uid;
+    svgEl.appendChild(path);
+  }
+
+  function drawNode(n) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svc = SVC[n.svcId];
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("class", "tg-node-group" + (state.connectFrom === n.uid ? " connecting" : ""));
+    g.setAttribute("transform", `translate(${n.x} ${n.y})`);
+    g.dataset.uid = n.uid;
+
+    const rect = document.createElementNS(ns, "rect");
+    rect.setAttribute("class", "tg-node-rect");
+    rect.setAttribute("width", NODE_W);
+    rect.setAttribute("height", NODE_H);
+    rect.setAttribute("rx", 10);
+    rect.setAttribute("filter", "drop-shadow(0 6px 12px rgba(26,58,110,0.10))");
+    g.appendChild(rect);
+
+    // Icon block
+    const iconBg = document.createElementNS(ns, "rect");
+    iconBg.setAttribute("x", 10); iconBg.setAttribute("y", 14);
+    iconBg.setAttribute("width", 28); iconBg.setAttribute("height", 28);
+    iconBg.setAttribute("rx", 6);
+    iconBg.setAttribute("fill", svc.color);
+    g.appendChild(iconBg);
+
+    const iconTxt = document.createElementNS(ns, "text");
+    iconTxt.setAttribute("class", "tg-node-icon-text");
+    iconTxt.setAttribute("x", 24); iconTxt.setAttribute("y", 28);
+    iconTxt.textContent = svc.abbr;
+    g.appendChild(iconTxt);
+
+    // Label
+    const label = document.createElementNS(ns, "text");
+    label.setAttribute("class", "tg-node-label");
+    label.setAttribute("x", 48); label.setAttribute("y", 33);
+    label.textContent = svc.name;
+    g.appendChild(label);
+
+    // Delete handle (top-right)
+    const del = document.createElementNS(ns, "g");
+    del.setAttribute("class", "tg-node-delete");
+    del.setAttribute("transform", `translate(${NODE_W - 10} 10)`);
+    const delC = document.createElementNS(ns, "circle");
+    delC.setAttribute("class", "tg-node-delete-circle");
+    delC.setAttribute("r", 8);
+    del.appendChild(delC);
+    const delX1 = document.createElementNS(ns, "line");
+    delX1.setAttribute("class", "tg-node-delete-x");
+    delX1.setAttribute("x1", -3); delX1.setAttribute("y1", -3);
+    delX1.setAttribute("x2", 3);  delX1.setAttribute("y2", 3);
+    del.appendChild(delX1);
+    const delX2 = document.createElementNS(ns, "line");
+    delX2.setAttribute("class", "tg-node-delete-x");
+    delX2.setAttribute("x1", -3); delX2.setAttribute("y1", 3);
+    delX2.setAttribute("x2", 3);  delX2.setAttribute("y2", -3);
+    del.appendChild(delX2);
+    del.addEventListener("pointerdown", (e) => { e.stopPropagation(); });
+    del.addEventListener("click", (e) => { e.stopPropagation(); removeNode(n.uid); });
+    g.appendChild(del);
+
+    // Drag + click-to-connect
+    g.addEventListener("pointerdown", (e) => onNodePointerDown(e, n));
+    svgEl.appendChild(g);
+  }
+
+  // ───────── Node interactions ─────────
+  function onNodePointerDown(e, n) {
+    e.preventDefault();
+    const start = { x: e.clientX, y: e.clientY, nodeX: n.x, nodeY: n.y, moved: false };
+    state.drag = { uid: n.uid, ...start };
+    const onMove = (ev) => {
+      const dx = ev.clientX - start.x;
+      const dy = ev.clientY - start.y;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) state.drag.moved = true;
+      n.x = start.nodeX + dx;
+      n.y = start.nodeY + dy;
+      // clamp to canvas
+      n.x = Math.max(0, Math.min(wrapEl.clientWidth - NODE_W, n.x));
+      n.y = Math.max(0, Math.min(wrapEl.clientHeight - NODE_H, n.y));
+      render();
+    };
+    const onUp = (ev) => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      const wasDragged = state.drag?.moved;
+      state.drag = null;
+      if (!wasDragged) onNodeClick(n);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  function onNodeClick(n) {
+    if (state.connectFrom == null) {
+      state.connectFrom = n.uid;
+      setStatus(`Connecting from <strong>${SVC[n.svcId].name}</strong>… click another service to wire it up.`);
+      render();
+      return;
+    }
+    if (state.connectFrom === n.uid) {
+      // cancel
+      state.connectFrom = null;
+      setStatus("Connection cancelled.");
+      render();
+      return;
+    }
+    // Create connection
+    const exists = state.edges.some(e => e.from === state.connectFrom && e.to === n.uid);
+    if (!exists) {
+      state.edges.push({ uid: uid(), from: state.connectFrom, to: n.uid });
+      const fromSvc = SVC[state.nodes.find(x => x.uid === state.connectFrom).svcId].name;
+      setStatus(`Wired ${fromSvc} → ${SVC[n.svcId].name}.`, true);
+    }
+    state.connectFrom = null;
+    render();
+  }
+
+  function removeNode(uid) {
+    state.nodes = state.nodes.filter(n => n.uid !== uid);
+    state.edges = state.edges.filter(e => e.from !== uid && e.to !== uid);
+    if (state.connectFrom === uid) state.connectFrom = null;
+    render();
+  }
+  function removeEdge(uid) {
+    state.edges = state.edges.filter(e => e.uid !== uid);
+    render();
+  }
+
+  // ───────── Drop from palette ─────────
+  wrapEl.addEventListener("dragover", (e) => e.preventDefault());
+  wrapEl.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const svcId = e.dataTransfer.getData("text/plain");
+    if (!SVC[svcId]) return;
+    const r = wrapEl.getBoundingClientRect();
+    const x = Math.max(0, Math.min(r.width - NODE_W, e.clientX - r.left - NODE_W / 2));
+    const y = Math.max(0, Math.min(r.height - NODE_H, e.clientY - r.top - NODE_H / 2));
+    state.nodes.push({ uid: uid(), svcId, x, y });
+    render();
+  });
+
+  // ───────── Validate / animated celebration ─────────
+  function validate() {
+    const evaluated = evaluateObjectives();
+    const allMet = evaluated.every(o => o.met);
+    renderObjectives();
+    if (allMet) {
+      state.flowingUntil = performance.now() + 4500;
+      setStatus("Architecture complete — data flowing now.", true);
+      toast("Architecture complete!");
+    } else {
+      const missing = evaluated.filter(o => !o.met).length;
+      setStatus(`<strong>${missing}</strong> objective${missing===1?"":"s"} still incomplete.`);
+      toast(`${missing} objective${missing===1?"":"s"} to go`, true);
+    }
+  }
+  $("tg-validate").addEventListener("click", validate);
+  $("tg-reset").addEventListener("click", () => {
+    state.nodes = []; state.edges = []; state.connectFrom = null; state.flowingUntil = 0;
+    setStatus("Canvas cleared.");
+    render();
+  });
+
+  // ───────── Particle system on canvas overlay ─────────
+  const ctx = canvasEl.getContext("2d");
+  function resizeCanvas() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    canvasEl.width  = wrapEl.clientWidth  * dpr;
+    canvasEl.height = wrapEl.clientHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", () => { resizeCanvas(); render(); });
+
+  const particles = [];
+  // Particles spawn on edges. During normal play one slow particle per edge keeps the canvas alive;
+  // during the "flowing" celebration we crank the spawn rate way up.
+  let lastSpawn = 0;
+  function tick(now) {
+    requestAnimationFrame(tick);
+    const flowing = now < state.flowingUntil;
+    const spawnEvery = flowing ? 80 : 700;
+    if (state.edges.length && now - lastSpawn > spawnEvery) {
+      lastSpawn = now;
+      // pick a random edge
+      const e = state.edges[Math.floor(Math.random() * state.edges.length)];
+      const from = state.nodes.find(n => n.uid === e.from);
+      const to = state.nodes.find(n => n.uid === e.to);
+      if (from && to) {
+        particles.push({
+          fromUid: e.from, toUid: e.to,
+          t: 0,
+          dur: flowing ? 900 + Math.random() * 600 : 1600 + Math.random() * 800,
+          born: now,
+          flowing,
+        });
+      }
+    }
+    // draw
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      const from = state.nodes.find(n => n.uid === p.fromUid);
+      const to = state.nodes.find(n => n.uid === p.toUid);
+      if (!from || !to) { particles.splice(i, 1); continue; }
+      const elapsed = now - p.born;
+      const t = elapsed / p.dur;
+      if (t >= 1) { particles.splice(i, 1); continue; }
+      const a = nodeCenter(from);
+      const b = nodeCenter(to);
+      const dx = b.x - a.x;
+      const cx1 = a.x + dx * 0.5, cy1 = a.y;
+      const cx2 = a.x + dx * 0.5, cy2 = b.y;
+      const pos = bezierAt(t, a.x, a.y, cx1, cy1, cx2, cy2, b.x, b.y);
+      const r = p.flowing ? 4.5 : 3;
+      const alpha = Math.sin(t * Math.PI); // fade in + out
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+      const isDark = document.documentElement.classList.contains("theme-sapphire");
+      const fill = isDark ? `rgba(0, 212, 170, ${alpha})` : `rgba(91, 155, 213, ${alpha})`;
+      const glow = isDark ? `rgba(0, 212, 170, ${alpha * 0.5})` : `rgba(91, 155, 213, ${alpha * 0.5})`;
+      ctx.shadowBlur = p.flowing ? 16 : 8;
+      ctx.shadowColor = glow;
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+  function bezierAt(t, x0, y0, x1, y1, x2, y2, x3, y3) {
+    const u = 1 - t;
+    const x = u*u*u*x0 + 3*u*u*t*x1 + 3*u*t*t*x2 + t*t*t*x3;
+    const y = u*u*u*y0 + 3*u*u*t*y1 + 3*u*t*t*y2 + t*t*t*y3;
+    return { x, y };
+  }
+
+  // ───────── Boot ─────────
+  buildPalette();
+  loadScenario(state.scenarioId);
+  resizeCanvas();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

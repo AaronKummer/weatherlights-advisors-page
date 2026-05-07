@@ -378,19 +378,6 @@
   },
   {
     "id": 30,
-    "question": "A company is decomposing a legacy monolith into services and adopting an event-driven architecture: domain events from order, payment, and shipping services need fan-out to many consumers, schema evolution, replay, and selective filtering. Which combo is best?",
-    "options": [
-      "A. Amazon EventBridge with a custom event bus per domain, schema registry for discovery and code-binding generation, archive + replay for bus history, and content-based rule filtering for consumers.",
-      "B. SNS topics per event type with SQS subscribers and ad-hoc Schemas in Confluence.",
-      "C. Kinesis Data Streams per service with consumer Lambdas filtering on payload via a Glue catalog.",
-      "D. A single SQS Standard queue per consumer; producers fan out via cross-account IAM."
-    ],
-    "answer": 0,
-    "explanation": "EventBridge offers content-based filtering, archive/replay, and a schema registry — purpose-built for this. SNS+SQS lacks filtering as expressive as EventBridge and there's no managed schema registry there (B). Kinesis is for stream processing, not pub/sub fan-out with filters (C). Direct SQS fan-out scales poorly and lacks schema/replay (D).",
-    "domain": "Accelerate Workload Migration and Modernization"
-  },
-  {
-    "id": 31,
     "question": "An ad-tech firm needs sub-millisecond key/value lookups at 5M ops/sec for ad targeting, with multi-AZ failover, and the cache must survive an AZ outage with no data loss. Which is the right primitive?",
     "options": [
       "A. Amazon MemoryDB for Redis with multi-AZ replication and durable transaction logs.",
@@ -403,7 +390,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 32,
+    "id": 31,
     "question": "A startup wants a fully serverless web app: a React SPA, an authenticated REST API, a Postgres-compatible database that scales to zero, file uploads, and CI/CD. Which composition?",
     "options": [
       "A. CloudFront + S3 for the SPA, Cognito user pools for auth, API Gateway HTTP API to Lambda, Aurora Serverless v2 with a min ACU of 0 for scale-to-zero, S3 with presigned URLs for uploads, and CodePipeline.",
@@ -416,7 +403,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 33,
+    "id": 32,
     "question": "A SaaS provider offers a Postgres-backed API, with per-tenant strict isolation requirements (tenant data must never be in the same table as another tenant). Tenants range from 1 GB to 4 TB. Which strategy balances isolation and cost?",
     "options": [
       "A. Pool model with row-level security per tenant in a single Aurora cluster; one schema per tenant for very large customers; bridge model for the largest 5 customers using dedicated Aurora clusters.",
@@ -429,7 +416,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 34,
+    "id": 33,
     "question": "A new global SaaS needs a CDN that supports request authentication, custom header injection, signed cookies, A/B testing, and the ability to run JavaScript at the edge for 50ms-budget personalization. Which choice is correct?",
     "options": [
       "A. CloudFront with CloudFront Functions for header manipulation and small JS at viewer-request, plus Lambda@Edge for heavier compute, signed cookies for auth, and KeyValueStore for A/B configuration.",
@@ -442,7 +429,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 35,
+    "id": 34,
     "question": "A team needs to run windowed (5-minute) aggregations over a 1M events/sec stream and write rolling counters to a low-latency store consumed by a dashboard. Which combination?",
     "options": [
       "A. Kinesis Data Streams as ingest; Managed Service for Apache Flink for windowed aggregation; sink to Amazon Timestream for the dashboard via QuickSight.",
@@ -455,7 +442,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 36,
+    "id": 35,
     "question": "An e-commerce platform must guarantee that every order is processed exactly once even with retries, that ordered processing per customer is preserved, and that a 30-second SLA per order is honored. Which is the appropriate AWS messaging primitive?",
     "options": [
       "A. Amazon SQS FIFO queue with content-based deduplication and message group ID = customerId; consumer is Lambda with reserved concurrency; visibility timeout 60s.",
@@ -468,7 +455,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 37,
+    "id": 36,
     "question": "A startup wants a managed graph database for a social application with billion-edge traversals and Gremlin/openCypher support. Which AWS service?",
     "options": [
       "A. Amazon Neptune.",
@@ -481,7 +468,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 38,
+    "id": 37,
     "question": "An architect must design a low-latency multiplayer game backend for 200k concurrent players in three Regions with stateful matchmaking, player session persistence under 10ms, and rolling deploys. Which combination?",
     "options": [
       "A. Amazon GameLift FlexMatch for matchmaking and session placement; ElastiCache for Redis multi-AZ for player session state; per-Region fleets behind GameLift queues.",
@@ -494,7 +481,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 39,
+    "id": 38,
     "question": "A media transcode pipeline must process 50 hours of source video per minute, with elastic scale, GPU acceleration, and pay-per-job pricing. Which is the simplest fit?",
     "options": [
       "A. AWS Elemental MediaConvert with output presets and queues; rely on its managed scaling.",
@@ -507,7 +494,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 40,
+    "id": 39,
     "question": "A solutions architect needs a managed search engine over 30 TB of product data with vector similarity for semantic search and traditional keyword search in the same query. Which is the best fit?",
     "options": [
       "A. Amazon OpenSearch Service with the kNN vector engine and BM25 hybrid scoring, sharded across data nodes; UltraWarm for cold partitions.",
@@ -520,20 +507,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 41,
-    "question": "A regulated firm needs to ensure that no S3 object created in any account in the org is ever made public, even via a careless ACL or bucket policy. Which is the correct, layered set of controls?",
-    "options": [
-      "A. Account-level S3 Block Public Access on every account, an SCP denying s3:PutBucketPublicAccessBlock with disable values, IAM Access Analyzer findings forwarded to Security Hub, and an RCP that prevents external principals from being granted s3:PutObject ACLs.",
-      "B. A daily Lambda that runs s3:GetBucketAcl and reports public buckets to Slack.",
-      "C. S3 Object Lock in compliance mode on every bucket.",
-      "D. Cross-Region replication only to a hardened bucket."
-    ],
-    "answer": 0,
-    "explanation": "Block Public Access at the account, SCPs to prevent disablement, Access Analyzer for detection, and RCPs scoping external principal grants are layered preventative + detective controls. Lambda detection alone is reactive (B). Object Lock prevents deletion, not exposure (C). CRR doesn't address public access (D).",
-    "domain": "Design for New Solutions"
-  },
-  {
-    "id": 42,
+    "id": 40,
     "question": "A service exposes a REST API to public internet users; the team wants to mitigate volumetric DDoS, layer-7 attacks, and bot scrapers, with managed rules for OWASP Top 10. Which combination is best?",
     "options": [
       "A. CloudFront with AWS Shield Advanced, AWS WAF (using Core Rule Set, IP Reputation, and Bot Control managed rules), and CAPTCHA action on suspicious requests; Route 53 health checks for failover.",
@@ -546,20 +520,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 43,
-    "question": "A workload uses AWS Lambda to call a third-party API that issues short-lived OAuth tokens. The team wants secure storage with automatic rotation and minimal Lambda boilerplate. Which is the cleanest pattern?",
-    "options": [
-      "A. AWS Secrets Manager with a custom rotation Lambda that exchanges client_credentials for new tokens; Lambda function uses the AWS Parameters and Secrets Lambda Extension to cache the secret locally.",
-      "B. Encrypt the static token with KMS and place it as an environment variable on the Lambda.",
-      "C. Store the token in DynamoDB and update via a CloudWatch Events scheduled rule.",
-      "D. Use AWS Systems Manager Parameter Store SecureString without rotation; rotate manually quarterly."
-    ],
-    "answer": 0,
-    "explanation": "Secrets Manager with custom rotation handles the OAuth refresh; the Parameters and Secrets extension reduces per-invocation overhead. Static envvars (B) defeat rotation. Custom DDB schemes (C) reinvent Secrets Manager. SSM Parameter Store SecureString lacks managed rotation (D).",
-    "domain": "Design for New Solutions"
-  },
-  {
-    "id": 44,
+    "id": 41,
     "question": "A startup wants to authenticate end users via Google, Apple, and email/password, while issuing JWTs that can authorize calls into AWS resources tied to per-user identities. Which AWS combination is appropriate?",
     "options": [
       "A. Amazon Cognito user pool with hosted UI (federated to Google and Apple), and a Cognito identity pool issuing temporary AWS credentials via roles mapped to user pool groups.",
@@ -572,7 +533,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 45,
+    "id": 42,
     "question": "An architect must design a global API endpoint with low connection-establishment latency from anywhere, static IP addresses for partner allow-listing, and origin failover between two Regions. Which AWS combination?",
     "options": [
       "A. AWS Global Accelerator with two static anycast IPs, endpoint groups in two Regions, traffic dial 100/0 with health-check failover, fronting Application Load Balancers.",
@@ -585,7 +546,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 46,
+    "id": 43,
     "question": "A SaaS company is launching in regulated jurisdictions that require data residency. Customer data must remain in-Region, including telemetry, backups, and any analytics. Which combination is most appropriate?",
     "options": [
       "A. AWS Control Tower Region deny SCP scoped to non-permitted Regions, per-Region S3 buckets and KMS multi-Region keys (with replicas only in permitted Regions), per-Region observability stacks, and AWS Backup policies that restrict copy-to-Region targets to permitted Regions.",
@@ -598,20 +559,7 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 47,
-    "question": "A retail platform must integrate with 40 partner APIs with vastly different protocols (REST, SOAP, SFTP, async webhooks). The team wants managed connectors and orchestration. Which AWS service catalog fits?",
-    "options": [
-      "A. Amazon AppFlow for SaaS connector flows, AWS Transfer Family for SFTP, EventBridge Pipes for filtered cross-service plumbing, and Step Functions for orchestrating end-to-end.",
-      "B. Single Lambda per partner; bespoke code for everything; no managed connectors.",
-      "C. AWS DataSync for all partner data transfers regardless of protocol.",
-      "D. AWS Glue Studio for all integrations including SOAP."
-    ],
-    "answer": 0,
-    "explanation": "AppFlow + Transfer Family + EventBridge Pipes + Step Functions is the AWS-native suite for B2B integration. Per-partner Lambdas (B) eschew managed connectors. DataSync is for storage migration (C). Glue Studio is for ETL, not SOAP integrations (D).",
-    "domain": "Design for New Solutions"
-  },
-  {
-    "id": 48,
+    "id": 44,
     "question": "A new product needs a queryable audit log that proves no record has been altered or deleted, even by admins, and must export to S3 for analytics. Which service combination?",
     "options": [
       "A. Amazon QLDB for cryptographically verified ledger; QLDB streams to Kinesis Data Streams; Firehose to S3 in Parquet for Athena.",
@@ -624,7 +572,33 @@
     "domain": "Design for New Solutions"
   },
   {
-    "id": 49,
+    "id": 45,
+    "question": "A regulated firm has discovered through Access Analyzer that several existing S3 buckets across the org have policies allowing public access. They need to remediate now and prevent recurrence even via a careless ACL or bucket policy. Which is the correct, layered set of controls?",
+    "options": [
+      "A. Account-level S3 Block Public Access on every account, an SCP denying s3:PutBucketPublicAccessBlock with disable values, IAM Access Analyzer findings forwarded to Security Hub, and an RCP that prevents external principals from being granted s3:PutObject ACLs.",
+      "B. A daily Lambda that runs s3:GetBucketAcl and reports public buckets to Slack.",
+      "C. S3 Object Lock in compliance mode on every bucket.",
+      "D. Cross-Region replication only to a hardened bucket."
+    ],
+    "answer": 0,
+    "explanation": "Block Public Access at the account, SCPs to prevent disablement, Access Analyzer for detection, and RCPs scoping external principal grants are layered preventative + detective controls. Lambda detection alone is reactive (B). Object Lock prevents deletion, not exposure (C). CRR doesn't address public access (D).",
+    "domain": "Continuous Improvement for Existing Solutions"
+  },
+  {
+    "id": 46,
+    "question": "An existing workload uses AWS Lambda to call a third-party API that issues short-lived OAuth tokens. Today the token is hardcoded as an env var and engineers rotate it manually. The team wants to harden the existing system with secure storage, automatic rotation, and minimal Lambda boilerplate. Which is the cleanest pattern?",
+    "options": [
+      "A. AWS Secrets Manager with a custom rotation Lambda that exchanges client_credentials for new tokens; Lambda function uses the AWS Parameters and Secrets Lambda Extension to cache the secret locally.",
+      "B. Encrypt the static token with KMS and place it as an environment variable on the Lambda.",
+      "C. Store the token in DynamoDB and update via a CloudWatch Events scheduled rule.",
+      "D. Use AWS Systems Manager Parameter Store SecureString without rotation; rotate manually quarterly."
+    ],
+    "answer": 0,
+    "explanation": "Secrets Manager with custom rotation handles the OAuth refresh; the Parameters and Secrets extension reduces per-invocation overhead. Static envvars (B) defeat rotation. Custom DDB schemes (C) reinvent Secrets Manager. SSM Parameter Store SecureString lacks managed rotation (D).",
+    "domain": "Continuous Improvement for Existing Solutions"
+  },
+  {
+    "id": 47,
     "question": "A startup wants disaster recovery for a stateful Kubernetes workload on EKS with RPO of 15 minutes and RTO of 30 minutes between two Regions. Application data lives in EBS-backed StatefulSets. Which combination is feasible?",
     "options": [
       "A. EKS clusters in both Regions; persistent volumes backed by Amazon EBS with cross-Region snapshots via EBS snapshot lifecycle policies (or AWS Backup), Velero for cluster-state backup, and ExternalDNS plus Route 53 ARC routing to the secondary on failover; rehydrate via restore-from-snapshot.",
@@ -637,7 +611,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 50,
+    "id": 48,
     "question": "An architect must improve an existing two-tier app (ALB to EC2 to RDS MySQL Multi-AZ) to provide RTO under 60 seconds and RPO under 5 minutes across two Regions, at lowest extra cost. Which DR strategy is appropriate?",
     "options": [
       "A. Warm standby: scaled-down replica stack in the second Region, RDS cross-Region read replica promoted on failover, Route 53 ARC for traffic shift.",
@@ -650,7 +624,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 51,
+    "id": 49,
     "question": "An existing Lambda + DynamoDB system has cold-start latency causing intermittent 3-second p99 spikes. The team can't change languages and the function is JVM-based. Which fix is most effective with least change?",
     "options": [
       "A. Enable Provisioned Concurrency on Lambda for the JVM function, and turn on SnapStart (where supported by runtime/region) to dramatically reduce JVM init time.",
@@ -663,7 +637,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 52,
+    "id": 50,
     "question": "An existing on-prem application uses an NFS share for stateful data. The team has lifted-and-shifted compute to EC2 in one VPC across two AZs but kept NFS on a single EC2 instance. Outages have followed each maintenance window. What's the best fix?",
     "options": [
       "A. Migrate the NFS share to Amazon EFS with Standard storage class and Multi-AZ; mount from each EC2 instance via NFSv4.1; lifecycle to EFS-IA for cold files.",
@@ -676,7 +650,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 53,
+    "id": 51,
     "question": "A team's existing data lake uses S3 plus Glue plus Athena. Storage costs are dominated by cold partitions older than 12 months that are queried only quarterly. Which optimization keeps query capability and cuts cost most?",
     "options": [
       "A. Lifecycle older partitions to S3 Glacier Instant Retrieval; Athena and Spectrum can still query.",
@@ -689,7 +663,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 54,
+    "id": 52,
     "question": "An ALB-fronted EC2 fleet shows 95th-percentile latency spikes during traffic bursts. CPU is at 30% on average; the cause is queue depth at the load balancer due to slow targets. The team also notices many idle connections. What is the most effective improvement?",
     "options": [
       "A. Tune target group health checks, enable connection draining, set ALB idle timeout appropriately, and switch the target group's algorithm to least outstanding requests; ensure HTTP keep-alive is enabled and the application's keepalive timeout is greater than the ALB's.",
@@ -702,7 +676,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 55,
+    "id": 53,
     "question": "An organization runs Aurora MySQL with a heavy read workload. Read replicas are saturated, and the application's connection count keeps maxing out the writer. Which improvement is most effective?",
     "options": [
       "A. Front the cluster with Amazon RDS Proxy to multiplex application connections, scale out Aurora reader auto scaling on CPU, and route reads via the reader endpoint with the application driver.",
@@ -715,7 +689,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 56,
+    "id": 54,
     "question": "A retailer's architect has been told that their existing monolithic web app on EC2 is over-provisioned. Compute Optimizer suggests resizing 60% of the fleet. They want to act on the recommendation safely with no outage and capture future drift. Which is the best ongoing approach?",
     "options": [
       "A. Apply right-sizing via blue/green Auto Scaling group rotations using AWS Systems Manager runbooks; subscribe Compute Optimizer findings to Security Hub or a Slack channel weekly; tag instances with intended size and use AWS Config to detect drift.",
@@ -728,7 +702,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 57,
+    "id": 55,
     "question": "A team is reducing costs on a steady-state EC2 fleet of 800 instances spread across many sizes and families, in three Regions. They want maximum flexibility and sustained discount, with little ongoing effort. Which commitment vehicle is most appropriate?",
     "options": [
       "A. Compute Savings Plans purchased in the management account, applied across the organization.",
@@ -741,7 +715,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 58,
+    "id": 56,
     "question": "A long-running EC2 workload writes 4 TB/day of telemetry to a single gp3 volume. IOPS are saturated; the team has already raised IOPS to 16,000 and throughput to 1000 MB/s without effect. What is the proper next step?",
     "options": [
       "A. Migrate the volume to io2 Block Express or stripe multiple gp3 volumes via LVM; move long-term data to S3 with Kinesis Data Firehose and shrink the working set on EBS.",
@@ -754,7 +728,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 59,
+    "id": 57,
     "question": "A logging service uses a single CloudWatch Logs group with hundreds of millions of events per day. Searches via Logs Insights are slow and expensive. Which migration improves analytics performance without losing live tail capability?",
     "options": [
       "A. Subscribe the log group to a Kinesis Data Firehose that delivers to S3 in Parquet (with Lambda transformation), partition daily, query via Athena; keep CloudWatch Logs retention short for live tail and deep-history searches go to Athena.",
@@ -767,7 +741,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 60,
+    "id": 58,
     "question": "A microservices stack on ECS Fargate frequently sees task failures because ECR pulls saturate the NAT Gateway during deploys. Which optimization is best?",
     "options": [
       "A. Use VPC interface endpoints (PrivateLink) for ECR API and ECR DKR plus a Gateway endpoint for S3, and enable image pull through cache for frequently-used base images.",
@@ -780,7 +754,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 61,
+    "id": 59,
     "question": "A team's existing Aurora PostgreSQL cluster periodically hits storage IO bottlenecks during analytics queries that scan multi-GB tables. Online transactional reads are degraded. Which improvement isolates analytics without splitting the database?",
     "options": [
       "A. Enable Aurora Optimized Reads (with local NVMe cache on r6id-class instances) for analytics queries, route those queries to dedicated reader endpoints in a custom endpoint group.",
@@ -793,7 +767,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 62,
+    "id": 60,
     "question": "A production workload depends on an application's correct behavior during partial Region outages of a single AZ. The team wants to validate this proactively each quarter. Which AWS service supports designed chaos experiments with safety guardrails?",
     "options": [
       "A. AWS Fault Injection Service with experiment templates that target specific AZ subnets and CloudWatch alarms acting as stop conditions.",
@@ -806,7 +780,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 63,
+    "id": 61,
     "question": "A platform's CI/CD pipeline pushes 50 deploys/day across many accounts. Lead time and rollback speed are the priority. Which combination yields fastest, safest deploys?",
     "options": [
       "A. AWS CodePipeline with multi-account deployment via cross-account roles, blue/green via CodeDeploy on Lambda or ECS, automated canary alarms in CloudWatch tied to rollback triggers, and deployment configuration that aborts on alarm.",
@@ -819,7 +793,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 64,
+    "id": 62,
     "question": "A Lambda-backed API has bursty workload that occasionally exceeds the account's per-Region concurrency limit, causing throttles. The team can't change the function logic. Which combination addresses the symptom and the root cause?",
     "options": [
       "A. Request a Service Quotas concurrency increase, set Reserved Concurrency on the critical function to guarantee a slice, use SQS as a buffer with a DLQ for spillover, and enable Lambda asynchronous invocation with destinations.",
@@ -832,7 +806,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 65,
+    "id": 63,
     "question": "An existing data warehouse uses Redshift provisioned dc2 nodes 24x7. Utilization is 12% during business hours and near-zero off-hours. Which optimization keeps SQL compatibility but reduces cost most?",
     "options": [
       "A. Migrate to Amazon Redshift Serverless and use it with workgroups and per-user usage limits; data sharing makes the migration low-risk.",
@@ -845,7 +819,7 @@
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
-    "id": 66,
+    "id": 64,
     "question": "An existing workload sends 5 TB/day of CloudWatch metrics; the bill from CloudWatch is the largest line item. Most of the metrics are never viewed. Which is the right combination to keep observability while cutting cost most?",
     "options": [
       "A. Tier metrics: keep only essential dashboards/alarms in CloudWatch, send high-cardinality custom metrics via the Embedded Metric Format (EMF) so they share log ingestion costs, and forward bulk metrics to a TSDB like Amazon Managed Service for Prometheus or Timestream as appropriate.",
@@ -856,6 +830,32 @@
     "answer": 0,
     "explanation": "Tiering plus EMF (which charges via Logs ingestion, often cheaper for high-cardinality dimensions) plus AMP for Prometheus-style time series is the standard cost pattern. Disabling all metrics breaks ops (B). X-Ray is tracing, not metrics (C). Negotiated rates don't fix the architecture (D).",
     "domain": "Continuous Improvement for Existing Solutions"
+  },
+  {
+    "id": 65,
+    "question": "A company is decomposing a legacy monolith into services and adopting an event-driven architecture: domain events from order, payment, and shipping services need fan-out to many consumers, schema evolution, replay, and selective filtering. Which combo is best?",
+    "options": [
+      "A. Amazon EventBridge with a custom event bus per domain, schema registry for discovery and code-binding generation, archive + replay for bus history, and content-based rule filtering for consumers.",
+      "B. SNS topics per event type with SQS subscribers and ad-hoc Schemas in Confluence.",
+      "C. Kinesis Data Streams per service with consumer Lambdas filtering on payload via a Glue catalog.",
+      "D. A single SQS Standard queue per consumer; producers fan out via cross-account IAM."
+    ],
+    "answer": 0,
+    "explanation": "EventBridge offers content-based filtering, archive/replay, and a schema registry — purpose-built for this. SNS+SQS lacks filtering as expressive as EventBridge and there's no managed schema registry there (B). Kinesis is for stream processing, not pub/sub fan-out with filters (C). Direct SQS fan-out scales poorly and lacks schema/replay (D).",
+    "domain": "Accelerate Workload Migration and Modernization"
+  },
+  {
+    "id": 66,
+    "question": "A retail platform is migrating from on-prem ESB-based B2B integration to AWS and must connect with 40 partner APIs across REST, SOAP, SFTP, and async webhooks. The team wants managed connectors and orchestration to accelerate the move. Which AWS service catalog fits?",
+    "options": [
+      "A. Amazon AppFlow for SaaS connector flows, AWS Transfer Family for SFTP, EventBridge Pipes for filtered cross-service plumbing, and Step Functions for orchestrating end-to-end.",
+      "B. Single Lambda per partner; bespoke code for everything; no managed connectors.",
+      "C. AWS DataSync for all partner data transfers regardless of protocol.",
+      "D. AWS Glue Studio for all integrations including SOAP."
+    ],
+    "answer": 0,
+    "explanation": "AppFlow + Transfer Family + EventBridge Pipes + Step Functions is the AWS-native suite for B2B integration. Per-partner Lambdas (B) eschew managed connectors. DataSync is for storage migration (C). Glue Studio is for ETL, not SOAP integrations (D).",
+    "domain": "Accelerate Workload Migration and Modernization"
   },
   {
     "id": 67,

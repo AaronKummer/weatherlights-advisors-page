@@ -104,14 +104,6 @@
     "domain": "Data Ingestion and Transformation"
   },
   {
-    "id": 8.5,
-    "question": "Placeholder removed",
-    "options": ["A", "B", "C", "D"],
-    "answer": 0,
-    "explanation": "n/a",
-    "domain": "n/a"
-  },
-  {
     "id": 9,
     "question": "An EMR Serverless Spark job ingests Hudi tables on S3 and writes daily snapshots. After several months, query performance on Athena degrades because of many small files. Which is the most appropriate remediation?",
     "options": [
@@ -321,19 +313,6 @@
   },
   {
     "id": 25,
-    "question": "A data engineer is choosing between Avro, Parquet, ORC, and JSON Lines for a write-heavy ingestion landing zone that will later be transformed to Parquet for analytics. Which format is best for the landing zone and why?",
-    "options": [
-      "A. Avro because it is row-oriented, supports schema evolution, and is efficient for streaming writes.",
-      "B. Parquet because columnar formats minimize storage everywhere.",
-      "C. ORC because it provides ACID for landing zones.",
-      "D. JSON Lines because it is human readable and faster to write than any binary format."
-    ],
-    "answer": 0,
-    "explanation": "Avro's row orientation and rich schema-evolution semantics are well suited to streaming/landing scenarios where records are appended as they arrive; downstream batch jobs convert to Parquet for analytics. Parquet/ORC are slower to write per-record. JSON Lines lacks schema enforcement and is verbose.",
-    "domain": "Data Ingestion and Transformation"
-  },
-  {
-    "id": 26,
     "question": "A data lake on S3 stores hot data in Standard, infrequently accessed reports in Standard-IA, and very old archives in Glacier Deep Archive. The team wants to automate transitions but is unsure of access patterns for new datasets. Which storage class minimizes risk while still optimizing cost?",
     "options": [
       "A. S3 Intelligent-Tiering, which auto-tiers between frequent, infrequent, archive instant, and (optional) deep archive tiers based on access.",
@@ -346,7 +325,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 27,
+    "id": 26,
     "question": "A team uses Amazon S3 Tables (Iceberg-managed) for analytics. They want Athena and EMR Spark to query tables without managing compaction or snapshot expiry. Which statement is correct?",
     "options": [
       "A. S3 Tables provide built-in Iceberg maintenance such as compaction, snapshot expiry, and unreferenced file removal.",
@@ -359,7 +338,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 28,
+    "id": 27,
     "question": "A Redshift Serverless workgroup is used for ad hoc analytics. The team wants to grant a partner read access only to certain rows of a sales table. Which mechanism is appropriate?",
     "options": [
       "A. Row-level security (RLS) policies attached to the table for the partner role.",
@@ -372,7 +351,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 29,
+    "id": 28,
     "question": "An analytics team runs Redshift on RA3 nodes. They want to keep frequently joined fact and dimension tables co-located on the same slices to minimize redistributions. Which distribution style suits two large fact tables joined on order_id?",
     "options": [
       "A. DISTSTYLE KEY on order_id for both tables.",
@@ -385,7 +364,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 30,
+    "id": 29,
     "question": "A team needs Redshift to query 200 TB of S3 Parquet directly without ingesting and to share certain materialized views with another Redshift cluster in the same account. Which two features address these needs?",
     "options": [
       "A. Redshift Spectrum for S3 querying and Redshift Data Sharing for cross-cluster materialized view access.",
@@ -398,7 +377,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 31,
+    "id": 30,
     "question": "A team is designing a DynamoDB table for an order-tracking app: queries are 'all orders for customer X', 'order detail by order id', and 'orders for customer X in the last 30 days'. Which key design supports all three efficiently?",
     "options": [
       "A. Partition key customer_id, sort key order_date#order_id, plus a GSI with order_id as PK.",
@@ -411,20 +390,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 32,
-    "question": "A regulated workload requires fine-grained access control on a Lake Formation governed catalog: marketing can see customer_email and country, while analytics can see country only. Which feature implements this?",
-    "options": [
-      "A. Lake Formation column-level permissions (with optional data filters) per principal.",
-      "B. S3 bucket policies referencing IAM tags.",
-      "C. Glue table-level grants with column lists in the IAM policy only.",
-      "D. KMS key policies that restrict ciphertext access by column."
-    ],
-    "answer": 0,
-    "explanation": "Lake Formation grants column-level (and optionally row-level) permissions on Data Catalog tables. Bucket policies and IAM alone do not understand columns. KMS keys protect ciphertext blobs, not specific columns within Parquet files.",
-    "domain": "Data Store Management"
-  },
-  {
-    "id": 33,
+    "id": 31,
     "question": "A data engineer wants Athena to skip listing all partitions for a table with 1.5 million partitions. Which Athena feature should they enable?",
     "options": [
       "A. Partition projection with appropriate type, range, and format properties on the table.",
@@ -437,7 +403,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 34,
+    "id": 32,
     "question": "An OpenSearch cluster ingests 1 TB/day of log data and the team wants to keep 30 days hot, 90 days warm, and 1 year cold. Which architecture is appropriate?",
     "options": [
       "A. OpenSearch with hot data nodes, UltraWarm storage for warm tier, and cold storage tier for archival, controlled by ISM.",
@@ -450,7 +416,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 35,
+    "id": 33,
     "question": "A team uses DynamoDB Global Tables in three regions for a global app. A region experiences a brief outage and clients fail over. After recovery, two updates to the same item from different regions conflict. How does DynamoDB resolve the conflict?",
     "options": [
       "A. Last-writer-wins based on the most recent timestamp at the regional endpoint.",
@@ -463,7 +429,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 36,
+    "id": 34,
     "question": "A document-oriented workload migrates from MongoDB 5.x to Amazon DocumentDB. Which compatibility consideration is most important to validate before cutover?",
     "options": [
       "A. Verify that all required MongoDB API features are listed as supported by the DocumentDB version targeted, since DocumentDB emulates a subset of the API.",
@@ -476,7 +442,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 37,
+    "id": 35,
     "question": "A team uses Athena for Apache Iceberg on tables registered in Glue. They want time travel to a snapshot from 12 hours ago. Which SQL pattern is correct?",
     "options": [
       "A. SELECT ... FROM table FOR TIMESTAMP AS OF TIMESTAMP '...' (or FOR VERSION AS OF snapshot_id).",
@@ -489,7 +455,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 38,
+    "id": 36,
     "question": "A 5 TB Parquet dataset is queried daily with predicates on country and event_date. The team uses Hive-style partitioning by event_date and reports slow performance for high-cardinality country filters. Which design improves performance while avoiding too-many-partitions issues?",
     "options": [
       "A. Keep date as partition and add bucketing by country (e.g., 32 buckets) using Hive bucketing or Iceberg hidden partitioning.",
@@ -502,7 +468,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 39,
+    "id": 37,
     "question": "A team wants Redshift to ingest streaming data from Kinesis into a materialized view that auto-refreshes. Which capability addresses this?",
     "options": [
       "A. Redshift Streaming Ingestion using an external schema over Kinesis with a materialized view marked AUTO REFRESH YES.",
@@ -515,20 +481,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 40,
-    "question": "An engineer must encrypt at rest a Glue Data Catalog and ensure ETL jobs can read encrypted catalog connections. Which set of controls is correct?",
-    "options": [
-      "A. Enable Data Catalog encryption with a customer-managed KMS key and grant the Glue job role kms:Decrypt on the key.",
-      "B. Enable S3 SSE-KMS on the data files only; the catalog itself does not require encryption.",
-      "C. Use AES-256 (SSE-S3) on the catalog and IAM policies for connection password protection.",
-      "D. Encrypt connections with a Secrets Manager rotation policy and skip catalog encryption."
-    ],
-    "answer": 0,
-    "explanation": "Glue Data Catalog supports KMS encryption for metadata and connection passwords; jobs need kms:Decrypt on the key to use encrypted connections. SSE-S3 does not encrypt the catalog metadata itself. Secrets rotation alone does not encrypt the catalog.",
-    "domain": "Data Store Management"
-  },
-  {
-    "id": 41,
+    "id": 38,
     "question": "A team uses Iceberg with the Glue catalog. After many MERGE operations, they want to keep only the last 7 days of snapshots and delete unreferenced data files. Which procedures are correct?",
     "options": [
       "A. Run expire_snapshots and remove_orphan_files (or equivalent rewrite procedures) on a schedule.",
@@ -541,33 +494,7 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 42,
-    "question": "A team needs cross-account read-only access to S3 data lake objects. Which design is least privilege and easiest to audit?",
-    "options": [
-      "A. Use Lake Formation cross-account grants with LF-Tags and resource shares via AWS RAM, then access via federated principals.",
-      "B. Make the bucket public-read for the data prefix only.",
-      "C. Share the producer account's IAM access keys with the consumer.",
-      "D. Use S3 Access Points with anonymous policies."
-    ],
-    "answer": 0,
-    "explanation": "Lake Formation cross-account access shares Data Catalog resources with LF-Tags via AWS RAM, providing a centrally managed, auditable, least-privilege model. Public buckets are insecure. Sharing keys is forbidden by best practice. S3 access points cannot be anonymous in a secure design.",
-    "domain": "Data Store Management"
-  },
-  {
-    "id": 43,
-    "question": "A team deploys S3 Object Lambda to redact PII on read. Which constraint must they design around?",
-    "options": [
-      "A. Object Lambda is invoked per GetObject and must return within Lambda's response size and timeout limits, so very large redactions need streaming or chunking.",
-      "B. Object Lambda only supports text/plain content types.",
-      "C. Object Lambda requires the underlying bucket to be in the same Availability Zone as the Lambda.",
-      "D. Object Lambda cannot access KMS-encrypted objects."
-    ],
-    "answer": 0,
-    "explanation": "Object Lambda transforms S3 GET responses through a Lambda; large objects require streaming responses or chunking to stay within Lambda response limits. There is no content-type restriction. AZ alignment is irrelevant; Lambda is regional. KMS-encrypted objects work normally with proper IAM/KMS permissions.",
-    "domain": "Data Store Management"
-  },
-  {
-    "id": 44,
+    "id": 39,
     "question": "A storage administrator uses S3 Storage Lens to find cost optimization opportunities across hundreds of buckets. Which feature provides the deepest insight?",
     "options": [
       "A. Activate Storage Lens advanced metrics and recommendations, with prefix-level aggregation enabled.",
@@ -580,21 +507,47 @@
     "domain": "Data Store Management"
   },
   {
-    "id": 45,
-    "question": "A data lake uses Lake Formation with LF-Tags to express access policies (Sensitivity=PII, Domain=Finance). A new team should access only finance non-PII tables. Which grant is correct?",
+    "id": 40,
+    "question": "A team uses Amazon S3 Multi-part Upload to land 50 GB media files. Some uploads abort and leave incomplete parts that incur storage cost. Which configuration most directly cleans these up?",
     "options": [
-      "A. Grant SELECT on the LF-Tag expression Domain=Finance AND Sensitivity!=PII to the team's principal.",
-      "B. Grant SELECT on each finance table individually to the team principal.",
-      "C. Grant ALL on Domain=Finance and rely on column-level deny rules.",
-      "D. Grant SELECT on Sensitivity=PII and exclude Finance via IAM SCP."
+      "A. An S3 Lifecycle rule that aborts incomplete multipart uploads after a defined number of days.",
+      "B. An hourly Lambda that calls ListMultipartUploads and AbortMultipartUpload on every part.",
+      "C. Enabling S3 Versioning with NoncurrentVersionExpiration.",
+      "D. Increasing the default retention to overwrite stale uploads."
     ],
     "answer": 0,
-    "explanation": "LF-Tag-based access control uses tag expressions to grant fine-grained access; Domain=Finance AND Sensitivity!=PII is the canonical pattern. Per-table grants do not scale and miss new tables. ALL with deny is over-permissive and Lake Formation does not have explicit denies on tags. Granting on PII contradicts the requirement.",
+    "explanation": "S3 Lifecycle has a built-in 'AbortIncompleteMultipartUpload' action that cleans up parts older than N days at no additional code cost. A Lambda accomplishes the same but adds operational overhead. Versioning rules apply to object versions, not orphan upload parts.",
     "domain": "Data Store Management"
   },
   {
-    "id": 46,
-    "question": "A team needs to monitor Glue ETL job performance and quickly find slow stages. Which combination is most effective?",
+    "id": 41,
+    "question": "An engineer needs Redshift to load 500 GB of compressed Parquet files from S3 daily, with proper distribution and sort keys already defined. Which approach is most efficient?",
+    "options": [
+      "A. Use COPY with FORMAT AS PARQUET, parallelizing across many files in the source manifest.",
+      "B. INSERT ... SELECT row-by-row from a Glue catalog external table.",
+      "C. Use single-threaded COPY with a single large Parquet file to avoid parallelism overhead.",
+      "D. Use Redshift Data API with batch INSERT statements grouped by 1000 rows."
+    ],
+    "answer": 0,
+    "explanation": "Redshift COPY with Parquet performs parallel ingestion across many files (preferably one per slice) and is the recommended bulk-load mechanism. Row-by-row INSERTs are extremely slow. A single large file underutilizes the cluster. The Data API with batch INSERTs is for OLTP-like patterns, not 500 GB loads.",
+    "domain": "Data Store Management"
+  },
+  {
+    "id": 42,
+    "question": "A team uses AWS Glue Schema Registry with the MSK Avro producer. A new field is added with a default value. They want consumers to keep working without redeployment. Which compatibility mode should they use?",
+    "options": [
+      "A. BACKWARD compatibility, which allows new schemas to add optional fields with defaults that older readers can ignore.",
+      "B. NONE compatibility, since defaults make schemas trivially compatible.",
+      "C. FORWARD compatibility, which is meant for older writers and newer readers.",
+      "D. FULL compatibility, which prevents adding any fields."
+    ],
+    "answer": 0,
+    "explanation": "BACKWARD compatibility ensures new schemas can be read by old readers, which is exactly the case when adding optional fields with defaults. NONE disables checks. FORWARD is for the inverse direction. FULL is the strictest but does allow some additive changes; BACKWARD most directly matches the scenario.",
+    "domain": "Data Store Management"
+  },
+  {
+    "id": 43,
+    "question": "A team must monitor Glue ETL job performance and quickly find slow stages. Which combination is most effective?",
     "options": [
       "A. Enable Glue job metrics and continuous logging, view Spark UI via Glue's history server, and set CloudWatch alarms on driver/executor metrics.",
       "B. Send job logs to S3 only and inspect them with Athena.",
@@ -606,7 +559,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 47,
+    "id": 44,
     "question": "An ETL pipeline processed an incorrect data load and downstream tables are corrupted. The data is in Iceberg tables on S3 with snapshots retained for 30 days. What is the fastest, safest recovery action?",
     "options": [
       "A. Use Iceberg's rollback_to_snapshot or set_current_snapshot to revert to the last good snapshot.",
@@ -619,7 +572,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 48,
+    "id": 45,
     "question": "An engineer wants to ensure Redshift queries from a BI tool meet a 5-second SLA while a heavy ETL job runs concurrently. Which configuration helps?",
     "options": [
       "A. Use Redshift Auto WLM with query priorities and short query acceleration; isolate BI queries to a higher-priority queue.",
@@ -632,7 +585,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 49,
+    "id": 46,
     "question": "A data engineer suspects a rogue Athena query is scanning many TB. Which action provides the fastest blast-radius control?",
     "options": [
       "A. Apply per-query and per-workgroup data scanning limits (workgroup-level controls and DataUsageControlLimit).",
@@ -645,7 +598,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 50,
+    "id": 47,
     "question": "A team uses MWAA to orchestrate a daily DAG. After upgrading Airflow, several DAGs fail with import errors for custom operators. Where should they place the operator code so MWAA loads it correctly?",
     "options": [
       "A. In the configured S3 plugins.zip referenced by the MWAA environment, with the path imported via airflow.plugins_manager.",
@@ -658,7 +611,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 51,
+    "id": 48,
     "question": "A nightly Glue job intermittently fails with 'Container killed by YARN for exceeding memory limits'. Which adjustment is most likely to resolve it?",
     "options": [
       "A. Switch to G.2X workers (more memory per DPU) or increase the number of workers, and tune Spark executor memory/overhead.",
@@ -671,7 +624,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 52,
+    "id": 49,
     "question": "A pipeline's SLA is breached when a Step Functions Standard workflow takes longer than 30 minutes. The team wants both alerting and an audit trail of state input/output. Which configuration is appropriate?",
     "options": [
       "A. Enable execution data logging at the workflow level, set CloudWatch metrics + alarms on ExecutionTime, and emit events to EventBridge for downstream alerting.",
@@ -684,7 +637,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 53,
+    "id": 50,
     "question": "A Kinesis Data Streams consumer falls behind: GetRecords.IteratorAgeMilliseconds spikes during peak hours. Which action most directly addresses this?",
     "options": [
       "A. Add more shards to increase parallelism (or use enhanced fan-out per consumer) and increase consumer concurrency to drain faster.",
@@ -697,7 +650,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 54,
+    "id": 51,
     "question": "A team uses CloudTrail Data Events for S3 to audit who reads sensitive prefixes. Storage cost of CloudTrail logs grows quickly. Which mitigation maintains auditability while reducing cost?",
     "options": [
       "A. Use advanced event selectors to log Data Events only for the specific sensitive prefixes, and configure log file delivery to S3 with Intelligent-Tiering.",
@@ -710,7 +663,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 55,
+    "id": 52,
     "question": "An engineer needs to reproduce a customer issue that occurred yesterday in DynamoDB. Which combination provides historical state?",
     "options": [
       "A. Restore a Point-in-Time Recovery (PITR) snapshot to a new table at the desired timestamp.",
@@ -723,7 +676,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 56,
+    "id": 53,
     "question": "A central data team gets repeated requests from analysts to find available datasets and request access. Which AWS service is purpose-built for self-service discovery and access workflows?",
     "options": [
       "A. AWS DataZone.",
@@ -736,7 +689,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 57,
+    "id": 54,
     "question": "An engineer needs to debug Athena Spark notebook performance. Which capability helps inspect job execution?",
     "options": [
       "A. The Spark UI from the Athena calculation execution details, plus CloudWatch logs for the calculation.",
@@ -749,7 +702,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 58,
+    "id": 55,
     "question": "A team must reduce cost of an EMR cluster running long-lived Spark jobs while preserving SLA. Which configuration is appropriate?",
     "options": [
       "A. Use EMR managed scaling, mix On-Demand core nodes with Spot task nodes, and use instance fleets with diversified instance types.",
@@ -762,7 +715,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 59,
+    "id": 56,
     "question": "A data pipeline must alert SRE within 1 minute of a Glue job failure with the run id and error message. Which design is correct?",
     "options": [
       "A. Send Glue job state change events to EventBridge, filter for FAILED, and target SNS with a transformer that includes runId and errorMessage.",
@@ -775,7 +728,7 @@
     "domain": "Data Operations and Support"
   },
   {
-    "id": 60,
+    "id": 57,
     "question": "An EMR Serverless Spark application repeatedly fails with 'No space left on device' on workers. Which adjustment most directly addresses it?",
     "options": [
       "A. Increase the worker disk allocation in the application configuration or repartition to reduce per-task spill, and set spark.local.dir on the configured volume.",
@@ -786,6 +739,45 @@
     "answer": 0,
     "explanation": "EMR Serverless lets you configure worker disk size; shuffle/spill can also be reduced by repartitioning and setting spark.local.dir to the configured volume. Disabling shuffle compression typically increases disk pressure. Reducing executor memory increases spill. Glue Python shell does not handle large Spark workloads.",
     "domain": "Data Operations and Support"
+  },
+  {
+    "id": 58,
+    "question": "A regulated workload requires fine-grained access control on a Lake Formation governed catalog: marketing can see customer_email and country, while analytics can see country only. Which feature implements this?",
+    "options": [
+      "A. Lake Formation column-level permissions (with optional data filters) per principal.",
+      "B. S3 bucket policies referencing IAM tags.",
+      "C. Glue table-level grants with column lists in the IAM policy only.",
+      "D. KMS key policies that restrict ciphertext access by column."
+    ],
+    "answer": 0,
+    "explanation": "Lake Formation grants column-level (and optionally row-level) permissions on Data Catalog tables. Bucket policies and IAM alone do not understand columns. KMS keys protect ciphertext blobs, not specific columns within Parquet files.",
+    "domain": "Data Security and Governance"
+  },
+  {
+    "id": 59,
+    "question": "An engineer must encrypt at rest a Glue Data Catalog and ensure ETL jobs can read encrypted catalog connections. Which set of controls is correct?",
+    "options": [
+      "A. Enable Data Catalog encryption with a customer-managed KMS key and grant the Glue job role kms:Decrypt on the key.",
+      "B. Enable S3 SSE-KMS on the data files only; the catalog itself does not require encryption.",
+      "C. Use AES-256 (SSE-S3) on the catalog and IAM policies for connection password protection.",
+      "D. Encrypt connections with a Secrets Manager rotation policy and skip catalog encryption."
+    ],
+    "answer": 0,
+    "explanation": "Glue Data Catalog supports KMS encryption for metadata and connection passwords; jobs need kms:Decrypt on the key to use encrypted connections. SSE-S3 does not encrypt the catalog metadata itself. Secrets rotation alone does not encrypt the catalog.",
+    "domain": "Data Security and Governance"
+  },
+  {
+    "id": 60,
+    "question": "A team deploys S3 Object Lambda to redact PII on read. Which constraint must they design around?",
+    "options": [
+      "A. Object Lambda is invoked per GetObject and must return within Lambda's response size and timeout limits, so very large redactions need streaming or chunking.",
+      "B. Object Lambda only supports text/plain content types.",
+      "C. Object Lambda requires the underlying bucket to be in the same Availability Zone as the Lambda.",
+      "D. Object Lambda cannot access KMS-encrypted objects."
+    ],
+    "answer": 0,
+    "explanation": "Object Lambda transforms S3 GET responses through a Lambda; large objects require streaming responses or chunking to stay within Lambda response limits. There is no content-type restriction. AZ alignment is irrelevant; Lambda is regional. KMS-encrypted objects work normally with proper IAM/KMS permissions.",
+    "domain": "Data Security and Governance"
   },
   {
     "id": 61,
@@ -915,58 +907,6 @@
     ],
     "answer": 0,
     "explanation": "CloudTrail captures Athena API calls; workgroup configurations retain query history; Object Lock plus access logging on the result bucket protect and audit results. Default history is not durable for SOX. Object Lambda transforms results but does not audit usage. Macie scans content, not query history.",
-    "domain": "Data Security and Governance"
-  },
-  {
-    "id": 71,
-    "question": "A team must rotate KMS keys used to encrypt Redshift, S3 lake, and Glue Data Catalog. They prefer the least disruption. Which approach is correct?",
-    "options": [
-      "A. Use AWS KMS automatic key rotation (annual) on customer-managed keys; existing data remains accessible because key material rotates while the key id stays the same.",
-      "B. Manually re-encrypt all data quarterly under a brand-new key.",
-      "C. Disable the existing key and create a new one with a different ARN.",
-      "D. Use AWS-owned keys to offload all rotation."
-    ],
-    "answer": 0,
-    "explanation": "Automatic rotation generates new key material while preserving the key id, so applications and stored ciphertexts continue to work. Manual re-encryption is disruptive. Disabling/replacing the key breaks references. AWS-owned keys cannot be used by services that require customer-managed keys for compliance.",
-    "domain": "Data Security and Governance"
-  },
-  {
-    "id": 72,
-    "question": "An engineer must stream secrets and connection strings into Glue jobs without exposing them in code or job parameters. Which integration is best?",
-    "options": [
-      "A. Store credentials in AWS Secrets Manager and reference them from Glue jobs via the SDK using the job role's secretsmanager:GetSecretValue.",
-      "B. Encode the password into a base64 environment variable.",
-      "C. Place them in plaintext in the script's default arguments.",
-      "D. Hard-code them and rely on private S3 to obscure access."
-    ],
-    "answer": 0,
-    "explanation": "Secrets Manager + IAM is the standard pattern for runtime secret retrieval, with rotation support. Base64 is not encryption. Default arguments are visible in run history. Hard-coding is forbidden by best practice.",
-    "domain": "Data Security and Governance"
-  },
-  {
-    "id": 73,
-    "question": "A team uses Lake Formation governed tables and wants to apply row-level filters that depend on the requesting principal's department, sourced from IAM Identity Center attributes. Which feature does this most directly?",
-    "options": [
-      "A. Lake Formation row-level data filters that use trusted identity propagation attributes (IAM Identity Center) to evaluate predicates per session.",
-      "B. Hard-coded IAM SCP per department.",
-      "C. Athena reserved capacity per department.",
-      "D. Pre-materialized per-department views maintained nightly."
-    ],
-    "answer": 0,
-    "explanation": "Lake Formation supports attribute-based row filters keyed on identity attributes propagated from IAM Identity Center, ideal for ABAC patterns. SCPs are not row-aware. Reserved capacity is about cost, not access. Pre-materialized views do not scale to many departments.",
-    "domain": "Data Security and Governance"
-  },
-  {
-    "id": 74,
-    "question": "A team wants to confirm that no objects in a sensitive prefix are publicly accessible and to receive alerts on policy drift. Which service is purpose built?",
-    "options": [
-      "A. IAM Access Analyzer with S3 findings and EventBridge integration for alerts.",
-      "B. AWS Config conformance pack for IAM only.",
-      "C. AWS Trusted Advisor's free-tier checks.",
-      "D. AWS Shield Advanced with S3 protection."
-    ],
-    "answer": 0,
-    "explanation": "Access Analyzer analyzes resource policies (including S3) for external access and emits findings to EventBridge for automation. Config conformance packs may help but are broader and slower to act. Trusted Advisor is summary-level. Shield is for DDoS.",
     "domain": "Data Security and Governance"
   }
 ]

@@ -341,9 +341,65 @@
 
       <section v-show="!embedOpen && activeTab === 'training'" id="training" class="portal-page">
         <div class="container">
-          <div class="eyebrow">Training Tools</div>
-          <h2 class="section-title">Sharpen up</h2>
-          <p class="section-lede">Practice exams, hands-on labs, and spaced-repetition flashcards.</p>
+          <a @click.prevent="openTool('/training-ground/index.html', 'AWS Training Ground')" href="#" class="tg-hero-card">
+            <div class="tg-hero-content">
+              <div class="tg-hero-tag">Featured · Interactive</div>
+              <div class="tg-hero-title">AWS Training Ground</div>
+              <p class="tg-hero-desc">
+                Drag AWS services onto a canvas. Wire them together. Watch data flow through your
+                architecture in real time. Four scenarios to start: static site, serverless API,
+                three-tier web app, event-driven pipeline.
+              </p>
+              <div class="tg-hero-cta">Launch the Ground <span aria-hidden>→</span></div>
+            </div>
+            <svg class="tg-hero-preview" viewBox="0 0 320 180" aria-hidden="true">
+              <defs>
+                <linearGradient id="tgGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#5b9bd5" stop-opacity="0.3"/>
+                  <stop offset="100%" stop-color="#1a3a6e" stop-opacity="0.15"/>
+                </linearGradient>
+              </defs>
+              <!-- background grid -->
+              <pattern id="tgGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(91,155,213,0.15)" stroke-width="0.5"/>
+              </pattern>
+              <rect width="320" height="180" fill="url(#tgGrid)"/>
+
+              <!-- animated connection lines -->
+              <path d="M 60 40 C 110 40 130 90 180 90" fill="none" stroke="#5b9bd5" stroke-width="2" stroke-dasharray="5 6">
+                <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="1.2s" repeatCount="indefinite"/>
+              </path>
+              <path d="M 180 90 C 230 90 220 140 270 140" fill="none" stroke="#5b9bd5" stroke-width="2" stroke-dasharray="5 6">
+                <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="1.2s" repeatCount="indefinite"/>
+              </path>
+
+              <!-- nodes -->
+              <g transform="translate(20 22)">
+                <rect width="80" height="36" rx="6" fill="#ffffff" stroke="#d8e6f3"/>
+                <rect x="6" y="8" width="22" height="20" rx="4" fill="#bf2b2b"/>
+                <text x="17" y="22" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">API</text>
+                <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">API GW</text>
+              </g>
+              <g transform="translate(140 72)">
+                <rect width="80" height="36" rx="6" fill="#ffffff" stroke="#d8e6f3"/>
+                <rect x="6" y="8" width="22" height="20" rx="4" fill="#fa7e14"/>
+                <text x="17" y="22" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">λ</text>
+                <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">Lambda</text>
+              </g>
+              <g transform="translate(230 122)">
+                <rect width="80" height="36" rx="6" fill="#ffffff" stroke="#d8e6f3"/>
+                <rect x="6" y="8" width="22" height="20" rx="4" fill="#3148c6"/>
+                <text x="17" y="22" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">DDB</text>
+                <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">DynamoDB</text>
+              </g>
+
+              <!-- traveling particles -->
+              <circle r="3" fill="#5b9bd5">
+                <animateMotion dur="2.4s" repeatCount="indefinite"
+                  path="M 60 40 C 110 40 130 90 180 90 C 230 90 220 140 270 140"/>
+              </circle>
+            </svg>
+          </a>
 
           <h3 class="finance-card-title training-h3">Practice Exams</h3>
           <div class="cert-picker-grid">
@@ -354,7 +410,7 @@
             </a>
           </div>
 
-          <h3 class="finance-card-title training-h3">Hands-On &amp; Memorize</h3>
+          <h3 class="finance-card-title training-h3">More Tools</h3>
           <div class="training-tools-grid">
             <a @click.prevent="openTool('/wargame/index.html', 'WeatherLight Wargame')" href="#" class="member-card">
               <div class="member-card-tag">CTF Range</div>
@@ -363,10 +419,10 @@
               <div class="member-card-cta">Launch <span aria-hidden>→</span></div>
             </a>
             <a @click.prevent="openTool('/lessons/index.html', 'AWS Lessons')" href="#" class="member-card">
-              <div class="member-card-tag">Interactive</div>
+              <div class="member-card-tag">Reference</div>
               <div class="member-card-title">AWS Lessons</div>
-              <p>38 services with a drag-and-drop architecture builder and inline quizzes.</p>
-              <div class="member-card-cta">Start <span aria-hidden>→</span></div>
+              <p>38 services across 6 categories with inline notes and quizzes.</p>
+              <div class="member-card-cta">Browse <span aria-hidden>→</span></div>
             </a>
             <a @click.prevent="openTool('/flashcards/index.html', 'Flashcards')" href="#" class="member-card">
               <div class="member-card-tag">SM-2</div>
@@ -1932,6 +1988,82 @@ export default {
   color: #2c5aa0;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+/* Training Ground hero card */
+.tg-hero-card {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  align-items: center;
+  gap: 2rem;
+  padding: 2.25rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #f0f7fd 0%, #e6f0fa 100%);
+  border: 1px solid #cfdcec;
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s, box-shadow 0.18s;
+}
+.tg-hero-card:hover {
+  transform: translateY(-2px);
+  border-color: #5b9bd5;
+  box-shadow: 0 16px 40px rgba(26, 58, 110, 0.10);
+}
+.tg-hero-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.85rem;
+}
+.tg-hero-title {
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  font-weight: 700;
+  color: #1a3a6e;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+.tg-hero-desc {
+  color: #4a5e7e;
+  font-size: 1rem;
+  line-height: 1.65;
+  margin-bottom: 1.5rem;
+  max-width: 560px;
+}
+.tg-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  background: #1a3a6e;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.tg-hero-card:hover .tg-hero-cta { background: #2c5aa0; }
+.tg-hero-card:hover .tg-hero-cta span { transform: translateX(4px); }
+.tg-hero-cta span { transition: transform 0.18s; }
+.tg-hero-preview {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  box-shadow: 0 8px 24px rgba(26, 58, 110, 0.08);
+}
+
+@media (max-width: 800px) {
+  .tg-hero-card { grid-template-columns: 1fr; padding: 1.75rem; }
+  .tg-hero-preview { display: none; }
 }
 .training-tools-grid {
   margin-top: 1rem;
