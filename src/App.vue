@@ -225,6 +225,48 @@ html.dark-fallback .stat-card {
 html.dark-fallback .stat-num { color: #ffffff !important; }
 html.dark-fallback .stat-label { color: #8b949e !important; }
 
+/* KPI cards */
+html.dark-fallback .kpi-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .kpi-label { color: #8b949e !important; }
+html.dark-fallback .kpi-num { color: #ffffff !important; }
+html.dark-fallback .kpi-sub { color: #00d4aa !important; }
+
+/* Client roster */
+html.dark-fallback .client-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .client-card:hover { border-color: rgba(0, 212, 170, 0.4) !important; box-shadow: 0 6px 18px rgba(0, 212, 170, 0.08) !important; }
+html.dark-fallback .client-name { color: #ffffff !important; }
+html.dark-fallback .client-focus { color: #8b949e !important; }
+html.dark-fallback .status-active     { background: rgba(40, 200, 120, 0.15) !important; color: #4cdb8c !important; }
+html.dark-fallback .status-onboarding { background: rgba(255, 170, 68, 0.18) !important; color: #ffaa44 !important; }
+html.dark-fallback .status-paused     { background: rgba(139, 148, 158, 0.18) !important; color: #c9d1d9 !important; }
+
+/* Finance */
+html.dark-fallback .finance-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .finance-card-title { color: #ffffff !important; }
+html.dark-fallback .finance-card-foot { color: #8b949e !important; }
+html.dark-fallback .bar-stack { background: linear-gradient(180deg, #00d4aa 0%, #00876d 100%) !important; }
+html.dark-fallback .bar-val { color: #0a0a0f !important; }
+html.dark-fallback .bar-x { color: #8b949e !important; }
+
+/* Feed */
+html.dark-fallback .feed-list {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .feed-item { border-bottom-color: rgba(255, 255, 255, 0.05) !important; }
+html.dark-fallback .feed-tag { color: #00d4aa !important; }
+html.dark-fallback .feed-text { color: #c9d1d9 !important; }
+html.dark-fallback .feed-when { color: #8b949e !important; }
+
 /* Dashboard cards */
 html.dark-fallback .dashboard-card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;

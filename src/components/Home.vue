@@ -211,38 +211,89 @@
     <!-- ════════ MEMBER PORTAL ════════ -->
     <template v-if="currentUser">
       <section class="portal-hero">
-        <div class="container portal-hero-inner">
-          <div>
-            <div class="eyebrow">Member Portal</div>
-            <h1 class="portal-title">Good {{ greeting }}, {{ currentUser.handle || currentUser.email }}.</h1>
-            <p class="portal-sub">{{ portalSub }}</p>
-          </div>
-          <div class="portal-stats">
-            <div class="stat-card">
-              <div class="stat-num">{{ stats.questionsAnswered }}</div>
-              <div class="stat-label">Questions answered</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-num">{{ stats.wargameLevel }}</div>
-              <div class="stat-label">Wargame level</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-num">{{ stats.flashcardsReviewed }}</div>
-              <div class="stat-label">Flashcards reviewed</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-num">{{ stats.lessonsViewed }}</div>
-              <div class="stat-label">Lessons viewed</div>
+        <div class="container">
+          <div class="eyebrow">Operations</div>
+          <h1 class="portal-title">Good {{ greeting }}, {{ currentUser.handle || currentUser.email }}.</h1>
+          <p class="portal-sub">Here's where the business stands today.</p>
+          <div class="kpi-grid">
+            <div v-for="k in kpis" :key="k.label" class="kpi-card">
+              <div class="kpi-label">{{ k.label }}</div>
+              <div class="kpi-num">{{ k.value }}</div>
+              <div class="kpi-sub">{{ k.sub }}</div>
             </div>
           </div>
         </div>
       </section>
 
+      <section id="clientele" class="content-section portal-section content-section-tint">
+        <div class="container">
+          <div class="eyebrow">Clientele</div>
+          <h2 class="section-title">Active engagements</h2>
+          <p class="section-lede">{{ clients.filter(c => c.status === 'active').length }} active, {{ clients.filter(c => c.status === 'onboarding').length }} onboarding, {{ clients.filter(c => c.status === 'paused').length }} paused.</p>
+          <div class="clients-grid">
+            <div v-for="c in clients" :key="c.name" class="client-card">
+              <div class="client-row">
+                <span class="client-name">{{ c.name }}</span>
+                <span class="client-status" :class="'status-' + c.status">{{ c.status }}</span>
+              </div>
+              <p class="client-focus">{{ c.focus }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="revenue" class="content-section portal-section">
+        <div class="container">
+          <div class="eyebrow">Financials</div>
+          <h2 class="section-title">Revenue &amp; AWS spend</h2>
+          <div class="finance-grid">
+            <div class="finance-card">
+              <div class="finance-card-title">Monthly revenue · last 6 months</div>
+              <div class="bar-chart">
+                <div v-for="m in revenue6mo" :key="m.month" class="bar-col">
+                  <div class="bar-stack" :style="{ height: (m.v * 1.1) + '%' }">
+                    <span class="bar-val">${{ m.v }}k</span>
+                  </div>
+                  <div class="bar-x">{{ m.month }}</div>
+                </div>
+              </div>
+            </div>
+            <div class="finance-card">
+              <div class="finance-card-title">Managed AWS spend by service</div>
+              <div class="dashboard-bars">
+                <div v-for="s in awsBreakdown" :key="s.svc" class="dashboard-bar-row">
+                  <span class="dashboard-bar-label">{{ s.svc }}</span>
+                  <div class="dashboard-bar-track">
+                    <div class="dashboard-bar-fill" :style="{ width: s.pct + '%' }"></div>
+                  </div>
+                  <span class="dashboard-bar-val">{{ s.pct }}%</span>
+                </div>
+              </div>
+              <div class="finance-card-foot">$312k/month total · 14 AWS accounts under management</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="feed" class="content-section portal-section content-section-tint">
+        <div class="container">
+          <div class="eyebrow">Recent Activity</div>
+          <h2 class="section-title">What's happening across the book</h2>
+          <ul class="feed-list">
+            <li v-for="(f, i) in feed" :key="i" class="feed-item">
+              <span class="feed-tag">{{ f.tag }}</span>
+              <span class="feed-text">{{ f.text }}</span>
+              <span class="feed-when">{{ f.when }}</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <section id="practice" class="content-section portal-section">
         <div class="container">
-          <div class="eyebrow">Practice Exams</div>
-          <h2 class="section-title">Every AWS certification</h2>
-          <p class="section-lede">700+ questions across 7 tracks. Pick a cert and start drilling.</p>
+          <div class="eyebrow">Training Tools</div>
+          <h2 class="section-title">Practice exams</h2>
+          <p class="section-lede">700+ questions across 7 AWS certs — sharpen up between client calls.</p>
           <div class="cert-picker-grid">
             <a v-for="b in quizBanks" :key="b.code" @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#" class="cert-pill">
               <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
@@ -284,39 +335,6 @@
             <p>180 cards across AWS services and Linux commands. Review what you're forgetting before you forget it.</p>
             <div class="member-card-cta">Open Deck <span aria-hidden>→</span></div>
           </a>
-        </div>
-      </section>
-
-      <section id="dashboard" class="content-section portal-section content-section-tint">
-        <div class="container">
-          <div class="eyebrow">Dashboard</div>
-          <h2 class="section-title">Your progress</h2>
-          <div class="dashboard-grid">
-            <div class="dashboard-card">
-              <div class="dashboard-card-title">Quiz progress by cert</div>
-              <div class="dashboard-bars">
-                <div v-for="d in stats.quizDomains" :key="d.code" class="dashboard-bar-row">
-                  <span class="dashboard-bar-label">{{ d.code.toUpperCase() }}</span>
-                  <div class="dashboard-bar-track">
-                    <div class="dashboard-bar-fill" :style="{ width: d.pct + '%' }"></div>
-                  </div>
-                  <span class="dashboard-bar-val">{{ d.pct }}%</span>
-                </div>
-              </div>
-            </div>
-            <div class="dashboard-card">
-              <div class="dashboard-card-title">Recent activity</div>
-              <ul class="activity-list">
-                <li v-for="(a, i) in stats.activity" :key="i">
-                  <span class="activity-tool">{{ a.tool }}</span>
-                  <span class="activity-detail">{{ a.detail }}</span>
-                </li>
-                <li v-if="stats.activity.length === 0" class="activity-empty">
-                  Nothing yet. Open a tool above to get started.
-                </li>
-              </ul>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -594,6 +612,48 @@ export default {
         activity: [],
       },
       ops: { contacts: "—", users: "—", lastContact: "" },
+
+      // Dummy consultancy KPIs + clients (replace with real data later)
+      kpis: [
+        { label: "Active clients",        value: "8",       sub: "+2 this quarter" },
+        { label: "Monthly revenue",       value: "$74k",    sub: "+11% MoM" },
+        { label: "AWS spend managed",     value: "$312k/mo", sub: "across 14 accounts" },
+        { label: "Active engagements",    value: "12",      sub: "3 closing this month" },
+      ],
+      clients: [
+        { name: "Helix Robotics",      status: "active",     focus: "Cert track — 12 engineers on SAA-C03" },
+        { name: "Northwind Logistics", status: "onboarding", focus: "Migration assessment + landing zone" },
+        { name: "Lumen & Co",          status: "active",     focus: "ML infra: SageMaker + Bedrock pipeline" },
+        { name: "Atlas Health",        status: "paused",     focus: "Q3 follow-up · HIPAA review" },
+        { name: "Brightpath Tutoring", status: "active",     focus: "Internal AWS academy + cert prep" },
+        { name: "Skyline Marine",      status: "active",     focus: "IoT Greengrass + telemetry pipeline" },
+        { name: "Coastal Credit Union", status: "onboarding", focus: "Landing zone + security audit" },
+        { name: "Verdant Energy",      status: "active",     focus: "Cost optimization + reserved instances" },
+      ],
+      revenue6mo: [
+        { month: "Nov", v: 42 },
+        { month: "Dec", v: 48 },
+        { month: "Jan", v: 52 },
+        { month: "Feb", v: 61 },
+        { month: "Mar", v: 67 },
+        { month: "Apr", v: 74 },
+      ],
+      awsBreakdown: [
+        { svc: "EC2",       pct: 38 },
+        { svc: "S3",        pct: 22 },
+        { svc: "RDS",       pct: 14 },
+        { svc: "Lambda",    pct: 11 },
+        { svc: "Bedrock",   pct: 8  },
+        { svc: "Other",     pct: 7  },
+      ],
+      feed: [
+        { tag: "Helix Robotics",       text: "3 engineers passed SAA-C03 (avg 87%)",    when: "2h ago" },
+        { tag: "Lumen & Co",           text: "SageMaker training pipeline deployed to prod", when: "yesterday" },
+        { tag: "Coastal Credit Union", text: "Landing-zone PoC kicked off",            when: "yesterday" },
+        { tag: "Skyline Marine",       text: "IoT Greengrass workflow shipped",         when: "2d ago" },
+        { tag: "Brightpath",           text: "12 new cards added to Linux deck",        when: "3d ago" },
+        { tag: "Verdant Energy",       text: "Saved $14k/mo via RI rightsizing review", when: "4d ago" },
+      ],
 
       // Quiz banks shown in the cert picker
       quizBanks: [
@@ -1342,31 +1402,166 @@ export default {
   line-height: 1.6;
   max-width: 520px;
 }
-.portal-stats {
+.kpi-grid {
+  margin-top: 2.5rem;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
-.stat-card {
-  padding: 1.1rem 1.25rem;
+.kpi-card {
+  padding: 1.4rem 1.5rem;
   background: #ffffff;
   border: 1px solid #e0eaf5;
-  border-radius: 10px;
-  min-width: 130px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(26, 58, 110, 0.04);
 }
-.stat-num {
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: #1a3a6e;
-  line-height: 1;
-  margin-bottom: 0.35rem;
-}
-.stat-label {
+.kpi-label {
   font-size: 0.78rem;
+  font-weight: 600;
   color: #6b7c93;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  margin-bottom: 0.6rem;
+}
+.kpi-num {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  line-height: 1;
+  margin-bottom: 0.4rem;
+  letter-spacing: -0.02em;
+}
+.kpi-sub {
+  font-size: 0.85rem;
+  color: #2c5aa0;
+}
+
+/* Clientele */
+.clients-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.client-card {
+  padding: 1.2rem 1.4rem;
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  border-radius: 10px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.client-card:hover { border-color: #5b9bd5; box-shadow: 0 6px 18px rgba(26, 58, 110, 0.06); }
+.client-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.client-name { font-size: 1.02rem; font-weight: 700; color: #1a3a6e; letter-spacing: -0.01em; }
+.client-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 100px;
+}
+.status-active     { background: rgba(40, 200, 120, 0.12); color: #1a8a4f; }
+.status-onboarding { background: rgba(255, 153, 0, 0.14);  color: #b86a00; }
+.status-paused     { background: rgba(107, 124, 147, 0.15); color: #4a5e7e; }
+.client-focus { color: #4a5e7e; font-size: 0.88rem; line-height: 1.5; }
+
+/* Finance */
+.finance-grid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 1.5rem;
+}
+.finance-card {
+  padding: 1.75rem;
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  border-radius: 12px;
+}
+.finance-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  margin-bottom: 1.5rem;
+}
+.finance-card-foot {
+  margin-top: 1.25rem;
+  font-size: 0.82rem;
+  color: #6b7c93;
+  font-style: italic;
+}
+.bar-chart {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+  height: 220px;
+  align-items: end;
+}
+.bar-col { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; height: 100%; }
+.bar-stack {
+  width: 100%;
+  background: linear-gradient(180deg, #5b9bd5 0%, #1a3a6e 100%);
+  border-radius: 6px 6px 2px 2px;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.4rem;
+  min-height: 30px;
+  transition: filter 0.15s;
+}
+.bar-col:hover .bar-stack { filter: brightness(1.1); }
+.bar-val {
+  font-size: 0.72rem;
+  color: #ffffff;
   font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.bar-x {
+  font-size: 0.78rem;
+  color: #6b7c93;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Activity feed */
+.feed-list {
+  margin-top: 2.5rem;
+  list-style: none;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid #e0eaf5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.feed-item {
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f0f4f9;
+}
+.feed-item:last-child { border-bottom: none; }
+.feed-tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  letter-spacing: -0.005em;
+}
+.feed-text { color: #1a3a6e; font-size: 0.92rem; }
+.feed-when { color: #6b7c93; font-size: 0.82rem; white-space: nowrap; }
+
+@media (max-width: 800px) {
+  .finance-grid { grid-template-columns: 1fr; }
+  .feed-item { grid-template-columns: 1fr; gap: 0.3rem; }
 }
 .portal-section {
   padding: 7rem 2rem 5rem;
