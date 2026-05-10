@@ -1206,10 +1206,10 @@
     </circle>
   </svg>
   <div class="tg-cover-actions">
-    <button class="tg-cover-btn tg-cover-btn-primary" id="tg-cover-share">Share to my desktop</button>
-    <button class="tg-cover-btn tg-cover-btn-ghost"  id="tg-cover-continue">Show me anyway</button>
+    <button class="tg-cover-btn tg-cover-btn-primary" id="tg-cover-share">Share link to my desktop</button>
+    <a class="tg-cover-btn tg-cover-btn-ghost" href="/" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Back to WeatherLight</a>
   </div>
-  <p class="tg-cover-foot">A mobile-native version is on the way.</p>
+  <p class="tg-cover-foot">A touch-native version is on the way.</p>
 </div>
 
 <div class="tg-app">
@@ -2734,15 +2734,11 @@
   }
 
   // ───────── Mobile cover handlers ─────────
-  // If user previously dismissed in this tab, defeat both the cover AND the
-  // media-query that hides .tg-app on small screens via an override class.
-  if (sessionStorage.getItem("tg-cover-dismissed") === "1") {
-    document.documentElement.classList.add("tg-mobile-override");
-  }
-  document.getElementById("tg-cover-continue")?.addEventListener("click", () => {
-    sessionStorage.setItem("tg-cover-dismissed", "1");
-    document.documentElement.classList.add("tg-mobile-override");
-  });
+  // Aggressively clear any prior 'show me anyway' opt-out — the previous
+  // behavior dumped users into a broken desktop layout. The cover is the
+  // only mobile state until we ship a proper touch UI.
+  sessionStorage.removeItem("tg-cover-dismissed");
+  document.documentElement.classList.remove("tg-mobile-override");
   document.getElementById("tg-cover-share")?.addEventListener("click", async () => {
     const url = location.href;
     const shareData = { title: "AWS Training Ground", text: "Built by WeatherLight Advisors — open on desktop:", url };
