@@ -1069,9 +1069,68 @@
     .tg-mobile-cover { display: flex; }
     .tg-app { display: none; }
   }
-  /* Power-user override: clicked "Show me anyway" — defeats the media-query hide */
+  /* Power-user override: clicked "Show me anyway" — defeats the media-query hide
+     AND swaps to a stacked vertical layout that actually works at phone width */
   html.tg-mobile-override .tg-mobile-cover { display: none !important; }
-  html.tg-mobile-override .tg-app { display: grid !important; }
+  @media (max-width: 700px) {
+    html.tg-mobile-override .tg-app {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      grid-template-rows: 56px 1fr auto !important;
+    }
+    html.tg-mobile-override .tg-objectives,
+    html.tg-mobile-override .tg-insights,
+    html.tg-mobile-override .tg-inspector,
+    html.tg-mobile-override .tg-total-cost {
+      display: none !important;
+    }
+    html.tg-mobile-override .tg-canvas-wrap { grid-row: 2; }
+    html.tg-mobile-override .tg-palette {
+      grid-row: 3;
+      border-right: none;
+      border-top: 1px solid var(--border);
+      max-height: 152px;
+    }
+    html.tg-mobile-override .tg-palette-search-wrap {
+      padding: 0.55rem 0.75rem;
+    }
+    html.tg-mobile-override .tg-palette-list {
+      display: flex !important;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 0.5rem 0.75rem 0.65rem;
+      gap: 0.4rem;
+    }
+    html.tg-mobile-override .tg-cat {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin: 0;
+      gap: 0.4rem;
+    }
+    html.tg-mobile-override .tg-cat-head { display: none; }
+    html.tg-mobile-override .tg-cat-body {
+      display: flex !important;
+      flex-direction: row;
+      gap: 0.4rem;
+    }
+    html.tg-mobile-override .tg-service {
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 0.5rem 0.65rem;
+    }
+    html.tg-mobile-override .tg-service-name { display: inline; }
+    html.tg-mobile-override .tg-scenarios { gap: 0.25rem; }
+    html.tg-mobile-override .tg-scenario-pill { font-size: 0.72rem; padding: 0.3rem 0.6rem; }
+    html.tg-mobile-override .tg-status { font-size: 0.72rem; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html.tg-mobile-override .tg-header { padding: 0 0.6rem; gap: 0.5rem; }
+    html.tg-mobile-override .tg-title { font-size: 0.78rem; margin-right: 0.4rem; }
+    html.tg-mobile-override .tg-empty-text { font-size: 0.85rem; }
+    html.tg-mobile-override .tg-empty-hint { font-size: 0.72rem; }
+  }
   .tg-cover-mark {
     font-size: 3rem;
     color: var(--accent-2);
@@ -1207,7 +1266,7 @@
   </svg>
   <div class="tg-cover-actions">
     <button class="tg-cover-btn tg-cover-btn-primary" id="tg-cover-share">Share link to my desktop</button>
-    <a class="tg-cover-btn tg-cover-btn-ghost" href="/" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">Back to WeatherLight</a>
+    <button class="tg-cover-btn tg-cover-btn-ghost" id="tg-cover-continue">Use compact mobile layout</button>
   </div>
   <p class="tg-cover-foot">A touch-native version is on the way.</p>
 </div>
@@ -2734,11 +2793,15 @@
   }
 
   // ───────── Mobile cover handlers ─────────
-  // Aggressively clear any prior 'show me anyway' opt-out — the previous
-  // behavior dumped users into a broken desktop layout. The cover is the
-  // only mobile state until we ship a proper touch UI.
-  sessionStorage.removeItem("tg-cover-dismissed");
-  document.documentElement.classList.remove("tg-mobile-override");
+  // 'Show me anyway' / compact-mobile-layout — opts into the stacked CSS
+  // layout instead of the broken desktop one. Persists across reloads.
+  if (sessionStorage.getItem("tg-cover-dismissed") === "1") {
+    document.documentElement.classList.add("tg-mobile-override");
+  }
+  document.getElementById("tg-cover-continue")?.addEventListener("click", () => {
+    sessionStorage.setItem("tg-cover-dismissed", "1");
+    document.documentElement.classList.add("tg-mobile-override");
+  });
   document.getElementById("tg-cover-share")?.addEventListener("click", async () => {
     const url = location.href;
     const shareData = { title: "AWS Training Ground", text: "Built by WeatherLight Advisors — open on desktop:", url };
