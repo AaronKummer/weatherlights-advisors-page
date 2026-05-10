@@ -1034,16 +1034,181 @@
   .tg-toast.error { background: linear-gradient(135deg, #b86a00, #8a3d00); }
   .tg-toast strong { color: #fffbe8; }
 
-  @media (max-width: 920px) {
+  @media (max-width: 920px) and (min-width: 701px) {
     .tg-app { grid-template-columns: 64px 1fr; grid-template-rows: 56px 1fr; }
     .tg-objectives { display: none; }
     .tg-service-name { display: none; }
-    .tg-palette { padding: 0.6rem 0.4rem; }
+    .tg-palette-list { padding: 0.4rem 0.4rem 1rem; }
     .tg-service { justify-content: center; padding: 0.5rem; }
   }
+
+  /* ─── Mobile interstitial (≤ 700px) ─── */
+  .tg-mobile-cover {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+    background:
+      radial-gradient(ellipse at 30% 0%, rgba(91, 155, 213, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, rgba(91, 155, 213, 0.12) 0%, transparent 50%),
+      var(--bg);
+    text-align: center;
+    color: var(--ink);
+  }
+  html.theme-sapphire .tg-mobile-cover {
+    background:
+      radial-gradient(ellipse at 30% 0%, rgba(0, 212, 170, 0.15) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, rgba(0, 212, 170, 0.1) 0%, transparent 50%),
+      var(--bg);
+  }
+  @media (max-width: 700px) {
+    .tg-mobile-cover { display: flex; }
+    .tg-app { display: none; }
+  }
+  .tg-cover-mark {
+    font-size: 3rem;
+    color: var(--accent-2);
+    margin-bottom: 0.5rem;
+    line-height: 1;
+    animation: cover-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes cover-pulse {
+    0%, 100% { filter: drop-shadow(0 0 8px rgba(91, 155, 213, 0.4)); }
+    50%      { filter: drop-shadow(0 0 24px rgba(91, 155, 213, 0.7)); }
+  }
+  .tg-cover-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 0.85rem;
+  }
+  .tg-cover-title {
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 0.85rem;
+    color: var(--ink);
+  }
+  .tg-cover-sub {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: 320px;
+    margin-bottom: 2rem;
+  }
+  .tg-cover-preview {
+    width: 100%;
+    max-width: 320px;
+    height: 160px;
+    margin-bottom: 2rem;
+    background: color-mix(in srgb, var(--panel) 70%, transparent);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  }
+  .tg-cover-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+    max-width: 320px;
+  }
+  .tg-cover-btn {
+    padding: 0.95rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  .tg-cover-btn-primary {
+    background: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 8px 22px rgba(26, 58, 110, 0.25);
+  }
+  html.theme-sapphire .tg-cover-btn-primary { color: #0a0a0f; }
+  .tg-cover-btn-primary:hover { filter: brightness(1.1); }
+  .tg-cover-btn-ghost {
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--border);
+  }
+  .tg-cover-foot {
+    margin-top: 1.75rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .tg-cover-foot a { color: var(--accent); text-decoration: none; font-weight: 600; }
 </style>
 </head>
 <body>
+<!-- Mobile interstitial — hides the broken-on-phone canvas behind a polished cover.
+     Appears only ≤ 700px viewport. Sessions can opt to continue anyway. -->
+<div class="tg-mobile-cover" id="tg-mobile-cover">
+  <div class="tg-cover-mark">⌁</div>
+  <div class="tg-cover-eyebrow">AWS Training Ground</div>
+  <h1 class="tg-cover-title">Best on a bigger screen</h1>
+  <p class="tg-cover-sub">
+    The architecture builder is built for drag-and-drop on a tablet or desktop. Open this URL on a larger screen for the full experience.
+  </p>
+  <svg class="tg-cover-preview" viewBox="0 0 320 160" aria-hidden="true">
+    <defs>
+      <linearGradient id="cov-flow" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"  stop-color="#5b9bd5" stop-opacity="0.4"/>
+        <stop offset="50%" stop-color="#5b9bd5" stop-opacity="1"/>
+        <stop offset="100%" stop-color="#5b9bd5" stop-opacity="0.4"/>
+        <animate attributeName="x1" from="-50%" to="100%" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="x2" from="50%"  to="200%" dur="2s" repeatCount="indefinite"/>
+      </linearGradient>
+    </defs>
+    <pattern id="cov-grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(91,155,213,0.12)" stroke-width="0.5"/>
+    </pattern>
+    <rect width="320" height="160" fill="url(#cov-grid)"/>
+    <!-- Wires -->
+    <path d="M 60 40 C 110 40 130 80 180 80" fill="none" stroke="url(#cov-flow)" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M 180 80 C 230 80 220 120 270 120" fill="none" stroke="url(#cov-flow)" stroke-width="2.4" stroke-linecap="round"/>
+    <!-- Nodes -->
+    <g transform="translate(20 22)">
+      <rect width="80" height="36" rx="7" fill="rgba(255,255,255,0.92)" stroke="rgba(91,155,213,0.4)"/>
+      <rect x="6" y="8" width="22" height="20" rx="4" fill="#bf2b2b"/>
+      <text x="17" y="22" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">API</text>
+      <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">API GW</text>
+    </g>
+    <g transform="translate(140 62)">
+      <rect width="80" height="36" rx="7" fill="rgba(255,255,255,0.92)" stroke="rgba(91,155,213,0.4)"/>
+      <rect x="6" y="8" width="22" height="20" rx="4" fill="#fa7e14"/>
+      <text x="17" y="22" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">λ</text>
+      <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">Lambda</text>
+    </g>
+    <g transform="translate(230 102)">
+      <rect width="80" height="36" rx="7" fill="rgba(255,255,255,0.92)" stroke="rgba(91,155,213,0.4)"/>
+      <rect x="6" y="8" width="22" height="20" rx="4" fill="#3148c6"/>
+      <text x="17" y="22" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">DDB</text>
+      <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">DynamoDB</text>
+    </g>
+    <!-- Particle traveling the path -->
+    <circle r="3.2" fill="#5b9bd5" filter="drop-shadow(0 0 6px #5b9bd5)">
+      <animateMotion dur="2.5s" repeatCount="indefinite"
+        path="M 60 40 C 110 40 130 80 180 80 C 230 80 220 120 270 120"/>
+    </circle>
+  </svg>
+  <div class="tg-cover-actions">
+    <button class="tg-cover-btn tg-cover-btn-primary" id="tg-cover-share">Share to my desktop</button>
+    <button class="tg-cover-btn tg-cover-btn-ghost"  id="tg-cover-continue">Show me anyway</button>
+  </div>
+  <p class="tg-cover-foot">A mobile-native version is on the way.</p>
+</div>
+
 <div class="tg-app">
   <header class="tg-header">
     <div class="tg-title"><span class="pre">⌁</span> AWS Training Ground</div>
@@ -2564,6 +2729,28 @@
     const y = u*u*u*y0 + 3*u*u*t*y1 + 3*u*t*t*y2 + t*t*t*y3;
     return { x, y };
   }
+
+  // ───────── Mobile cover handlers ─────────
+  const cover = document.getElementById("tg-mobile-cover");
+  // If user previously dismissed in this tab, hide the cover regardless of width.
+  if (sessionStorage.getItem("tg-cover-dismissed") === "1" && cover) {
+    cover.style.display = "none";
+  }
+  document.getElementById("tg-cover-continue")?.addEventListener("click", () => {
+    sessionStorage.setItem("tg-cover-dismissed", "1");
+    cover.style.display = "none";
+  });
+  document.getElementById("tg-cover-share")?.addEventListener("click", async () => {
+    const url = location.href;
+    const shareData = { title: "AWS Training Ground", text: "Built by WeatherLight Advisors — open on desktop:", url };
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        document.getElementById("tg-cover-share").textContent = "Link copied!";
+      }
+    } catch (_) {}
+  });
 
   // ───────── Sound design ─────────
   // Synthesized via Web Audio API — no asset files, tiny code.
