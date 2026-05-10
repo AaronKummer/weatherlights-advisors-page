@@ -1069,6 +1069,9 @@
     .tg-mobile-cover { display: flex; }
     .tg-app { display: none; }
   }
+  /* Power-user override: clicked "Show me anyway" — defeats the media-query hide */
+  html.tg-mobile-override .tg-mobile-cover { display: none !important; }
+  html.tg-mobile-override .tg-app { display: grid !important; }
   .tg-cover-mark {
     font-size: 3rem;
     color: var(--accent-2);
@@ -2731,14 +2734,14 @@
   }
 
   // ───────── Mobile cover handlers ─────────
-  const cover = document.getElementById("tg-mobile-cover");
-  // If user previously dismissed in this tab, hide the cover regardless of width.
-  if (sessionStorage.getItem("tg-cover-dismissed") === "1" && cover) {
-    cover.style.display = "none";
+  // If user previously dismissed in this tab, defeat both the cover AND the
+  // media-query that hides .tg-app on small screens via an override class.
+  if (sessionStorage.getItem("tg-cover-dismissed") === "1") {
+    document.documentElement.classList.add("tg-mobile-override");
   }
   document.getElementById("tg-cover-continue")?.addEventListener("click", () => {
     sessionStorage.setItem("tg-cover-dismissed", "1");
-    cover.style.display = "none";
+    document.documentElement.classList.add("tg-mobile-override");
   });
   document.getElementById("tg-cover-share")?.addEventListener("click", async () => {
     const url = location.href;
