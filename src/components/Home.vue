@@ -1228,12 +1228,15 @@ export default {
     },
     buildSrcdoc(html, path, extra) {
       const fullUrl = this.toolUrl(path, extra);
-      // Inject history.replaceState so the tool's own scripts read
-      // window.location.pathname / .search as if loaded normally.
+      // <base> sets the correct directory for relative resource fetches
+      // (fetch, CSS, scripts). history.replaceState sets window.location
+      // so tool scripts read the correct pathname and search params.
+      const basePath = path.substring(0, path.lastIndexOf("/") + 1);
+      const baseTag = '<base href="' + basePath + '">';
       const tag = "script";
       const code = 'try{history.replaceState(null,"","' +
         fullUrl.replace(/"/g, '\\"') + '")}catch(e){}';
-      const inject = "<" + tag + ">" + code + "</" + tag + ">";
+      const inject = baseTag + "<" + tag + ">" + code + "</" + tag + ">";
       return html.replace(/<head([^>]*)>/, "<head$1>" + inject);
     },
     closeTool() {
