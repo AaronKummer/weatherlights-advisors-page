@@ -1301,9 +1301,9 @@
       "D. AWS Config conformance packs"
     ],
     "answer": 0,
-    "explanation": "Resource Control Policies (RCPs) are the AWS Organizations policy type that constrains what external identities can do with resources in the organization, complementing SCPs to help build a data perimeter. Password policies set credential rules, GuardDuty surfaces threats, and Config conformance packs evaluate configuration compliance.",
+    "explanation": "Resource Control Policies (RCPs), introduced in AWS Organizations in late 2024, attach to resources and set the maximum permissions for any principal acting on those resources — including identities outside the organization. They complement SCPs (which cap what principals in member accounts can do) to help build a data perimeter. Password policies set credential rules, GuardDuty surfaces threats, and Config conformance packs evaluate configuration compliance.",
     "optionExplanations": [
-      "Correct — RCPs sit alongside SCPs in AWS Organizations and restrict actions external identities can perform on org resources, supporting data-perimeter goals.",
+      "Correct — RCPs sit alongside SCPs in AWS Organizations and cap what any principal (including external identities) can do with org resources, which is the data-perimeter use case described.",
       "IAM password policies define credential rules (length, rotation); they do not constrain external-identity access to resources.",
       "GuardDuty detects and reports suspicious activity but does not preventively restrict what external identities can do.",
       "Config conformance packs check that resource configurations meet rules; they do not function as preventive Organizations policy controls."

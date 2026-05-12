@@ -1657,7 +1657,7 @@
     "question": "A security operations team uses VPC Traffic Mirroring on 1,400 ENIs across 6 VPCs to feed an out-of-band IDS fleet. Each mirrored source averages 220 Mbps. They want to mirror only ingress TCP traffic on ports 22, 3389, 80, and 443, and the IDS fleet must scale horizontally. Current design: one mirror target NLB fronting an Auto Scaling group; one mirror filter shared by every session; one mirror session per ENI. The IDS fleet is dropping ~12% of packets at peak. Which redesign best addresses the loss while staying within Traffic Mirroring's documented constraints?",
     "options": [
       "A. Split the mirror filter into ingress-only rules with the four explicit (protocol, port) tuples and tighter rule numbers, distribute mirror sessions across multiple NLB mirror targets sharded by source-VPC, and ensure each target NLB has enough cross-AZ capacity and enough IDS instances behind it that aggregate ingest exceeds peak mirrored bandwidth with headroom for VXLAN encapsulation overhead",
-      "B. Increase the mirror session limit per ENI to 10 to multiply throughput",
+      "B. Raise the per-ENI mirror-session count well above the documented default (3) to multiply throughput from each source",
       "C. Switch mirror targets from NLB to a single EC2 instance to reduce per-packet load-balancing overhead",
       "D. Lower the IDS instance type and add more instances without changing the mirror target"
     ],
@@ -1665,7 +1665,7 @@
     "explanation": "Traffic Mirroring is bandwidth- and CPU-bound at the target. At 1,400 ENIs averaging 220 Mbps, peak aggregate mirrored bandwidth is on the order of 300 Gbps before VXLAN overhead, which a single NLB target with one ASG cannot reliably absorb without drops. The correct redesign is to (a) tighten the filter so only the four relevant ingress flows are captured, (b) shard mirror sessions across multiple mirror-target NLBs by source-VPC so no single target absorbs the whole fan-in, and (c) right-size each target's IDS fleet for the encapsulated bandwidth including VXLAN headers. Mirror-session-per-ENI limits are documented and cannot be casually inflated.",
     "optionExplanations": [
       "Correct — tightening the filter to the needed flows, sharding mirror targets across NLBs, and sizing each fleet for VXLAN-encapsulated peak is the documented capacity-planning approach for high-fan-in Traffic Mirroring.",
-      "Incorrect — Traffic Mirroring enforces a documented per-ENI session limit that you cannot raise to arbitrary values, and more sessions per ENI multiplies the very fan-in causing the drops.",
+      "Incorrect — Traffic Mirroring's per-ENI session count defaults to 3 and is a soft limit you cannot inflate arbitrarily; more sessions per ENI also multiplies the same fan-in causing the drops at the target.",
       "Incorrect — a single EC2 instance is a bandwidth bottleneck far below what 1,400 mirrored ENIs produce; this trades one bottleneck for a worse one.",
       "Incorrect — shrinking the instance type reduces per-node throughput, so even with horizontal scale you fight the encapsulation overhead with weaker nodes."
     ],

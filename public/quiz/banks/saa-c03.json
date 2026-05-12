@@ -1529,12 +1529,12 @@
       "D. Keep 0.5 ACU minimum but switch the storage class to Aurora I/O-Optimized."
     ],
     "answer": 0,
-    "explanation": "Aurora Serverless v2 supports a 0-ACU minimum (auto-pause), so compute charges drop to zero during idle periods. The trade-off is a multi-second resume latency on the first request — explicitly acceptable here. Stopping a cluster works but Aurora auto-starts a stopped cluster after seven days, requiring tooling to keep it stopped. Serverless v1 has been superseded and lacks v2's scaling profile. I/O-Optimized changes storage pricing, not idle compute cost.",
+    "explanation": "Aurora Serverless v2 supports a 0-ACU minimum (auto-pause), so compute charges drop to zero during idle periods. The trade-off is roughly 15 seconds of resume latency on the first request — explicitly acceptable here. Stopping a cluster works but Aurora auto-starts a stopped cluster after seven days, requiring tooling to keep it stopped. Aurora Serverless v1 has been retired and is no longer an option for new workloads. I/O-Optimized changes storage pricing, not idle compute cost.",
     "domain": "Design Cost-Optimized Architectures",
     "optionExplanations": [
-      "Correct — Aurora Serverless v2 supports a 0-ACU minimum that auto-pauses the writer during idle periods, eliminating compute charges, with a multi-second resume latency on the next connection.",
+      "Correct — Aurora Serverless v2 supports a 0-ACU minimum that auto-pauses the writer during idle periods, eliminating compute charges, with roughly 15 seconds of resume latency on the next connection.",
       "Stopping a cluster via EventBridge works for a fixed schedule but Aurora auto-starts a stopped cluster after seven days and the schedule cannot react to ad-hoc weekend queries.",
-      "Aurora Serverless v1 is on a deprecation path and lacks the fine-grained 0-ACU scaling and PostgreSQL feature parity of Serverless v2.",
+      "Aurora Serverless v1 has reached end-of-life and is no longer available for new clusters — it cannot be a target architecture going forward.",
       "I/O-Optimized changes storage and I/O pricing but does not eliminate compute (ACU) charges during idle periods."
     ]
   },
@@ -1578,7 +1578,7 @@
   },
   {
     "id": 84,
-    "question": "A payment processor replicates a transaction-ledger S3 bucket from us-east-1 to us-west-2 for disaster recovery. The audit team has set a contractual RPO of fifteen minutes and wants the replication SLA to be enforced by AWS and visible in CloudWatch so that breaches can be alarmed on. The current configuration uses standard Same-Region Replication. Which adjustment satisfies the SLA and observability needs with the least custom code?",
+    "question": "A payment processor replicates a transaction-ledger S3 bucket from us-east-1 to us-west-2 for disaster recovery. The audit team has set a contractual RPO of fifteen minutes and wants the replication SLA to be enforced by AWS and visible in CloudWatch so that breaches can be alarmed on. The current configuration uses standard Cross-Region Replication with default settings. Which adjustment satisfies the SLA and observability needs with the least custom code?",
     "options": [
       "A. Enable S3 Replication Time Control on the replication rule and create CloudWatch alarms on the OperationsPendingReplication and ReplicationLatency metrics.",
       "B. Add an EventBridge rule that fires on every PutObject and triggers a Lambda that copies the object cross-Region.",

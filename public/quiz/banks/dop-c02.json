@@ -1529,13 +1529,13 @@
       "D. Use a stage-level exit condition on the staging stage with the same three rules and the WAIT result, so the pipeline pauses indefinitely until signals clear."
     ],
     "answer": 0,
-    "explanation": "CodePipeline V2 stage-level conditions (released Aug 2024) evaluate one or more rules at stage entry, on success, or on failure, and support FAIL, ROLLBACK, or WAIT results. Entry conditions with rules wired to CloudWatch alarms, Security Hub, and Change Manager give native gate-style enforcement; the per-rule outcome is emitted to EventBridge automatically. Manual approval (B) is human-mediated and not a deterministic gate. CodeBuild polling (C) reintroduces orchestration code the team wants to avoid. An exit condition on staging with WAIT (D) pauses but does not fail, and exit conditions are evaluated when the stage exits, not when the next stage is entered.",
+    "explanation": "CodePipeline V2 stage-level conditions (released Aug 2024) evaluate one or more rules at stage entry, on success, or on failure, and entry/failure conditions support FAIL, ROLLBACK, or RETRY results. Entry conditions with rules wired to CloudWatch alarms, Security Hub, and Change Manager give native gate-style enforcement; the per-rule outcome is emitted to EventBridge as stage-execution events. Manual approval (B) is human-mediated and not a deterministic gate. CodeBuild polling (C) reintroduces orchestration code the team wants to avoid. The WAIT result invoked in (D) is not an actual CodePipeline condition result, and there is no exit condition that pauses a stage on the next stage's entry signals.",
     "domain": "SDLC Automation",
     "optionExplanations": [
       "Correct - CodePipeline V2 stage-level entry conditions evaluate rules against CloudWatch, Security Hub, and Change Manager at the moment a stage starts, the FAIL result aborts the execution deterministically, and per-rule outcomes are emitted as native EventBridge events without a Lambda orchestrator.",
       "A human manual-approval action is non-deterministic, depends on out-of-band checks, and produces no per-signal diagnostic EventBridge event.",
       "A CodeBuild gate would work but reintroduces exactly the orchestration code the team wants to eliminate, and the conditional-action plumbing duplicates capability that stage-level conditions provide natively.",
-      "Exit conditions evaluate when the stage finishes rather than when the next stage starts, and the WAIT result pauses the pipeline rather than failing it, which is the wrong knob on the right service."
+      "WAIT is not a documented CodePipeline V2 stage-condition result (the supported results are FAIL, ROLLBACK, and RETRY), so the named knob does not exist; an indefinite pause also does not satisfy the abort-and-emit requirement."
     ]
   },
   {

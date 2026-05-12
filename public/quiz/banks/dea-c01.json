@@ -1371,17 +1371,17 @@
     "id": 73,
     "question": "A data quality engineer wants a Glue Data Quality rule that fails when today's row count for the orders table drops more than 20 percent compared to the median of the previous seven daily runs. The rule must reference historical results captured in DataQualityResults without writing a custom Lambda. Which Glue Data Quality DQDL expression fits?",
     "options": [
-      "A. RowCount > 0.8 * last(7, stat=median)",
+      "A. RowCount > 0.8 * median(last(7))",
       "B. RowCount between 0 and (avg(7) * 1.2)",
       "C. RowCount >= prior_run('orders').rows * 0.8",
       "D. AssertCount('orders') withTolerance 20 percent"
     ],
     "answer": 0,
-    "explanation": "Glue Data Quality dynamic rules use the last(k) function to reference the prior k run outcomes captured in DataQualityResults, optionally with stat=median/avg/min/max. Comparing today's RowCount to 0.8 * last(7, stat=median) expresses 'no more than 20 percent below the rolling median.' The other syntaxes are not part of DQDL.",
+    "explanation": "Glue Data Quality dynamic rules use the last(k) function to return the prior k run outcomes captured in DataQualityResults, wrapped by an aggregate such as median, avg, min, max, or sum. Comparing today's RowCount to 0.8 * median(last(7)) expresses 'no more than 20 percent below the rolling median of the last seven runs.' The other syntaxes are not part of DQDL.",
     "domain": "Data Operations and Support",
     "optionExplanations": [
-      "Correct - DQDL supports dynamic rules using last(k, stat=...) to compare current metrics to historical run statistics; 0.8 * last(7, stat=median) implements the 20 percent drop threshold.",
-      "avg(7) is not the DQDL function form; the supported syntax is last(k, stat=avg), and the comparison direction here is wrong for a 'drop' check.",
+      "Correct - DQDL supports dynamic rules by wrapping last(k) with an aggregate like median(last(7)); 0.8 * median(last(7)) implements the 20 percent drop threshold against historical results.",
+      "avg(7) is not the DQDL function form; the supported syntax is avg(last(k)), and this comparison direction does not implement a 'drop below' check.",
       "prior_run(...) is invented syntax; DQDL does not expose named prior-run lookups by table.",
       "AssertCount withTolerance is not a DQDL construct; rule shape is metric op expression."
     ]
@@ -1434,12 +1434,12 @@
       "D. Run two streams in parallel, one provisioned and one on-demand, and let producers fan out randomly."
     ],
     "answer": 0,
-    "explanation": "On-demand mode auto-scales up to twice the prior 30-day peak per stream and is ideal for unpredictable bursts; for steady predictable workloads, provisioned is typically cheaper above the crossover point (commonly cited around 25 percent average utilization of on-demand). Switching modes is a single API change and supported up to twice per 24 hours, so reverting after the launch is straightforward. Permanent over-provisioning wastes money, and dual streams break ordering.",
+    "explanation": "On-demand mode auto-scales up to roughly 200 MB/s ingress and 400 MB/s egress per stream (and up to twice the prior 30-day peak) and is ideal for unpredictable bursts. For steady, well-tuned workloads, provisioned is typically cheaper once average shard utilization exceeds about 70 percent of on-demand throughput. Switching modes is a single API change, so reverting to provisioned after the launch is straightforward. Permanent over-provisioning wastes money, and dual streams break per-key ordering.",
     "domain": "Data Ingestion and Transformation",
     "optionExplanations": [
-      "Correct - On-demand mode absorbs unpredictable bursts and can be switched back to provisioned after the launch window, balancing cost during the steady baseline with elasticity during the burst.",
+      "Correct - On-demand mode absorbs unpredictable bursts up to the stream limits and can be switched back to provisioned after the launch window, balancing cost during the steady baseline with elasticity during the burst.",
       "Permanently scaling to 120 shards pays peak cost 24x7 even when traffic is at baseline, which is exactly what on-demand avoids.",
-      "On-demand is not always cheaper; for steady, predictable workloads provisioned is typically lower cost above the utilization crossover point.",
+      "On-demand is not always cheaper; once sustained utilization climbs past roughly 70 percent of the equivalent on-demand throughput, provisioned is typically lower cost for steady workloads.",
       "Splitting producers across two streams randomly destroys per-key ordering and complicates consumers without solving the capacity problem."
     ]
   },
