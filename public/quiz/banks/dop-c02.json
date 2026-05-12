@@ -1518,5 +1518,195 @@
       "Internet gateway with security groups exposes each VPC directly to the internet rather than routing through a central inspection point.",
       "CloudFront in front of every workload is an HTTP-only edge service and does not enforce VPC-level inspection invariants."
     ]
+  },
+  {
+    "id": 81,
+    "question": "A payments platform team runs a CodePipeline V2 pipeline that deploys to dev, staging, and prod ECS services. Regulators now require that no deployment may enter the prod stage unless three signals are simultaneously true at the moment of stage entry: the staging stage's synthetic Canary success rate over the last 30 minutes is above 99%, the Security Hub critical finding count for the staging account is zero, and a Change Manager change request linked to the execution is in approved state. Failure to satisfy any signal must abort the execution and emit a single EventBridge event identifying which signal failed. The team wants to avoid building a Lambda orchestrator and wants the gate evaluated by the pipeline itself. Which CodePipeline V2 capability fits with the least custom code?",
+    "options": [
+      "A. Configure a stage-level entry condition on the prod stage with three rule expressions evaluating CloudWatch alarms, Security Hub findings, and Change Manager state; set the condition's result to FAIL to abort the execution, and rely on CodePipeline's native stage-condition EventBridge events for the per-signal diagnostic.",
+      "B. Add a manual approval action at the top of the prod stage and instruct the approver to validate the three signals out-of-band before approving.",
+      "C. Insert a CodeBuild action at the start of the prod stage that polls CloudWatch, Security Hub, and Change Manager, then writes a Boolean pipeline variable consumed by a downstream conditional action.",
+      "D. Use a stage-level exit condition on the staging stage with the same three rules and the WAIT result, so the pipeline pauses indefinitely until signals clear."
+    ],
+    "answer": 0,
+    "explanation": "CodePipeline V2 stage-level conditions (released Aug 2024) evaluate one or more rules at stage entry, on success, or on failure, and support FAIL, ROLLBACK, or WAIT results. Entry conditions with rules wired to CloudWatch alarms, Security Hub, and Change Manager give native gate-style enforcement; the per-rule outcome is emitted to EventBridge automatically. Manual approval (B) is human-mediated and not a deterministic gate. CodeBuild polling (C) reintroduces orchestration code the team wants to avoid. An exit condition on staging with WAIT (D) pauses but does not fail, and exit conditions are evaluated when the stage exits, not when the next stage is entered.",
+    "domain": "SDLC Automation",
+    "optionExplanations": [
+      "Correct - CodePipeline V2 stage-level entry conditions evaluate rules against CloudWatch, Security Hub, and Change Manager at the moment a stage starts, the FAIL result aborts the execution deterministically, and per-rule outcomes are emitted as native EventBridge events without a Lambda orchestrator.",
+      "A human manual-approval action is non-deterministic, depends on out-of-band checks, and produces no per-signal diagnostic EventBridge event.",
+      "A CodeBuild gate would work but reintroduces exactly the orchestration code the team wants to eliminate, and the conditional-action plumbing duplicates capability that stage-level conditions provide natively.",
+      "Exit conditions evaluate when the stage finishes rather than when the next stage starts, and the WAIT result pauses the pipeline rather than failing it, which is the wrong knob on the right service."
+    ]
+  },
+  {
+    "id": 82,
+    "question": "A logistics company runs a CodePipeline V2 pipeline that deploys a Lambda-backed API. The team wants this behavior: if any action in the deploy stage fails, only the resources changed during that stage are reverted, and the pipeline is marked failed; if instead the team manually requests a rollback after the stage succeeds, the system must replay the previous successful execution's artifacts against the same stage. The team explicitly does not want an all-at-once revert of the entire pipeline, nor an alarm-driven CodeDeploy rollback inside the action. Which combination is correct?",
+    "options": [
+      "A. Enable stage-level automated rollback on the deploy stage so failures revert only that stage's resources to the last successful execution, and rely on the CodePipeline StartPipelineExecution API with the SOURCE_REVISION override to manually replay prior artifacts.",
+      "B. Enable stage-level automated rollback on the deploy stage and use the RollbackStage API to manually roll back the stage to a prior successful execution by id.",
+      "C. Enable pipeline-level rollback so the whole pipeline reverts on any action failure, and use a Lambda action to re-trigger the pipeline with prior artifacts for the manual case.",
+      "D. Use CodeDeploy deployment alarms inside the Lambda deploy action to drive rollback, and skip CodePipeline's rollback features."
+    ],
+    "answer": 1,
+    "explanation": "CodePipeline V2 supports stage-level automated rollback (configured per stage), which reverts only the affected stage's resources to the last successful execution when an action fails. Separately, the RollbackStage API explicitly targets a stage and a prior successful execution id, replaying its artifacts - the canonical manual-rollback path. (A) confuses two APIs: StartPipelineExecution with SOURCE_REVISION starts a new execution from a specific source, not a stage rollback. (C) is an all-at-once revert, which the team explicitly rejects. (D) abandons pipeline-level rollback semantics for alarm-driven action rollback - a different control plane.",
+    "domain": "SDLC Automation",
+    "optionExplanations": [
+      "StartPipelineExecution with a SOURCE_REVISION override begins a new execution from a specified source revision; it does not roll a stage back to a prior successful execution, so the right service is paired with the wrong API.",
+      "Correct - Stage-level automated rollback (released Apr 2024) reverts only the failing stage's resources to the last successful execution and marks the pipeline failed; for the manual case the RollbackStage API targets a specific stage and prior execution id to replay its artifacts.",
+      "Pipeline-level rollback reverts the entire pipeline rather than only the affected stage, which is the all-at-once behavior the requirement explicitly forbids.",
+      "CodeDeploy alarm-driven rollback operates inside the deploy action against a deployment group and does not satisfy the pipeline-stage rollback semantics the team needs."
+    ]
+  },
+  {
+    "id": 83,
+    "question": "A data platform team is provisioning a new EKS 1.30 cluster that will host 40 namespaces, each with several service accounts that need AWS API access. The team wants centralized, IAM-role-to-service-account mappings that can be managed at the EKS API rather than per-cluster OIDC trust policies, work across multiple clusters with the same IAM role without re-editing trust policies, and avoid the per-cluster OIDC provider creation step entirely. Cross-region failover replicas of the cluster are also planned. The team has no legacy workloads on the cluster. Which mechanism best matches all these constraints?",
+    "options": [
+      "A. Use IAM Roles for Service Accounts (IRSA), create an OIDC provider per cluster, and edit the IAM role trust policy to add each cluster's OIDC issuer.",
+      "B. Use EKS Pod Identity with the eks-pod-identity-agent add-on, create PodIdentityAssociations through the EKS API mapping IAM roles to namespace/service-account pairs, and reuse the same IAM roles across clusters without editing trust policies.",
+      "C. Use node IAM instance profiles and rely on kube2iam to scope by pod annotation.",
+      "D. Use IRSA but skip the OIDC provider by attaching the IAM role directly to the EKS managed node group."
+    ],
+    "answer": 1,
+    "explanation": "EKS Pod Identity is the newer mechanism designed exactly for these constraints: associations are managed at the EKS API (CreatePodIdentityAssociation), there is no per-cluster OIDC provider to create, and the same IAM role can be reused across clusters by adding new associations rather than editing trust policies. IRSA (A) requires a unique OIDC provider per cluster and trust-policy edits per cluster - the operational pain the team is escaping. kube2iam (C) is a deprecated community pattern with metadata-hijack risks. (D) is incoherent: node instance profiles do not provide per-pod identity, and IRSA requires the OIDC provider.",
+    "domain": "Configuration Management and IaC",
+    "optionExplanations": [
+      "IRSA requires a per-cluster OIDC identity provider and a trust-policy edit for every additional cluster's issuer, which is exactly the operational toil the team is trying to avoid.",
+      "Correct - EKS Pod Identity manages role-to-service-account mappings via the EKS API, requires no per-cluster OIDC provider, and lets one IAM role be reused across many clusters without editing its trust policy - matching every stated constraint for a new cluster with no legacy workloads.",
+      "kube2iam is a community sidecar pattern that intercepts the instance metadata service and is widely considered insecure and deprecated for new clusters.",
+      "Attaching the IAM role to the managed node group grants the role to every pod on the node, eliminating per-service-account scoping, and IRSA cannot bypass the OIDC provider requirement."
+    ]
+  },
+  {
+    "id": 84,
+    "question": "A retail SRE team runs a checkout API on ECS Fargate and wants formal SLOs that gate releases. They require: a request-based availability SLO of 99.9% over 30 days, a request-based latency SLO with the 95th percentile under 250 ms over 30 days, burn-rate alarms at 2% and 5% of error budget consumed over 1-hour and 6-hour windows respectively, and the ability to auto-suggest additional SLOs based on observed traffic patterns. The team uses OpenTelemetry instrumentation. Which AWS-native capability delivers this with the least custom code?",
+    "options": [
+      "A. Build CloudWatch metric math expressions for SLI numerators and denominators, manually compute burn rates with composite alarms, and hand-author every SLO threshold in CloudFormation.",
+      "B. Use CloudWatch Application Signals to define request-based availability and latency SLOs over a 30-day rolling window, configure burn-rate alarms at the required percentages and windows, and enable SLO Recommendations to suggest additional SLOs from observed Application Signals service maps.",
+      "C. Use CloudWatch Synthetics with canary success rates only, since canaries cover availability and latency.",
+      "D. Use AWS X-Ray service map alarms with anomaly detection in place of explicit SLOs."
+    ],
+    "answer": 1,
+    "explanation": "CloudWatch Application Signals natively supports request-based SLOs (availability and latency), 30-day rolling windows, multi-window burn-rate alarms, and SLO Recommendations that propose SLOs from observed service traffic - matching every requirement out of the box and consuming OpenTelemetry data via the ADOT-instrumented service. Hand-rolled metric math (A) reinvents what Application Signals automates. Synthetics canaries (C) measure synthetic, not real-user request volume - that is the definition of a synthetic SLI, not request-based. X-Ray anomaly detection (D) flags drift but is not an SLO with explicit error budget and burn rate.",
+    "domain": "Monitoring and Logging",
+    "optionExplanations": [
+      "Hand-rolled CloudWatch metric math, composite alarms, and CloudFormation SLO authoring works but is the maximum-custom-code path and ignores the request-based SLO and SLO Recommendations primitives Application Signals already provides.",
+      "Correct - CloudWatch Application Signals defines request-based availability and latency SLOs over 30-day rolling windows, supports the multi-window 2%/5% burn-rate alarm pattern natively, and SLO Recommendations propose SLOs from observed service maps; it ingests the team's OpenTelemetry data via ADOT.",
+      "CloudWatch Synthetics canaries produce synthetic SLIs against test traffic, not request-based SLIs against real user traffic, so they cannot satisfy a request-based SLO requirement.",
+      "X-Ray service map anomaly detection flags statistical drift but does not model explicit error budgets, burn-rate windows, or SLO targets - the right observability service paired with the wrong feature."
+    ]
+  },
+  {
+    "id": 85,
+    "question": "A platform team must add cryptographic supply-chain provenance to every container image their CodePipeline ships to ECR. Requirements: signatures must be verifiable by Kubernetes admission with the Notation verifier, the signing key must be managed by AWS with usage events recorded in CloudTrail, and the verification policy must reject images signed by any other identity. The team explicitly does not want to manage Cosign key files in Secrets Manager. Which approach fits?",
+    "options": [
+      "A. Use AWS Signer with a signing profile bound to a Notation-compatible signing platform, sign the OCI image after push in CodeBuild using the notation CLI with the AWS Signer plugin, and configure cluster admission with a Notation trust policy that pins the signing profile ARN.",
+      "B. Use AWS Signer with a Lambda signing profile, sign the image's manifest digest, and have admission verify the signature using cosign verify with the Signer public key.",
+      "C. Generate a Cosign keypair in AWS KMS, store the public key in SSM Parameter Store, sign with cosign sign --key awskms://, and verify with cosign verify in admission.",
+      "D. Use ECR's built-in image signing (the ecr:PutImageSigningProfile API) and let ECR enforce verification at pull time."
+    ],
+    "answer": 0,
+    "explanation": "AWS Signer supports the Notation signing platform for OCI images; the notation CLI with the AWS Signer plugin attaches signatures, and a Notation trust policy pinned to the Signer profile ARN rejects any other identity. CloudTrail records Signer's SignPayload calls. (B) Signer's Lambda profile signs Lambda code packages, not OCI manifests, and Notation verification does not use cosign verify - wrong knob, wrong verifier. (C) is the explicitly rejected Cosign-based path. (D) ECR has no native signing API or pull-time verification - that's fabricated.",
+    "domain": "SDLC Automation",
+    "optionExplanations": [
+      "Correct - AWS Signer's Notation-compatible signing platform pairs with the notation CLI's AWS Signer plugin to attach signatures to OCI images, signing key usage is recorded in CloudTrail, and a Notation trust policy pinned to the Signer profile ARN rejects any other identity at admission.",
+      "AWS Signer's Lambda signing profile is purpose-built for Lambda code packages, not OCI manifests, and the Notation verifier required by the cluster does not consume cosign verify - the right service with the wrong profile and verifier.",
+      "Cosign with a KMS-backed key works technically but is exactly the path the team rejects, and Notation admission verifiers do not consume Cosign signature formats by default.",
+      "ECR has no native cryptographic image signing API or pull-time enforcement - the named API is fabricated, and Signer plus Notation is the supported path."
+    ]
+  },
+  {
+    "id": 86,
+    "question": "An engineering org wants to add automated code review and unit-test generation to every GitHub pull request that targets the main branch. Requirements: comments and suggestions appear directly on the PR as review comments, the reviewer is identified as an AWS-managed bot identity that does not consume a developer seat, generated unit tests are proposed as a separate commit on the same PR branch, and access is governed by an IAM role rather than a GitHub PAT. Which solution fits with the least custom integration?",
+    "options": [
+      "A. Configure Amazon Q Developer's GitHub integration so the /q review and /q test commands run from a PR, posting review comments and generated unit-test commits as the Q Developer bot; install the integration with a CodeConnections (CodeStar Connections) GitHub connection scoped to the org and grant developers an IAM role with q:StartCodeReview-class permissions.",
+      "B. Build a GitHub Actions workflow that invokes Bedrock Claude models on every PR and posts comments via the GitHub API using a fine-grained PAT in Actions secrets.",
+      "C. Deploy CodeGuru Reviewer on the repository for automated review and use CodeBuild reports to attach generated tests as workflow artifacts.",
+      "D. Use Amazon Q Business with the GitHub data source connector so Q can answer questions about PRs in chat, and rely on developers to copy suggestions into PR comments manually."
+    ],
+    "answer": 0,
+    "explanation": "Amazon Q Developer's PR integration posts review comments and pushes proposed unit-test commits as the Q Developer bot identity, integrates with GitHub via CodeConnections (no PAT), and access is brokered through IAM permissions on Q Developer actions. (B) is a custom build that uses exactly the PAT pattern the requirement forbids. (C) CodeGuru Reviewer's public-repo and on-demand review functionality has been deprecated in favor of Q Developer, and CodeGuru Reviewer never generated unit tests. (D) Q Business is a generative knowledge-assistant product, not a PR-review bot - the right vendor, wrong product.",
+    "domain": "SDLC Automation",
+    "optionExplanations": [
+      "Correct - Amazon Q Developer's GitHub integration posts /q review comments and /q test unit-test commits on the PR as the Q Developer bot, installs via a CodeConnections GitHub connection so no PAT is needed, and access is governed by IAM permissions on Q Developer actions.",
+      "A custom GitHub Actions plus Bedrock workflow reinvents what Q Developer ships, and storing a fine-grained PAT in Actions secrets is exactly the credential model the requirement excludes.",
+      "CodeGuru Reviewer has been deprecated in favor of Amazon Q Developer, never produced generated unit tests as commits, and is no longer the AWS-recommended PR review service.",
+      "Amazon Q Business is a generative knowledge assistant over enterprise data sources and is not a PR review bot - the right product family with the wrong product."
+    ]
+  },
+  {
+    "id": 87,
+    "question": "A team must let their GitHub Actions workflows deploy CloudFormation stacks to three AWS accounts (dev, staging, prod) without storing any long-lived AWS access keys in GitHub. Requirements: each workflow run must obtain short-lived credentials, the IAM role must reject assume-role calls that come from a branch other than main when targeting prod, and the trust must be scoped to a specific GitHub repository (not the whole org). Which configuration is correct?",
+    "options": [
+      "A. Register token.actions.githubusercontent.com as an IAM OIDC identity provider in each account, create an IAM role per account whose trust policy uses Condition StringEquals on token.actions.githubusercontent.com:sub with repo:org/repo:ref:refs/heads/main for prod (and looser conditions for dev/staging), and have workflows use the aws-actions/configure-aws-credentials action with role-to-assume.",
+      "B. Register GitHub as a SAML 2.0 identity provider in IAM and use IAM Identity Center permission sets bound to GitHub groups.",
+      "C. Store a long-lived IAM access key in GitHub Environments protected by required reviewers and rotate it via a Lambda every 24 hours.",
+      "D. Use IAM Roles Anywhere with a GitHub-signed certificate authority and assume the role from Actions runners."
+    ],
+    "answer": 0,
+    "explanation": "GitHub OIDC to IAM is the canonical short-lived-credentials pattern. Registering token.actions.githubusercontent.com as an OIDC provider and writing a trust policy with sub-claim conditions (repo:org/repo:ref:refs/heads/main) scopes assumption to a specific repo and branch. (B) GitHub does not act as a SAML IdP for IAM in this pattern, and IAM Identity Center group bindings to GitHub groups are not the OIDC integration. (C) is the long-lived-key model the requirement forbids; rotation does not change that. (D) IAM Roles Anywhere uses X.509 certificates from a customer CA - GitHub does not issue such certs to Actions runners, so this is the right service paired with an impossible trust source.",
+    "domain": "SDLC Automation",
+    "optionExplanations": [
+      "Correct - Registering token.actions.githubusercontent.com as an IAM OIDC identity provider and using trust-policy conditions on the sub claim (repo:org/repo:ref:refs/heads/main for prod) gives short-lived credentials per workflow run scoped to a specific repository and branch.",
+      "GitHub Actions does not function as a SAML IdP for AWS IAM in the documented pattern; the supported short-lived-credential integration is OIDC via token.actions.githubusercontent.com.",
+      "An IAM access key is a long-lived credential by definition; environment protections and Lambda rotation do not change that and still violate the no-long-lived-secrets requirement.",
+      "IAM Roles Anywhere requires X.509 client certs from a registered CA; GitHub does not issue Actions-runner certificates to a customer-registered CA, so this is the right service with an impossible trust source."
+    ]
+  },
+  {
+    "id": 88,
+    "question": "A reliability team wants their CI pipeline to run a chaos experiment after each production deploy of a critical API: terminate one Availability Zone's worth of ECS tasks for 5 minutes, then assert that the service's 5xx rate stayed below 1% and p95 latency stayed below 300 ms; abort the experiment if a stop-condition alarm fires. The experiment definition must be version-controlled and reusable. Which AWS service and pattern fits?",
+    "options": [
+      "A. Use AWS Fault Injection Service (FIS) experiment templates committed in the repo, with actions targeting ECS tasks by AZ tag and a CloudWatch alarm as a stop condition; the pipeline invokes StartExperiment and polls until completion, asserting SLI metrics afterwards.",
+      "B. Use AWS Systems Manager Automation runbooks to terminate tasks in a loop and a Lambda to evaluate SLIs.",
+      "C. Use AWS Resilience Hub assessments in the pipeline, since Resilience Hub runs failure injection automatically.",
+      "D. Use FIS experiment templates but rely on actions targeting EC2 instances by AZ - ECS targets are not supported."
+    ],
+    "answer": 0,
+    "explanation": "AWS Fault Injection Service experiment templates support ECS task-stop actions, AZ-scoped target selection by tag/filter, and CloudWatch alarms as stop conditions. The template can be committed as JSON/YAML and invoked via StartExperiment in CI. (B) SSM Automation is a generic runbook engine that lacks FIS's built-in fault primitives, stop-condition semantics, and target selection model. (C) Resilience Hub assesses resiliency and recommends FIS experiments but does not itself run continuous fault injection in a CI loop. (D) FIS does support ECS targets (aws:ecs:stop-task action) - the claim is false.",
+    "domain": "Incident and Event Response",
+    "optionExplanations": [
+      "Correct - AWS FIS experiment templates support ECS aws:ecs:stop-task actions, AZ-scoped target selection by tag, and CloudWatch alarm stop conditions; templates are JSON/YAML and committable, and pipelines invoke StartExperiment then assert SLI metrics afterwards.",
+      "SSM Automation is a general runbook engine and lacks FIS's purpose-built fault actions, target selection, and stop-condition model - hand-rolling these reinvents FIS.",
+      "AWS Resilience Hub performs resiliency assessments and recommends FIS experiments to run; it does not itself execute repeating fault injection in a CI pipeline, so this is the right adjacent service with the wrong role.",
+      "FIS does support ECS targets via the aws:ecs:stop-task action and ECS-task target type, so the premise of this distractor is factually incorrect."
+    ]
+  },
+  {
+    "id": 89,
+    "question": "A retail platform uses EventBridge to deliver order events between microservices. During blue/green deploys of a downstream consumer, the team wants to validate the new (green) version by replaying the last 60 minutes of production events against it and comparing outputs to the blue version - without re-emitting events to the rest of the bus. Schemas must be discoverable and versioned for both old and new payload shapes. Which design fits with the least new infrastructure?",
+    "options": [
+      "A. Enable the EventBridge Schema Registry with schema discovery so old and new event schemas are versioned, configure an Event Archive on the bus, and during validation use StartReplay with a filter that targets only the green consumer's rule - so replay flows to green without touching other targets.",
+      "B. Pause the EventBridge bus during deploys, dump the last hour of CloudWatch Logs to S3, and run a Lambda to re-emit them into a new isolated bus consumed only by green.",
+      "C. Use Kinesis Data Streams in place of EventBridge so consumers can independently rewind via shard iterators.",
+      "D. Configure an Event Archive but bypass the schema registry, since archive replay does not require schemas."
+    ],
+    "answer": 0,
+    "explanation": "EventBridge Event Archive captures matched events; StartReplay can be scoped to specific rules (or rule ARNs), so replay can be directed at only the green consumer's rule without re-fanning to other targets. Schema Registry with discovery versions both the old and new payload shapes so producer/consumer drift is visible. (B) re-architects around the platform and is operationally heavy. (C) substitutes a different service rather than using what's there. (D) abandons the schema-versioning requirement; the question explicitly demands it.",
+    "domain": "Resilient Cloud Solutions",
+    "optionExplanations": [
+      "Correct - EventBridge Event Archive captures matched events, StartReplay supports targeting only specific rules so replay reaches only the green consumer without re-fanning to other rules, and the Schema Registry with discovery versions both old and new event shapes.",
+      "Pausing the bus and re-emitting from CloudWatch Logs is heavy and bypasses the native archive/replay primitive that already exists for this purpose.",
+      "Switching to Kinesis Data Streams changes the routing model entirely rather than using EventBridge's existing archive and replay capabilities, and ignores the schema registry requirement.",
+      "Schema Registry usage is explicitly required by the question; archive replay can technically run without schemas but the design fails the discoverability and versioning constraint."
+    ]
+  },
+  {
+    "id": 90,
+    "question": "A team running ECS blue/green via CodeDeploy must add lifecycle hook logic with these requirements: a database migration must run before any task of the new (replacement) task set is registered, smoke tests must run against the replacement task set on its test listener before production traffic shifts, and a final business-acceptance check must run after production traffic has fully shifted but before the original (blue) task set is terminated. Each hook is a Lambda. Which mapping of hooks is correct?",
+    "options": [
+      "A. BeforeInstall for the migration, AfterAllowTestTraffic for smoke tests on the test listener, and AfterAllowTraffic for the post-production-shift acceptance check.",
+      "B. AfterInstall for the migration, BeforeAllowTraffic for smoke tests, and AfterAllowTraffic for the post-production-shift check.",
+      "C. BeforeAllowTraffic for the migration, ValidateService for smoke tests on the test listener, and BeforeAllowTraffic again for the post-production-shift check.",
+      "D. ValidateService for the migration, BeforeInstall for smoke tests, and AfterInstall for the post-production-shift check."
+    ],
+    "answer": 0,
+    "explanation": "For ECS blue/green, CodeDeploy fires hooks in this order: BeforeInstall (before the replacement task set is created), AfterInstall (after creation, before test listener), AfterAllowTestTraffic (after the test listener routes to the replacement task set - the place for smoke tests against test traffic), BeforeAllowTraffic (before prod listener shifts), AfterAllowTraffic (after prod listener has fully shifted, before original task set termination). A DB migration that must precede registration of any replacement task belongs in BeforeInstall. Smoke tests against the test listener belong in AfterAllowTestTraffic. Final acceptance after prod shift but before blue teardown belongs in AfterAllowTraffic.",
+    "domain": "SDLC Automation",
+    "optionExplanations": [
+      "Correct - BeforeInstall fires before the replacement task set is created so DB migration runs first, AfterAllowTestTraffic fires once the replacement task set is reachable on the test listener so smoke tests run there, and AfterAllowTraffic fires after production traffic has fully shifted but before the original task set is terminated for final acceptance.",
+      "AfterInstall fires after the replacement task set is created but before the test listener routes to it, so smoke tests in BeforeAllowTraffic would not be testing on the test listener as required - the right hook family with one wrong slot.",
+      "BeforeAllowTraffic does not gate the creation of the replacement task set (BeforeInstall does), and reusing BeforeAllowTraffic for the post-production-shift check is incoherent because production traffic has not yet shifted at that hook.",
+      "ValidateService is a CodeDeploy hook for EC2/on-prem and Lambda compute platforms, not the ECS blue/green hook set; it is not where DB migration belongs and BeforeInstall is not where smoke tests against test traffic belong."
+    ]
   }
 ]

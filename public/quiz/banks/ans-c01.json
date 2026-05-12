@@ -1518,5 +1518,195 @@
       "Incorrect — Direct Connect connects to the AWS Region, not to the local LAN."
     ],
     "domain": "Network Security, Compliance, and Governance"
+  },
+  {
+    "id": 81,
+    "question": "A platform team runs an AWS Cloud WAN core network across 5 Regions with three segments: prod, dev, and shared-services. Compliance now mandates that every prod-to-prod east-west flow between Regions traverse a centralized stateful inspection appliance fleet that lives in a dedicated inspection VPC in us-east-1. The team has 47 prod VPC attachments spread across the 5 Regions, and they refuse to rewrite static routes per attachment whenever a new VPC joins. Which Cloud WAN configuration meets the requirement with the least per-attachment routing churn?",
+    "options": [
+      "A. Create a Network Function Group (NFG) referencing the inspection VPC attachment and use a send-via action in the prod segment's segment-actions to steer inter-Region prod traffic through the NFG, leaving intra-Region prod flows unaffected",
+      "B. Add a static 0.0.0.0/0 route in every prod VPC attachment's segment route table pointing to the inspection VPC attachment ID",
+      "C. Replace the prod segment with a shared-segment and rely on segment sharing to force all traffic through inspection",
+      "D. Configure send-to actions on the prod segment so that every packet is delivered to the inspection appliance regardless of source or destination"
+    ],
+    "answer": 0,
+    "explanation": "Cloud WAN Network Function Groups paired with a send-via segment-action insert an inspection hop into the path between segments (or between Regions within a segment) without requiring per-attachment static routes. send-via preserves the original destination and routes traffic transitively through the NFG attachment, so adding the 48th VPC needs no route-table edits. send-to terminates traffic at the NFG and is for centralized egress, not east-west inspection.",
+    "optionExplanations": [
+      "Correct — an NFG plus send-via on the prod segment programs the Cloud WAN data plane to insert the inspection VPC into the path for prod-to-prod inter-Region flows while leaving intra-Region traffic alone, with no per-VPC route updates needed when attachments are added.",
+      "Incorrect — managing 47+ static default routes per attachment is exactly the operational burden the team wants to avoid and breaks any non-default destinations inside the segment.",
+      "Incorrect — segment sharing controls which segments can reach each other; it does not impose a forced inspection hop and would actually flatten the isolation the team needs.",
+      "Incorrect — send-to is the egress pattern (terminate traffic at the NFG, typically for Internet inspection); it does not preserve the original destination needed for east-west prod-to-prod flows."
+    ],
+    "domain": "Network Implementation"
+  },
+  {
+    "id": 82,
+    "question": "A regulated bank is rolling out VPC Lattice to expose 26 internal microservices across 9 accounts. The security team requires that (1) only callers in the 'payments' OU may invoke any service tagged tier=pci, (2) within those callers only the principal arn:aws:iam::*:role/payment-runner may issue POST requests to the /transfer resource path, and (3) read-only GETs from any payments-OU caller are allowed on every path. They want the coarse-grained rule applied once at the service network and the fine-grained rule applied per service. Which auth-policy placement satisfies all three controls?",
+    "options": [
+      "A. Put the OU-scope condition in the service-network auth policy (Principal + aws:PrincipalOrgPaths condition), put the POST /transfer rule in the per-service auth policy (Action vpc-lattice-svcs:Invoke with a Resource ARN ending /transfer and a condition on vpc-lattice-svcs:RequestMethod), and rely on policy intersection so both must allow",
+      "B. Put every rule in the service-network policy because per-service policies cannot reference HTTP methods",
+      "C. Put every rule in each per-service policy and skip the service-network policy entirely",
+      "D. Use a Lambda authorizer attached to the listener to evaluate all three conditions at request time"
+    ],
+    "answer": 0,
+    "explanation": "VPC Lattice auth policies are PARC (Principal, Action, Resource, Condition) IAM-style documents that exist at two scopes: the service network (coarse, org-wide gate) and the individual service (fine, per-path/method). When both are attached the effective decision is the intersection — both must allow. Placing the OU gate at the service network and the method+path rule at the service exploits this layering exactly as designed and uses the vpc-lattice-svcs:RequestMethod and Resource-ARN conditions that Lattice exposes natively.",
+    "optionExplanations": [
+      "Correct — service-network policy enforces the org-wide PCI gate via aws:PrincipalOrgPaths while the per-service policy enforces the method+path rule via vpc-lattice-svcs:RequestMethod and a Resource ARN bound to /transfer; intersection semantics guarantee both controls apply.",
+      "Incorrect — per-service auth policies do support HTTP method and path conditions; cramming everything into the service-network policy loses per-service granularity and ARN-scoped Resource matching.",
+      "Incorrect — works but doesn't scale: duplicating the OU gate inside 26 service policies multiplies drift risk and is exactly what the service-network scope exists to prevent.",
+      "Incorrect — Lambda authorizers are not how Lattice enforces auth policies; this is the right service, wrong knob, and adds latency plus a per-invoke charge."
+    ],
+    "domain": "Network Security, Compliance, and Governance"
+  },
+  {
+    "id": 83,
+    "question": "A SaaS provider must inspect TLS 1.3 traffic leaving its 12 production VPCs to detect data exfiltration to third-party services. They deploy AWS Network Firewall in a centralized inspection VPC behind a Gateway Load Balancer. Outbound TLS inspection is enabled. Their workload EC2 instances run a hardened Amazon Linux 2023 AMI managed by an SSM baseline. After enabling the TLS inspection configuration, all curl calls to https://api.stripe.com fail with a certificate-verification error from the workload. The Network Firewall configuration uses an ACM Private CA-issued intermediate CA as the decryption certificate. What is the correct fix?",
+    "options": [
+      "A. Distribute the Private CA root certificate to the trust store on every workload instance (for example, via SSM State Manager and update-ca-trust) so workloads trust the on-the-fly leaf certs minted by Network Firewall during decryption",
+      "B. Import the Stripe public certificate into AWS Certificate Manager and reference it from the firewall rule group",
+      "C. Switch the TLS inspection configuration to use a public ACM certificate instead of the Private CA intermediate",
+      "D. Disable certificate verification on the workload (curl --insecure) as the documented AWS pattern"
+    ],
+    "answer": 0,
+    "explanation": "Outbound TLS inspection on Network Firewall works by terminating the client's TLS session, decrypting, re-encrypting to the upstream server, and presenting the client with a freshly minted leaf certificate signed by the configured decryption CA. The client must trust that CA's root, otherwise verification fails. The standard pattern is to distribute the Private CA root into each workload's trust store via SSM, an AMI baseline, or configuration management. Public ACM certs cannot be used as a signing CA, and disabling verification is a security regression that defeats the purpose of the inspection.",
+    "optionExplanations": [
+      "Correct — Network Firewall mints synthetic leaf certs signed by the configured Private CA during outbound decryption; workloads must trust that root, and SSM State Manager + update-ca-trust is the standard distribution mechanism.",
+      "Incorrect — importing the upstream server's cert into ACM does nothing for the decryption-and-resign flow; the workload still sees a Network-Firewall-minted cert chain.",
+      "Incorrect — public ACM certificates cannot sign arbitrary leaf certs on the fly; only a Private CA intermediate works as the decryption cert. Right service, wrong knob.",
+      "Incorrect — disabling verification destroys the integrity guarantee the inspection is meant to provide and is never the documented AWS pattern."
+    ],
+    "domain": "Network Security, Compliance, and Governance"
+  },
+  {
+    "id": 84,
+    "question": "A healthcare ISV runs workloads in 4 VPCs that resolve DNS via Route 53 Resolver. Threat intel shows that compromised endpoints are exfiltrating data via DNS-over-HTTPS (DoH) to attacker-controlled resolvers on TCP/443, bypassing the existing Route 53 Resolver DNS Firewall domain-blocklists which only see UDP/53 and TCP/53 queries. The security team must block known malicious DoH endpoints and inspect or block unsanctioned DoH usage without breaking sanctioned DoH to 1.1.1.1. Which control combination is most effective?",
+    "options": [
+      "A. Enable Route 53 Resolver DNS Firewall Advanced with DoH inspection to apply domain-list and threat-intel rules to DoH queries leaving the VPC, and pair it with a Network Firewall stateful rule that allows TCP/443 to 1.1.1.1 only while blocking known malicious DoH resolver IPs",
+      "B. Add the malicious DoH FQDNs to the existing standard DNS Firewall domain list and rely on Route 53 Resolver to drop the queries",
+      "C. Configure a security group egress rule denying TCP/443 to public IPs",
+      "D. Move all workloads behind a NAT Gateway and trust source-NAT to anonymize the DoH traffic"
+    ],
+    "answer": 0,
+    "explanation": "Standard DNS Firewall only inspects plain DNS on UDP/53 and TCP/53 — it never sees encrypted DoH queries on TCP/443. DNS Firewall Advanced adds DoH inspection so domain-list and managed threat-intel rules apply to encrypted resolver traffic. Combining it with a Network Firewall stateful allowlist for the sanctioned 1.1.1.1 endpoint and a blocklist for known malicious DoH IPs gives layered enforcement: encrypted-payload domain filtering plus L3/L4 reachability control. Blanket egress blocks would also kill legitimate HTTPS.",
+    "optionExplanations": [
+      "Correct — DNS Firewall Advanced is the feature that inspects DoH on TCP/443; pairing it with Network Firewall IP allow/deny gives both domain-level and reachability-level enforcement without breaking sanctioned DoH.",
+      "Incorrect — standard DNS Firewall does not see DoH traffic, so adding domains to its lists has no effect on TCP/443-encapsulated queries.",
+      "Incorrect — denying TCP/443 to all public IPs would break virtually every legitimate HTTPS workload; this is the wrong granularity.",
+      "Incorrect — NAT Gateways do not inspect or filter DNS or DoH; this is the wrong service entirely."
+    ],
+    "domain": "Network Security, Compliance, and Governance"
+  },
+  {
+    "id": 85,
+    "question": "A financial-data startup wants to expose an on-prem PostgreSQL cluster (CIDR 10.40.0.0/24, port 5432) to consumer accounts in two Regions — us-east-1 and eu-west-1 — using PrivateLink resources (the newer feature that lets you publish non-VPC and cross-Region resources as PrivateLink endpoints). Consumers must be able to discover and connect to the same logical resource from either Region with a single endpoint configuration per consumer VPC, and failover between Regions must not require consumer-side IP or DNS changes. Which design uses PrivateLink resources correctly?",
+    "options": [
+      "A. Register the on-prem PostgreSQL as a PrivateLink resource in us-east-1, create a Resource Configuration shared via RAM, and provision Resource Endpoints in consumer VPCs in both Regions referencing the same Resource Configuration ARN — consumer DNS resolves to the per-Region endpoint while the underlying resource ARN is shared",
+      "B. Build a Network Load Balancer in each Region in front of the on-prem cluster and expose two separate endpoint services, requiring consumers to configure both",
+      "C. Use Route 53 Resolver outbound endpoints plus VPC peering to reach the on-prem database without PrivateLink",
+      "D. Publish the resource only in us-east-1 and require eu-west-1 consumers to traverse inter-Region TGW peering to reach the endpoint"
+    ],
+    "answer": 0,
+    "explanation": "PrivateLink resources introduce Resource Configurations (an abstraction over a target — IP, ARN, or domain — that can be on-prem, cross-Region, or even outside VPCs) shared via RAM, and Resource Endpoints in consumer VPCs that reference a Resource Configuration ARN. Consumers in multiple Regions can each create a local Resource Endpoint pointing at the same shared Resource Configuration, getting per-Region private DNS and per-Region failover semantics without needing to know whether the producer is on-prem, in another VPC, or in another Region.",
+    "optionExplanations": [
+      "Correct — Resource Configurations + RAM share + per-Region Resource Endpoints is the exact PrivateLink resources pattern for cross-Region consumer-side discovery of a non-VPC target.",
+      "Incorrect — works but doesn't scale: two separate endpoint services force consumers to configure and DNS-switch between two endpoints per Region, which is precisely what PrivateLink resources was built to eliminate.",
+      "Incorrect — Resolver outbound endpoints solve DNS forwarding, not private TCP reachability to a resource, and the question explicitly mandates PrivateLink resources.",
+      "Incorrect — single-Region publishing forces a cross-Region hairpin and gives no Region-local failover; right service, wrong knob."
+    ],
+    "domain": "Network Implementation"
+  },
+  {
+    "id": 86,
+    "question": "An enterprise with 180 accounts wants centralized IPv4 CIDR governance: a top-level /8 pool of public-routable space carved into Region-scoped /12 pools, then per-OU /16 sub-pools that account-level VPCs draw /24 allocations from. They need automatic non-compliance findings when a VPC allocates outside its OU's sub-pool, plus monitoring of unused address efficiency and BYOIP integration. Cost matters: only the features they actually need should be in the Advanced tier. Which IPAM tier configuration matches the requirement?",
+    "options": [
+      "A. Provision the IPAM in Advanced tier in the network account because Advanced tier is required for cross-Region pools, compliance/efficiency monitoring, AWS Organizations integration, and SCP-style allocation rules; Free tier only supports basic CIDR tracking inside a single account",
+      "B. Use Free tier — Free tier supports cross-account pools and compliance monitoring; Advanced tier only adds BYOIP",
+      "C. Provision two separate IPAMs (one Free, one Advanced) and federate them with a Lambda reconciler",
+      "D. Skip IPAM entirely and manage the hierarchy with a spreadsheet checked into the network account's S3 bucket"
+    ],
+    "answer": 0,
+    "explanation": "IPAM has a two-tier model: Free tier is single-account, single-Region, and limited to discovery of resources it owns — no compliance monitoring, no cross-Region pools, no AWS Organizations integration. Advanced tier adds cross-Region pools, AWS Organizations integration, allocation-rule enforcement (allocation-min/max-netmask, locale, tag conditions), compliance and overlap findings, and address-utilization monitoring — all of which the scenario explicitly requires. BYOIP works on both tiers. Splitting into two IPAMs defeats the central-governance goal.",
+    "optionExplanations": [
+      "Correct — Advanced tier is the tier that adds cross-Region pools, AWS Organizations integration, allocation-rule enforcement, and compliance/efficiency monitoring, which are precisely the features the scenario demands.",
+      "Incorrect — Free tier does not include cross-Region pools, AWS Organizations integration, or compliance monitoring; this misstates the feature split.",
+      "Incorrect — splitting into two IPAMs reintroduces the fragmentation IPAM is supposed to eliminate and creates a custom reconciler the team would have to maintain.",
+      "Incorrect — a spreadsheet is not an enforceable governance control and gives no API/EventBridge integration for drift detection."
+    ],
+    "domain": "Network Management and Operations"
+  },
+  {
+    "id": 87,
+    "question": "A platform team runs 240 VPCs across 6 accounts. Quarterly, the security team must produce an org-wide audit answering two questions: (1) for every TGW-attached prod VPC, can any resource in any dev VPC reach the prod-database security groups on TCP/5432, and (2) does any actual reachable forwarding path exist today between a known-public ALB and the prod-database SGs. They want a single repeatable, IaC-friendly workflow. Which tool combination produces both answers most precisely?",
+    "options": [
+      "A. Use Network Access Analyzer with a Network Access Scope describing the (dev sources -> prod-database SGs on 5432) reachability assertion to answer question 1, and use Reachability Analyzer path queries from the ALB ENI to the prod-database ENIs to answer question 2; orchestrate both via CloudFormation/StepFunctions for the quarterly run",
+      "B. Use only VPC Flow Logs queried via Athena to answer both questions",
+      "C. Use only Reachability Analyzer for both questions because Network Access Analyzer cannot evaluate security-group reachability",
+      "D. Deploy a third-party agent on every instance to crawl the network actively"
+    ],
+    "answer": 0,
+    "explanation": "Network Access Analyzer evaluates declarative org-wide reachability scopes — 'can any resource matching X reach any resource matching Y over protocol/port Z' — across many accounts and VPCs without testing individual paths, which is exactly question 1. Reachability Analyzer answers point-to-point 'is there a forwarding path between ENI A and ENI B' queries with full hop-by-hop output, which is exactly question 2. The two services are complementary by design: scope-level posture audit + per-path forensic confirmation. Flow Logs only show what already happened; agents are out-of-band.",
+    "optionExplanations": [
+      "Correct — Network Access Analyzer handles the org-wide declarative scope, Reachability Analyzer handles the point-to-point path, and both expose APIs/CFN for IaC orchestration.",
+      "Incorrect — Flow Logs are observational, not analytical; they cannot answer 'is there a path' for traffic that has never been generated.",
+      "Incorrect — misstates the tool: Network Access Analyzer does evaluate SG and NACL reachability across the org; this is the right-service-wrong-knob distractor.",
+      "Incorrect — third-party agents are out-of-scope, intrusive, and don't integrate with the IaC workflow requirement."
+    ],
+    "domain": "Network Management and Operations"
+  },
+  {
+    "id": 88,
+    "question": "A security operations team uses VPC Traffic Mirroring on 1,400 ENIs across 6 VPCs to feed an out-of-band IDS fleet. Each mirrored source averages 220 Mbps. They want to mirror only ingress TCP traffic on ports 22, 3389, 80, and 443, and the IDS fleet must scale horizontally. Current design: one mirror target NLB fronting an Auto Scaling group; one mirror filter shared by every session; one mirror session per ENI. The IDS fleet is dropping ~12% of packets at peak. Which redesign best addresses the loss while staying within Traffic Mirroring's documented constraints?",
+    "options": [
+      "A. Split the mirror filter into ingress-only rules with the four explicit (protocol, port) tuples and tighter rule numbers, distribute mirror sessions across multiple NLB mirror targets sharded by source-VPC, and ensure each target NLB has enough cross-AZ capacity and enough IDS instances behind it that aggregate ingest exceeds peak mirrored bandwidth with headroom for VXLAN encapsulation overhead",
+      "B. Increase the mirror session limit per ENI to 10 to multiply throughput",
+      "C. Switch mirror targets from NLB to a single EC2 instance to reduce per-packet load-balancing overhead",
+      "D. Lower the IDS instance type and add more instances without changing the mirror target"
+    ],
+    "answer": 0,
+    "explanation": "Traffic Mirroring is bandwidth- and CPU-bound at the target. At 1,400 ENIs averaging 220 Mbps, peak aggregate mirrored bandwidth is on the order of 300 Gbps before VXLAN overhead, which a single NLB target with one ASG cannot reliably absorb without drops. The correct redesign is to (a) tighten the filter so only the four relevant ingress flows are captured, (b) shard mirror sessions across multiple mirror-target NLBs by source-VPC so no single target absorbs the whole fan-in, and (c) right-size each target's IDS fleet for the encapsulated bandwidth including VXLAN headers. Mirror-session-per-ENI limits are documented and cannot be casually inflated.",
+    "optionExplanations": [
+      "Correct — tightening the filter to the needed flows, sharding mirror targets across NLBs, and sizing each fleet for VXLAN-encapsulated peak is the documented capacity-planning approach for high-fan-in Traffic Mirroring.",
+      "Incorrect — Traffic Mirroring enforces a documented per-ENI session limit that you cannot raise to arbitrary values, and more sessions per ENI multiplies the very fan-in causing the drops.",
+      "Incorrect — a single EC2 instance is a bandwidth bottleneck far below what 1,400 mirrored ENIs produce; this trades one bottleneck for a worse one.",
+      "Incorrect — shrinking the instance type reduces per-node throughput, so even with horizontal scale you fight the encapsulation overhead with weaker nodes."
+    ],
+    "domain": "Network Management and Operations"
+  },
+  {
+    "id": 89,
+    "question": "An insurer runs an active-passive multi-Region application in us-east-1 (primary) and us-west-2 (standby). They use Route 53 health checks today: if the primary ALB fails three consecutive HTTPS health checks (interval 10s) the failover record swings traffic to us-west-2. Recent post-mortems show the health checks flapped during a partial brownout, triggering an undesired failover. The DR team wants a deliberate, operator-or-automation-controlled cut-over: failover should occur only when an authorized control says so, not when the health endpoint blips, while still allowing scripted automation to trigger sub-minute failover during an actual outage. Which Route 53 capability fits best?",
+    "options": [
+      "A. Route 53 Application Recovery Controller (ARC) routing controls and safety rules — toggling the routing-control state (On/Off) deterministically swings DNS without depending on probe-based health, and safety rules prevent unsafe simultaneous states",
+      "B. Increase the health-check failure threshold to 10 and the interval to 30s",
+      "C. Replace HTTPS health checks with calculated health checks that AND the existing checks",
+      "D. Move the failover decision into the application by serving a 500 status from the primary when it wants to fail away"
+    ],
+    "answer": 0,
+    "explanation": "Route 53 Application Recovery Controller routing controls are an explicit, deterministic On/Off switch evaluated by ARC's highly-available cluster and projected into DNS — failover happens because an authorized signal (operator console, API, or runbook automation) flips a routing control, not because a probe blipped. Safety rules add guardrails such as 'at least one routing control in this group must be On' to prevent both Regions being off simultaneously. Traditional health checks remain probe-driven and inherently subject to the flap problem described.",
+    "optionExplanations": [
+      "Correct — ARC routing controls give deterministic operator/automation-driven failover with safety rules, eliminating probe-flap-induced cut-overs while still supporting sub-minute scripted failover.",
+      "Incorrect — works but doesn't scale to the requirement: slowing the probes lengthens recovery time during real outages and still leaves the decision in probe-based hands.",
+      "Incorrect — calculated health checks still depend on underlying probes flapping; ANDing them doesn't remove the probe-driven decision model.",
+      "Incorrect — coupling failover decisions to application-served 500s confuses fault detection with fault declaration and prevents independent operator override."
+    ],
+    "domain": "Network Design"
+  },
+  {
+    "id": 90,
+    "question": "A gaming company runs a real-time matchmaking service exposed through AWS Global Accelerator with two endpoint groups: us-east-1 (ALB front, traffic dial 100) and ap-southeast-1 (ALB front, traffic dial 100). Game clients hold persistent WebSocket sessions and break if successive packets from the same client land on different backend hosts. The team enables client-affinity = SOURCE_IP on both endpoint groups and also enables cross-zone load balancing on each Region's ALB. After a partial AZ failure in us-east-1, a portion of session-mid clients are still being torn down. Which statement most precisely explains the residual problem and the appropriate corrective action?",
+    "options": [
+      "A. Client-affinity SOURCE_IP on the accelerator pins a client's source IP to one endpoint group and one endpoint (the ALB), but does not pin which target behind the ALB serves the request — cross-zone load balancing on the ALB can still steer the connection to a different AZ's target on reconnect; enabling target-group stickiness (duration-based cookie or source-IP for NLB) on the ALB is the missing layer",
+      "B. SOURCE_IP affinity is broken on Global Accelerator and should be replaced with destination-port affinity",
+      "C. Cross-zone load balancing must be disabled on Global Accelerator (not the ALB) to retain stickiness",
+      "D. The only fix is to collapse the accelerator to a single endpoint group, eliminating the second Region"
+    ],
+    "answer": 0,
+    "explanation": "Global Accelerator's client-affinity SOURCE_IP operates at the accelerator layer: a given client source IP is hashed to a specific endpoint group and a specific endpoint (the ALB) within that group. It does not propagate stickiness into the ALB's target selection — once a flow reaches the ALB, target choice obeys the ALB's own algorithm, and cross-zone load balancing means any healthy target in any AZ is fair game. To keep a WebSocket reconnect on the same target, you must additionally enable target-group stickiness on the ALB (duration-based cookies for ALB target groups). Disabling cross-zone or removing the second Region throws away capacity and resilience for the wrong reason.",
+    "optionExplanations": [
+      "Correct — accelerator-level SOURCE_IP affinity pins endpoint and endpoint-group selection but not target selection behind the ALB; ALB target-group stickiness is the missing layer that keeps reconnects on the same backend.",
+      "Incorrect — Global Accelerator does not expose a 'destination-port affinity' mode; this is a fabricated knob.",
+      "Incorrect — cross-zone load balancing is an ALB/NLB feature, not a Global Accelerator setting; this is the right-service-wrong-knob distractor.",
+      "Incorrect — collapsing to one endpoint group destroys the multi-Region resilience that motivated using Global Accelerator in the first place and does not address the target-level stickiness gap."
+    ],
+    "domain": "Network Design"
   }
 ]

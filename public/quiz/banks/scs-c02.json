@@ -1518,5 +1518,195 @@
       "CloudWatch metrics do not track IAM principal activity."
     ],
     "domain": "Management and Security Governance"
+  },
+  {
+    "id": 81,
+    "question": "A regulated payments platform must enforce a data perimeter so that data resources can only be accessed by identities inside its AWS Organization, from expected networks, and using expected protocols — across S3, STS (AssumeRole / AssumeRoleWithWebIdentity), KMS, SQS, and Secrets Manager. The security team already publishes SCPs that constrain principals, but auditors note that an over-permissioned resource-based policy could still allow an outside identity to reach data through one of these services. Which control is purpose-built to layer a deny on the resource side without rewriting every resource policy, and what is the correct division of labour with SCPs?",
+    "options": [
+      "A. Use Resource Control Policies (RCPs) attached at the Organization or OU root, with statements that deny access to S3, STS, KMS, SQS, and Secrets Manager resources unless aws:PrincipalOrgID matches and aws:SourceVpc/aws:SourceIp is in the expected set; keep SCPs to constrain what principals inside the org can do.",
+      "B. Use a single SCP with NotPrincipal listing the org's account IDs to deny all cross-account access; remove RCPs because SCPs already cover both principal and resource sides.",
+      "C. Attach an identity-based boundary policy to every role in every account that denies access to resources outside the org; treat SCPs as the resource-side control.",
+      "D. Enable IAM Access Analyzer external-access findings and auto-remediate any flagged resource policy with a Lambda that rewrites the policy to add aws:PrincipalOrgID."
+    ],
+    "answer": 0,
+    "explanation": "Resource Control Policies are the resource-side analogue of SCPs introduced for data-perimeter use cases. An RCP attached at the Org or OU evaluates on every request to supported resources (S3, STS, KMS, SQS, Secrets Manager and others) regardless of the resource policy author, so an overly-permissive bucket or key policy still cannot grant access outside the perimeter. SCPs remain the principal-side guardrail. NotPrincipal in an SCP does not see the resource side at all; permissions boundaries are identity-scoped and cannot constrain anonymous or cross-account principals targeting the resource; Access Analyzer detects after the fact and cannot author every policy correctly via Lambda.",
+    "optionExplanations": [
+      "Correct — RCPs evaluate on the resource side for supported services (S3, STS, KMS, SQS, Secrets Manager, etc.) at every request, so a permissive resource policy cannot bypass aws:PrincipalOrgID / aws:SourceVpc conditions; SCPs continue to constrain principals.",
+      "SCPs only restrict principals inside the org; they cannot deny an outside principal that is granted access by a resource policy, so NotPrincipal in an SCP does not close the data-perimeter gap.",
+      "Permissions boundaries are identity-attached and only constrain what a principal in the same account can do; they cannot constrain outside principals that resource policies allow in.",
+      "Access Analyzer is detective; using Lambda to rewrite arbitrary resource policies introduces correctness and race-condition risk and still leaves a window of exposure before remediation."
+    ],
+    "domain": "Identity and Access Management"
+  },
+  {
+    "id": 82,
+    "question": "A platform team wants to run the IAM Access Analyzer unused-access analyzer at the organization scope, but they need to exclude two break-glass roles and one regulated account from the analyzer's evaluations to reduce false-positive cleanup tickets. The auditor's requirement is that the exclusions are configured in the analyzer itself (not via filter-then-ignore on the consuming dashboard) and are documented as part of the analyzer's configuration. Which capability satisfies this?",
+    "options": [
+      "A. The unused-access analyzer's exclusion configuration (added Nov 2024), which lets you exclude specific account IDs and IAM role ARNs from the analyzer's scope so findings for those principals are never generated.",
+      "B. A Security Hub automation rule that suppresses unused-access findings whose ResourceId matches the break-glass role ARNs.",
+      "C. A delegated administrator that disables Access Analyzer in the regulated account; for the break-glass roles, attach a tag AccessAnalyzerIgnore=true.",
+      "D. An EventBridge rule that drops Access Analyzer findings for the excluded ARNs before they reach the SIEM."
+    ],
+    "answer": 0,
+    "explanation": "In November 2024 IAM Access Analyzer added a custom scope to the unused-access analyzer that excludes specified account IDs and role ARNs from analysis at the source, so excluded principals never produce findings and the exclusion is part of the analyzer's documented configuration. A Security Hub automation rule suppresses after the fact (not in the analyzer); disabling Access Analyzer in an account removes all coverage including the parts you want; tags are not recognised by the unused-access analyzer as an exclusion mechanism; an EventBridge filter just hides findings downstream and does not satisfy 'configured in the analyzer itself.'",
+    "optionExplanations": [
+      "Correct — the unused-access analyzer's custom scope (Nov 2024) excludes specified account IDs and IAM role ARNs from analysis, so findings are never produced for those principals and the exclusion lives in the analyzer's configuration.",
+      "Security Hub automation rules suppress findings after they are generated; they do not exclude principals from the analyzer's scope, so the auditor's 'configured in the analyzer' requirement is unmet.",
+      "Disabling Access Analyzer in the regulated account removes all coverage there, not just the targeted exclusions; tags are not a recognised exclusion key for the unused-access analyzer.",
+      "EventBridge filtering is downstream and dashboard-only; it does not stop findings from being produced and does not satisfy the configured-in-analyzer requirement."
+    ],
+    "domain": "Identity and Access Management"
+  },
+  {
+    "id": 83,
+    "question": "A security engineer is right-sizing an over-permissioned application role that has accumulated unused permissions over two years. The team wants AWS to produce a recommended policy that removes the unused actions while preserving the ones actually invoked in the last 90 days, without manually parsing CloudTrail. Which Access Analyzer capability delivers this directly and what is its correct input?",
+    "options": [
+      "A. The IAM Access Analyzer unused-access recommendations feature (Jun 2024), which generates a refined IAM policy from the unused-access analyzer's findings by removing unused services, actions, and resource-level permissions while preserving used ones.",
+      "B. IAM Access Advisor's last-accessed data exported to S3 and post-processed with a Lambda that calls iam:UpdatePolicy.",
+      "C. Access Analyzer policy generation (the existing CloudTrail-driven generator) pointed at the role's CloudTrail event history for the last 90 days.",
+      "D. AWS Config rule iam-policy-no-statements-with-admin-access combined with iam-policy-no-wildcard-actions."
+    ],
+    "answer": 0,
+    "explanation": "In June 2024 Access Analyzer added unused-access recommendations: starting from an unused-access finding for a role or user, it proposes a refined policy that removes the unused actions and resource-level permissions while keeping the ones that the principal actually used. The legacy policy generation feature builds a policy from scratch from CloudTrail and is the right answer for a different question (generate from logs), not for refining an existing policy. Access Advisor only shows service-level last-accessed data, not action-level refinement. The Config rules are evaluative, not generative.",
+    "optionExplanations": [
+      "Correct — unused-access recommendations (Jun 2024) refine an existing role's policy by removing unused services/actions/resource-level permissions while preserving the used ones, anchored on the unused-access finding.",
+      "Access Advisor's last-accessed data is service-level (and partial action-level for some services) and is not packaged as a recommendation engine that emits a refined policy.",
+      "Access Analyzer's CloudTrail-driven policy generation builds a policy from scratch for a role with no policy; it is not the refinement-of-existing-policy feature requested here.",
+      "Those Config rules evaluate compliance against patterns; they do not generate or refine policies."
+    ],
+    "domain": "Identity and Access Management"
+  },
+  {
+    "id": 84,
+    "question": "An ISV is building a SaaS product where each tenant has fine-grained roles like CanViewInvoice, CanIssueRefund, CanReadDocumentIfOwnerOrSharedWithMe. The team wants an AWS-native authorization service that evaluates policies in a purpose-built language, supports policy-as-data per tenant, and can be called synchronously from the API layer with millisecond latency. Which AWS service is purpose-built for this, and what language does it use?",
+    "options": [
+      "A. Amazon Verified Permissions, which evaluates Cedar policies via an IsAuthorized API; you model the application's principals, actions, and resources in Cedar and store per-tenant policy stores in the service.",
+      "B. AWS IAM with a custom managed policy per tenant and a SigV4 signed call from the app; rely on IAM's policy evaluation for application-level authorization.",
+      "C. AWS Lake Formation tag-based access control extended via Lambda for app-side checks.",
+      "D. Cognito user pool groups, where each group corresponds to an application permission and Cognito's group claim is read by the API as the authorization decision."
+    ],
+    "answer": 0,
+    "explanation": "Verified Permissions is the AWS-native fine-grained application authorization service. It uses Cedar — Amazon's open-source policy language designed for authorization with explicit principals, actions, resources, and contexts — and exposes IsAuthorized / IsAuthorizedWithToken APIs that decide each request synchronously, with per-tenant policy stores keeping policies as data. IAM is for AWS API authorization, not application authorization, and SCPs/identity policies don't model app-level resources. Lake Formation is for data lake permissions on Glue/Athena. Cognito groups are coarse and don't model attribute-based, per-resource authorization at the level Cedar provides.",
+    "optionExplanations": [
+      "Correct — Amazon Verified Permissions evaluates Cedar policies via IsAuthorized / IsAuthorizedWithToken, supports per-tenant policy stores, and is purpose-built for application-level fine-grained authorization.",
+      "IAM authorizes AWS API calls by AWS principals; using it for application-tier authorization conflates IAM's principal model with the app's user model and does not scale to per-tenant fine-grained rules.",
+      "Lake Formation authorizes catalog access for data-lake services (Glue/Athena/Redshift Spectrum); it is not an application-level authorization engine.",
+      "Cognito groups are coarse memberships exposed as token claims; they do not provide attribute-based, per-resource policy evaluation comparable to Cedar in Verified Permissions."
+    ],
+    "domain": "Identity and Access Management"
+  },
+  {
+    "id": 85,
+    "question": "A media company allows external partners to upload assets to a staging S3 bucket via pre-signed URLs. The security team wants AWS to scan each newly uploaded object for malware at write time and quarantine infected objects automatically — without standing up Lambda functions, ClamAV containers, or custom scanners. Which managed control fits and how does it differ from the EC2-side capability?",
+    "options": [
+      "A. Enable GuardDuty Malware Protection for S3 on the bucket; it scans newly uploaded objects on a scan-on-upload model and writes scan results back as object tags so a bucket-policy condition can deny GetObject when GuardDutyMalwareScanStatus is not NO_THREATS_FOUND.",
+      "B. Enable GuardDuty Malware Protection (the EC2 capability) and have it scan the bucket via a scheduled snapshot of an attached file gateway.",
+      "C. Run Macie on the bucket — Macie classifies sensitive content and quarantines suspicious objects.",
+      "D. Configure S3 Event Notifications to trigger a Lambda that calls Inspector v2 to scan the object."
+    ],
+    "answer": 0,
+    "explanation": "GuardDuty Malware Protection for S3 is a separate, managed offering from the EC2-side capability: it scans S3 objects at upload time, returns a scan result, and writes that result as an object tag (e.g., GuardDutyMalwareScanStatus). A bucket policy can then deny GetObject for objects whose tag is not NO_THREATS_FOUND, achieving quarantine without custom infrastructure. The EC2 Malware Protection capability scans EBS volumes attached to EC2/ECS workloads on a different model and does not scan S3 objects. Macie is for sensitive-data classification, not malware. Inspector v2 scans Lambda code, container images, and EC2 OS packages — not arbitrary S3 objects.",
+    "optionExplanations": [
+      "Correct — GuardDuty Malware Protection for S3 scans newly uploaded objects on a scan-on-upload model and writes scan-result tags so a bucket policy condition on the tag can block downloads of infected objects.",
+      "GuardDuty Malware Protection for EC2 scans EBS volumes attached to suspect EC2/ECS workloads; it is a different capability and does not scan arbitrary S3 objects through a file-gateway snapshot.",
+      "Macie classifies sensitive content (PII/PHI) — it is a data-classification service, not an antimalware scanner.",
+      "Inspector v2 scans container images, Lambda functions, and EC2 OS packages for vulnerabilities; it does not scan user-uploaded S3 objects for malware."
+    ],
+    "domain": "Threat Detection and Incident Response"
+  },
+  {
+    "id": 86,
+    "question": "A large Organization has a delegated administrator account for Security Hub and wants to define, in one place, exactly which Security Hub standards and controls are enabled per OU, and to aggregate findings from every Region into a single home Region — without writing StackSets to enable controls per account. Which capability does this and what is one constraint to call out?",
+    "options": [
+      "A. Security Hub Central Configuration, where the delegated administrator authors configuration policies that select standards and controls per OU/account, with a home Region for aggregation; the constraint is that Security Hub finding aggregation is per home Region with linked Regions (cross-Region replication of findings into one queryable place).",
+      "B. AWS Config conformance packs deployed at the org level — they configure Security Hub controls indirectly via Config rule packs.",
+      "C. Audit Manager assessments, which enable Security Hub controls as part of evidence collection.",
+      "D. AWS Firewall Manager security policies — they enable Security Hub controls in member accounts."
+    ],
+    "answer": 0,
+    "explanation": "Security Hub Central Configuration (GA in 2023, extended since) lets the delegated administrator define configuration policies that turn standards and controls on/off per OU or account and assign them across the org, replacing per-account StackSets for control management. It pairs with cross-Region finding aggregation: a home Region receives findings from linked Regions, enabling org-wide single-pane querying. Config conformance packs deploy Config rules, not Security Hub controls. Audit Manager consumes Security Hub findings; it does not configure them. Firewall Manager configures WAF/SG/Network Firewall policies, not Security Hub controls.",
+    "optionExplanations": [
+      "Correct — Central Configuration authors policies per OU/account selecting standards and controls; cross-Region finding aggregation links Regions into a home Region for single-pane querying.",
+      "Conformance packs deploy AWS Config rules; they do not enable or disable Security Hub standards/controls.",
+      "Audit Manager consumes Security Hub findings as evidence; it does not centrally configure which controls are enabled.",
+      "Firewall Manager governs WAF, Shield, security group, and Network Firewall policies; it does not configure Security Hub controls."
+    ],
+    "domain": "Management and Security Governance"
+  },
+  {
+    "id": 87,
+    "question": "A bank's cryptography policy requires that customer-managed KMS keys protecting highly sensitive databases rotate every 180 days rather than the AWS default of 365 days, and that low-risk keys protecting throwaway dev data rotate every 730 days to reduce operational churn. Which KMS feature supports this and which is the correct guidance?",
+    "options": [
+      "A. KMS configurable automatic rotation period (Apr 2024), which lets you set the rotation interval between 90 and 2,560 days per key; choose 180 days for the high-sensitivity keys and 730 for the low-risk keys, configured per key.",
+      "B. Rotate manually with AWS Lambda on EventBridge schedules — KMS only supports the fixed 365-day default rotation cycle.",
+      "C. Use KMS multi-Region key replication; the replicas rotate on independent schedules, which lets you pick effective rotation cadences.",
+      "D. Use CloudHSM's PKCS#11 rotation policy mapped to KMS via custom key stores; KMS-managed keys cannot deviate from 365 days."
+    ],
+    "answer": 0,
+    "explanation": "In April 2024 KMS added a configurable automatic rotation period for symmetric customer-managed keys, with a range of 90 to 2,560 days; you set it per key. The default remains 365 days, but you can move shorter for higher-risk keys or longer for low-risk ones. The other answers either deny that KMS supports configurable rotation (false since April 2024), conflate replication with rotation (replicas of a multi-Region key share key material and rotation is at the primary), or require a CHSM custom key store (a heavier-weight unrelated solution).",
+    "optionExplanations": [
+      "Correct — KMS supports a configurable rotation period (90 to 2,560 days, Apr 2024); choose shorter intervals for higher-risk keys and longer ones for low-risk keys, configured per key.",
+      "KMS supports configurable rotation natively since April 2024; building a Lambda-driven rotation is unnecessary and breaks the managed-rotation guarantees.",
+      "Multi-Region key replicas share the same key material and rotation is governed centrally on the primary key; replication is not a rotation-cadence mechanism.",
+      "CHSM custom key stores back KMS keys with HSM material but do not unlock a different rotation policy — KMS managed-key rotation cadence is governed by the KMS feature itself."
+    ],
+    "domain": "Data Protection"
+  },
+  {
+    "id": 88,
+    "question": "A platform team must add automated SAST-style vulnerability detection for Lambda function source code (not just for the function's runtime/container layer) and feed findings into the team's CI/CD gate so a pull request that introduces a high-severity finding fails. Which AWS service capability is the right primitive and what is its scope?",
+    "options": [
+      "A. Amazon Inspector code scanning for Lambda, which performs static code analysis (Amazon CodeGuru–powered) on Lambda function source to detect injection, secrets-in-code, and insecure use of crypto APIs; integrate Inspector findings with the CI/CD gate via EventBridge or Security Hub.",
+      "B. Inspector v2's package-vulnerability scanning, which is the only Lambda scan and covers the function's runtime layer dependencies.",
+      "C. GuardDuty Lambda Protection, which performs SAST on the function code at deploy time.",
+      "D. CodeGuru Reviewer only — Inspector does not support Lambda code scanning."
+    ],
+    "answer": 0,
+    "explanation": "Inspector v2 has two distinct capabilities for Lambda: package-vulnerability scanning (detects vulnerable dependencies in the function's runtime layer) and code scanning, which is SAST-style analysis of the function's own code, powered by CodeGuru detectors and surfacing findings such as injection, secrets in code, and insecure cryptography. It complements (does not replace) image and EC2 scanning. GuardDuty Lambda Protection detects suspicious runtime behaviour (network anomalies, etc.) and does not perform SAST. CodeGuru Reviewer is a related service but the question is about Inspector's Lambda code-scanning capability specifically.",
+    "optionExplanations": [
+      "Correct — Inspector code scanning for Lambda performs SAST on the function's source (powered by CodeGuru detectors); pipe findings to EventBridge/Security Hub to gate the CI/CD pipeline.",
+      "Inspector v2's package-vulnerability scanning targets dependencies and OS packages — it is not the SAST capability and misses code-level injection/secrets issues.",
+      "GuardDuty Lambda Protection inspects runtime behaviour for anomalies (network exfiltration, etc.); it is not a static code analysis tool.",
+      "Inspector does support Lambda code scanning; CodeGuru Reviewer is a separate service and not the AWS-native Inspector capability the question asks about."
+    ],
+    "domain": "Threat Detection and Incident Response"
+  },
+  {
+    "id": 89,
+    "question": "A compliance team deploys an AWS Config conformance pack to evaluate around 40 rules across every account in the Organization. For roughly 10 of those rules they want non-compliant resources to be auto-remediated — for example, an S3 bucket that becomes public should be made private. They want this to work uniformly across the org without per-account scripts. Which architecture is purpose-built?",
+    "options": [
+      "A. Author the conformance pack with remediation actions referencing AWS-owned SSM Automation documents (or custom documents shared org-wide), then deploy the pack as an organization conformance pack from the delegated administrator; Config invokes the SSM Automation document against the non-compliant resource in its home account.",
+      "B. Deploy the conformance pack with EventBridge rules in each account that match Config-rule-noncompliant findings and call a central Lambda — Config conformance packs do not natively support remediation.",
+      "C. Use AWS Systems Manager State Manager associations to remediate resources discovered by AWS Config aggregator queries on a 30-minute schedule.",
+      "D. Use AWS Firewall Manager remediation policies — Firewall Manager remediates AWS Config findings org-wide."
+    ],
+    "answer": 0,
+    "explanation": "Config conformance packs natively support remediation actions: each rule in the pack can declare a remediation that references an SSM Automation document (AWS-owned or a custom document shared org-wide), with parameters bound from the non-compliant resource. Deploying the pack as an organization conformance pack from the delegated administrator propagates the rules and remediation actions to every account; Config invokes the SSM Automation in the non-compliant resource's home account. EventBridge-plus-Lambda fan-out is unnecessary; State Manager + aggregator runs on a schedule and is not the conformance-pack native pattern; Firewall Manager governs WAF/SG/Network Firewall, not Config-rule remediation.",
+    "optionExplanations": [
+      "Correct — conformance packs can declare per-rule remediation actions tied to SSM Automation documents; deployed as an organization conformance pack from the delegated administrator, remediations run in the resource's home account uniformly.",
+      "Conformance packs do natively support remediation via SSM Automation references; fanning out to a central Lambda is unnecessary and creates a cross-account hop.",
+      "State Manager + aggregator polling is not the conformance-pack-native remediation pattern and introduces latency between detection and remediation.",
+      "Firewall Manager governs WAF, Shield, SG, and Network Firewall policies — it does not remediate arbitrary AWS Config rule findings."
+    ],
+    "domain": "Management and Security Governance"
+  },
+  {
+    "id": 90,
+    "question": "An application runs active-active in us-east-1 and eu-west-1. It reads a database credential from Secrets Manager and tolerates Regional failure. The team wants the secret available locally in both Regions, with rotation initiated in one Region and propagated to the other, so that an outage in the primary Region does not stall rotation. Which Secrets Manager feature meets this and what is its correct rotation behaviour?",
+    "options": [
+      "A. Configure Secrets Manager replica secrets: create the primary secret in us-east-1, then add an eu-west-1 replica; rotation is configured on the primary, and Secrets Manager replicates new versions to the replicas; if the primary Region is impaired, promote the replica to a standalone primary to re-establish rotation.",
+      "B. Run two independent Secrets Manager secrets — one per Region — each with its own rotation Lambda; use Route 53 health checks to swap which secret the app reads.",
+      "C. Use KMS multi-Region keys for the secret payload; Secrets Manager automatically replicates secrets that are encrypted with multi-Region keys.",
+      "D. Store the secret in AWS Systems Manager Parameter Store SecureString and use cross-Region replication; Secrets Manager itself does not support replicas."
+    ],
+    "answer": 0,
+    "explanation": "Secrets Manager replica secrets create read-only replicas of a primary secret in additional Regions. Rotation is configured and runs on the primary; new versions are propagated to the replicas. For DR you can promote a replica to a standalone primary to re-establish rotation if the primary Region is unavailable. Two independent secrets with separate rotation drift apart and don't share state. KMS multi-Region keys protect data with shared key material across Regions but do not by themselves replicate a Secrets Manager secret's value. Parameter Store SecureString is a different service and does not have native cross-Region replicas in the Secrets Manager sense.",
+    "optionExplanations": [
+      "Correct — replica secrets propagate new versions from the primary to each replica Region; rotation runs on the primary, and a replica can be promoted to a standalone primary in a DR event.",
+      "Two independent secrets with their own rotation Lambdas drift apart in value at every rotation cycle; Route 53 swap does not reconcile divergent secret values.",
+      "Multi-Region KMS keys share key material across Regions for crypto operations but do not by themselves replicate a Secrets Manager secret's value to another Region.",
+      "Parameter Store SecureString is a different service from Secrets Manager and lacks Secrets Manager's replica-secret feature; the premise that Secrets Manager does not support replicas is incorrect."
+    ],
+    "domain": "Data Protection"
   }
 ]

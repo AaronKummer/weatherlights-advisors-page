@@ -1518,5 +1518,233 @@
       "MSK is a different engine (Kafka) and brokers carry their own minimums — not a drop-in cost improvement for variable Kinesis workloads.",
       "SQS standard doesn't preserve ordered partitioning by key like Kinesis does — it's a different model, not a cost optimization."
     ]
+  },
+  {
+    "id": 81,
+    "question": "An analytics company runs a reporting workload on Aurora PostgreSQL Serverless v2 used only during business hours and occasional weekend ad-hoc queries. The current configuration sets a minimum capacity of 0.5 ACU 24/7. Finance wants the database to incur zero compute charges during the long idle windows, and the team accepts that the first query after an idle period may take several seconds longer to return. Which change best meets this objective?",
+    "options": [
+      "A. Lower the minimum capacity to 0 ACU so Aurora Serverless v2 auto-pauses idle instances and resumes on the next connection.",
+      "B. Stop the cluster every evening via an EventBridge schedule and start it again each morning.",
+      "C. Migrate to Aurora Serverless v1, which billed per second of activity.",
+      "D. Keep 0.5 ACU minimum but switch the storage class to Aurora I/O-Optimized."
+    ],
+    "answer": 0,
+    "explanation": "Aurora Serverless v2 supports a 0-ACU minimum (auto-pause), so compute charges drop to zero during idle periods. The trade-off is a multi-second resume latency on the first request — explicitly acceptable here. Stopping a cluster works but Aurora auto-starts a stopped cluster after seven days, requiring tooling to keep it stopped. Serverless v1 has been superseded and lacks v2's scaling profile. I/O-Optimized changes storage pricing, not idle compute cost.",
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Aurora Serverless v2 supports a 0-ACU minimum that auto-pauses the writer during idle periods, eliminating compute charges, with a multi-second resume latency on the next connection.",
+      "Stopping a cluster via EventBridge works for a fixed schedule but Aurora auto-starts a stopped cluster after seven days and the schedule cannot react to ad-hoc weekend queries.",
+      "Aurora Serverless v1 is on a deprecation path and lacks the fine-grained 0-ACU scaling and PostgreSQL feature parity of Serverless v2.",
+      "I/O-Optimized changes storage and I/O pricing but does not eliminate compute (ACU) charges during idle periods."
+    ]
+  },
+  {
+    "id": 82,
+    "question": "A data team is building a new lakehouse on Apache Iceberg in S3. Today they manage Iceberg metadata themselves: they run a Glue-based compaction job nightly, a separate snapshot-expiry job weekly, and a manifest-rewrite Lambda. The team wants AWS to own all of the table-maintenance work and bill predictably for it, while still letting Athena, EMR, and Redshift Spectrum query the tables. Which option meets these goals with the least operational ownership?",
+    "options": [
+      "A. Convert the dataset to S3 Tables, which provide managed Iceberg tables with built-in compaction, snapshot expiry, and unreferenced-file removal.",
+      "B. Keep tables in S3 Standard and move all maintenance jobs into AWS Step Functions for orchestration.",
+      "C. Migrate the dataset to S3 Glacier Instant Retrieval and run Iceberg maintenance from EMR Serverless.",
+      "D. Move the tables to DynamoDB and use the Iceberg DynamoDB catalog for metadata."
+    ],
+    "answer": 0,
+    "explanation": "S3 Tables is a purpose-built bucket type for managed Iceberg: AWS runs compaction, snapshot expiry, and unreferenced-file cleanup automatically and exposes the tables to Athena, EMR, and Redshift via the integrated catalog. Step Functions only re-orchestrates the same code the team already owns. Glacier Instant Retrieval is a storage class, not a table-management service. The DynamoDB Iceberg catalog only handles metadata pointers; the team would still own compaction and expiry of data files in S3.",
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — S3 Tables is a managed Iceberg table bucket type where AWS runs compaction, snapshot expiry, and unreferenced-file cleanup, and Athena, EMR, and Redshift Spectrum can query it through the integrated catalog.",
+      "Orchestrating the same jobs with Step Functions does not remove ownership — the team still writes and maintains the compaction, expiry, and manifest-rewrite logic.",
+      "Glacier Instant Retrieval is a storage class with retrieval-fee semantics; it neither manages Iceberg metadata nor performs compaction.",
+      "The DynamoDB Iceberg catalog only stores the current metadata pointer; it does not run compaction, snapshot expiry, or orphan-file cleanup on the data files in S3."
+    ]
+  },
+  {
+    "id": 83,
+    "question": "A media platform serves a global subscriber base from S3 buckets replicated into eu-west-1, us-east-1, and ap-southeast-2. The product team wants client SDKs to use a single global endpoint that automatically routes each request to the closest healthy bucket, and that fails away from a Region whose bucket becomes unavailable without an application-side config change. Which design meets this requirement?",
+    "options": [
+      "A. Configure an S3 Multi-Region Access Point fronting the three buckets with active-active routing and failover controls.",
+      "B. Put the three bucket endpoints behind a Route 53 latency record and rely on health checks to fail away.",
+      "C. Use CloudFront with three S3 origins in an origin group and rely on origin failover.",
+      "D. Replicate to a single primary bucket in us-east-1 and serve every Region from it over Transfer Acceleration."
+    ],
+    "answer": 0,
+    "explanation": "S3 Multi-Region Access Points expose one global endpoint, route each request to the lowest-latency bucket using the AWS global network, and support active-active failover controls that shift traffic when a Region's bucket is marked unavailable — all without app-side reconfiguration. Route 53 latency records only resolve DNS toward the nearest endpoint; failover health checks help but do not give a single SigV4-signable global endpoint for S3. CloudFront origin groups support only one origin at a time per group (primary plus failover), not three-way active-active. Transfer Acceleration speeds uploads to a single bucket; it is not multi-Region.",
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — S3 Multi-Region Access Points provide one global endpoint, route to the closest bucket over the AWS backbone, and support active-active failover controls that redirect traffic away from a failed Region without client changes.",
+      "Route 53 latency records resolve DNS by latency and can fail over on health checks, but each bucket still has its own endpoint and SigV4 signature — clients must change hostnames per Region.",
+      "CloudFront origin groups support a primary plus a single failover origin, not three-way active-active routing across Regions for write traffic.",
+      "Transfer Acceleration accelerates uploads to one bucket via CloudFront edges; it is a single-Region construct and does not provide multi-Region failover."
+    ]
+  },
+  {
+    "id": 84,
+    "question": "A payment processor replicates a transaction-ledger S3 bucket from us-east-1 to us-west-2 for disaster recovery. The audit team has set a contractual RPO of fifteen minutes and wants the replication SLA to be enforced by AWS and visible in CloudWatch so that breaches can be alarmed on. The current configuration uses standard Same-Region Replication. Which adjustment satisfies the SLA and observability needs with the least custom code?",
+    "options": [
+      "A. Enable S3 Replication Time Control on the replication rule and create CloudWatch alarms on the OperationsPendingReplication and ReplicationLatency metrics.",
+      "B. Add an EventBridge rule that fires on every PutObject and triggers a Lambda that copies the object cross-Region.",
+      "C. Schedule an hourly aws s3 sync from a Lambda to mirror the bucket to the DR Region.",
+      "D. Use CRR with the default settings and run a daily inventory diff to confirm parity."
+    ],
+    "answer": 0,
+    "explanation": "S3 Replication Time Control (RTC) carries a 15-minute SLA — 99.99% of objects replicate within 15 minutes — and emits ReplicationLatency, BytesPendingReplication, and OperationsPendingReplication metrics natively to CloudWatch. A Lambda-on-PutObject pipeline is brittle, lacks an SLA, and offers no built-in visibility. Hourly aws s3 sync has a one-hour RPO by construction. Default CRR is best-effort with no SLA and inventory diffs only catch drift after the fact.",
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — S3 Replication Time Control provides a 15-minute SLA for replication and natively emits ReplicationLatency and OperationsPendingReplication metrics to CloudWatch for alarming.",
+      "An EventBridge plus Lambda copier carries no AWS-backed SLA, lacks built-in replication-lag metrics, and has to handle retries, throttling, and large-object multipart on its own.",
+      "An hourly aws s3 sync has a built-in worst-case RPO of one hour, which exceeds the fifteen-minute contractual target.",
+      "Default Cross-Region Replication is best-effort with no SLA, and an inventory diff is a once-daily reconciliation, not real-time observability."
+    ]
+  },
+  {
+    "id": 85,
+    "question": "A company runs about forty microservices across six VPCs in two accounts. The platform team wants service-to-service traffic to flow over private AWS networking with central policy controls — who can call whom, auth via IAM, and per-request logging — without provisioning a separate endpoint per consumer or building a peering mesh. Which AWS networking construct fits best?",
+    "options": [
+      "A. Connect every VPC via Transit Gateway and rely on security groups for east-west authorization.",
+      "B. Publish each service through PrivateLink endpoint services and have every consumer create an interface endpoint per provider.",
+      "C. Adopt VPC Lattice service networks, register the services as targets, and attach the consumer VPCs to the service network with IAM auth policies.",
+      "D. Convert every microservice to an internet-facing ALB and restrict access via WAF IP-allow lists."
+    ],
+    "answer": 2,
+    "explanation": "VPC Lattice is purpose-built for application-layer service-to-service connectivity: services register with a service network, consumer VPCs attach once, and the service network enforces IAM-based auth policies with built-in access logs — no per-consumer endpoint or peering mesh required. Transit Gateway gives Layer-3 routing but no per-service auth or logging. PrivateLink works but at forty services it forces every consumer to create and manage an endpoint per provider. Internet-facing ALBs violate the private-networking requirement and WAF IP allow-lists are crude compared to IAM identity-based controls.",
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Transit Gateway routes packets between VPCs at Layer 3 but offers no per-service IAM auth or per-request access logging — security groups alone do not scale to forty services with central policy.",
+      "PrivateLink is a strong fit for a single provider with many consumers, but at forty services each consumer must create and manage an interface endpoint per provider — operationally heavy.",
+      "Correct — VPC Lattice service networks centralize service-to-service connectivity over private networking, support IAM-based auth policies, and emit per-request access logs without a peering mesh.",
+      "Exposing internal services on internet-facing ALBs violates the private-networking requirement, and WAF IP allow-lists are coarser than IAM identity controls."
+    ]
+  },
+  {
+    "id": 86,
+    "question": "A platform team is building a new EKS cluster on Kubernetes 1.30. Application pods need AWS API credentials scoped per workload — one ServiceAccount per microservice maps to one IAM role — and the cluster runs both x86 and Graviton node groups. The team wants the simplest setup that avoids managing an OIDC provider per cluster and avoids overloading the EKS control plane with extra trust-policy churn. Which credential mechanism should they adopt?",
+    "options": [
+      "A. Install the EKS Pod Identity add-on and create PodIdentityAssociations mapping ServiceAccounts to IAM roles.",
+      "B. Configure IAM Roles for Service Accounts (IRSA) by registering the cluster's OIDC issuer as an IAM identity provider and using sts:AssumeRoleWithWebIdentity.",
+      "C. Run kube2iam as a DaemonSet and rely on instance-profile metadata interception.",
+      "D. Store long-lived IAM access keys in Kubernetes secrets and mount them into pods as environment variables."
+    ],
+    "answer": 0,
+    "explanation": "EKS Pod Identity, introduced for this exact use case, replaces IRSA's OIDC-provider plumbing: the EKS Pod Identity Agent runs on each node, PodIdentityAssociations map ServiceAccounts to IAM roles directly in the EKS API, and trust policies use a single pods.eks.amazonaws.com principal instead of per-cluster OIDC issuers. IRSA still works but requires registering and rotating an OIDC IdP per cluster and writing per-cluster trust policies. kube2iam is a deprecated community tool that intercepts IMDS — fragile and unsupported. Long-lived access keys in Kubernetes secrets are the anti-pattern AWS explicitly warns against.",
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — EKS Pod Identity uses a node-level agent and PodIdentityAssociations to map ServiceAccounts to IAM roles, removing the per-cluster OIDC provider and reducing trust-policy churn versus IRSA.",
+      "IRSA works but requires registering an OIDC identity provider per cluster in IAM and writing per-cluster trust policies — exactly the overhead the team wants to avoid.",
+      "kube2iam is a community DaemonSet that intercepts the instance metadata service; it is unsupported, fragile, and breaks on IMDSv2-only configurations.",
+      "Long-lived IAM access keys mounted into pods is the credential anti-pattern AWS explicitly warns against — keys are static, rotation is manual, and exfiltration is catastrophic."
+    ]
+  },
+  {
+    "id": 87,
+    "question": "A retailer fronts a private S3 bucket with CloudFront. Today access is locked down with an Origin Access Identity (OAI) and bucket-policy condition. Security wants to retire OAI and require SigV4-signed origin requests, and the bucket must be encrypted with a customer-managed KMS key going forward. Which configuration change meets both objectives?",
+    "options": [
+      "A. Replace OAI with CloudFront Origin Access Control (OAC) using SigV4 signing, grant the CloudFront service principal kms:Decrypt on the customer-managed key, and update the bucket policy to allow the distribution's service-principal source ARN.",
+      "B. Keep OAI but switch the bucket to SSE-KMS with the customer-managed key — OAI handles SigV4 transparently.",
+      "C. Remove OAI, make the bucket public, and rely on CloudFront signed URLs for access control.",
+      "D. Front the bucket with a Lambda@Edge function that re-signs each origin request with a hard-coded IAM access key."
+    ],
+    "answer": 0,
+    "explanation": "Origin Access Control supersedes OAI: it signs origin requests with SigV4, supports SSE-KMS on the bucket (which OAI cannot decrypt without granting the KMS key to the CloudFront service principal), and is configured with a bucket policy keyed on the distribution's aws:SourceArn. OAI predates SigV4 to S3 and cannot decrypt SSE-KMS objects encrypted with a customer-managed key. Making the bucket public defeats the security model. A Lambda@Edge with hard-coded keys is an obvious credential anti-pattern.",
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — Origin Access Control signs origin requests with SigV4 and supports SSE-KMS via a grant of kms:Decrypt to the CloudFront service principal, with the bucket policy keyed to the distribution's aws:SourceArn.",
+      "OAI predates SigV4-to-S3 and cannot decrypt objects encrypted with a customer-managed KMS key — only OAC can be granted kms:Decrypt on the CMK.",
+      "Making the bucket public eliminates origin-level access control entirely; signed URLs at the edge do not stop direct S3 access.",
+      "Hard-coding an IAM access key inside a Lambda@Edge function is a credential anti-pattern — keys cannot be rotated safely and any code leak exposes the account."
+    ]
+  },
+  {
+    "id": 88,
+    "question": "A trading platform runs an Aurora PostgreSQL Global Database with the primary cluster in eu-west-1 and a secondary cluster in us-east-1 used for low-latency reads in the Americas. Product wants Americas users to occasionally submit small writes — order annotations and watchlist updates — without changing the application's database connection logic to reach across the Atlantic. Eventual cross-Region consistency for these writes is acceptable. Which feature satisfies the requirement?",
+    "options": [
+      "A. Promote the us-east-1 secondary to a standalone cluster and asynchronously replicate writes back to eu-west-1 via DMS.",
+      "B. Enable Aurora Global Database write forwarding on the us-east-1 secondary so its writer endpoint transparently forwards writes to the primary in eu-west-1.",
+      "C. Convert the us-east-1 cluster to a read replica of an RDS PostgreSQL instance in eu-west-1.",
+      "D. Configure each Americas client to open two connections — one for reads in us-east-1 and one for writes directly to eu-west-1."
+    ],
+    "answer": 1,
+    "explanation": "Aurora Global Database supports write forwarding: applications connect to the secondary cluster's endpoint and small writes are transparently forwarded to the primary, with eventual consistency on the secondary's local read replicas. Promoting the secondary breaks the global cluster into two independent ones and forces a custom replication pipeline. RDS PostgreSQL read replicas don't apply to Aurora Global Databases. Asking the application to open two connections is exactly the change the requirement forbids.",
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Promoting the secondary breaks the Global Database into two independent clusters and requires building a custom write-back pipeline through DMS — high operational cost.",
+      "Correct — Aurora Global Database write forwarding lets applications connected to the secondary issue writes that are transparently forwarded to the primary, with eventual local consistency.",
+      "RDS PostgreSQL read replicas are not part of Aurora Global Database topologies — replacing Aurora with RDS would also lose Aurora's storage-layer replication.",
+      "Opening two database connections per client is exactly the application change the requirement forbids — the goal is to preserve the existing connection logic."
+    ]
+  },
+  {
+    "id": 89,
+    "question": "A regulated insurance firm runs production workloads in twelve member accounts of an AWS Organization. Auditors require that EBS snapshots, RDS snapshots, and DynamoDB point-in-time backups be copied into a dedicated backup account in a second Region, that the copies be immutable for seven years even from the backup-account administrator, and that the entire scheme be managed centrally. Which design meets all three requirements?",
+    "options": [
+      "A. Use AWS Backup with a delegated administrator account, a cross-account/cross-Region copy plan, and AWS Backup Vault Lock in compliance mode on the destination vault.",
+      "B. Schedule per-service Lambda functions in each account that copy snapshots into the backup account and tag them with a retention date.",
+      "C. Apply S3 Object Lock in compliance mode to a centralized S3 bucket and use AWS Backup only for local copies.",
+      "D. Rely on default snapshot retention plus an SCP denying snapshot deletion in the source accounts."
+    ],
+    "answer": 0,
+    "explanation": "AWS Backup with a delegated admin account centrally manages plans across the Organization, supports cross-account and cross-Region copy actions natively, and Vault Lock in compliance mode makes the destination vault WORM for the configured retention — even the backup-account root user cannot shorten the lock once the cooling-off period expires. Per-service Lambdas re-implement what AWS Backup already does and lack a true WORM control. S3 Object Lock protects S3 objects, not native EBS/RDS/DynamoDB backup constructs. SCPs prevent deletion in the source account but don't create immutable cross-account copies in another Region.",
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — AWS Backup with a delegated administrator manages plans org-wide, copies recovery points cross-account and cross-Region, and Vault Lock in compliance mode enforces WORM retention that even the destination account root cannot revoke.",
+      "Per-service Lambdas re-implement what AWS Backup already provides and have no native WORM control equivalent to Vault Lock compliance mode.",
+      "S3 Object Lock applies to S3 objects, not to native EBS snapshots, RDS snapshots, or DynamoDB PITR exports as first-class backup constructs.",
+      "An SCP denying snapshot deletion in source accounts does not produce cross-account, cross-Region, immutable copies in a separate backup account."
+    ]
+  },
+  {
+    "id": 90,
+    "question": "A bank's CISO wants to enforce a data perimeter across the entire AWS Organization: no S3, KMS, or Secrets Manager request from any account in the org may be served if the request comes from outside the org's networks, even if an IAM principal in the account has been granted permission by a resource-based policy. Existing SCPs already restrict identity-based actions, but the requirement is to also constrain resource policies and cross-account roles that the source accounts cannot see. Which control achieves this?",
+    "options": [
+      "A. Attach Resource Control Policies (RCPs) at the Organization root that deny S3, KMS, and Secrets Manager requests when aws:SourceVpc is absent and aws:PrincipalOrgID does not match.",
+      "B. Add an SCP that denies the same actions using aws:SourceIp conditions.",
+      "C. Configure GuardDuty S3 Protection and rely on alerts for suspicious access.",
+      "D. Apply a bucket policy in each account that denies non-org principals."
+    ],
+    "answer": 0,
+    "explanation": "Resource Control Policies are the resource-side counterpart to SCPs: they apply to resources within accounts in the Organization and constrain the effective permissions granted by resource-based policies. Only RCPs (currently scoped to S3, SQS, KMS, Secrets Manager, and STS) can enforce a data perimeter even when a resource policy or cross-account role would otherwise allow access. SCPs only constrain identity-based actions performed by principals in the account — they don't override an allowance in someone else's resource policy. GuardDuty detects; it doesn't prevent. Per-bucket policies require touching every bucket in every account and miss KMS and Secrets Manager.",
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — Resource Control Policies constrain the effective permissions of resources within Organization accounts and enforce a data perimeter across S3, KMS, Secrets Manager (and others) regardless of resource-policy grants.",
+      "SCPs only constrain identity-based actions taken by principals within the account; they do not override a resource policy in another account that grants access to an external principal.",
+      "GuardDuty S3 Protection detects suspicious access patterns but does not prevent any request — it is a detective control, not a perimeter.",
+      "Per-bucket policies require touching every bucket in every account and do not cover KMS or Secrets Manager resources, so they cannot enforce a unified perimeter."
+    ]
+  },
+  {
+    "id": 91,
+    "question": "A trading firm fronts a TCP order-entry service with a Network Load Balancer. The risk team wants to restrict inbound traffic to a small set of broker CIDRs at the load-balancer layer, and they want the same security posture and visibility — including default deny and stateful evaluation — that they already use for ALBs. Subnet-level NACLs are considered too coarse and stateless. Which feature should they enable?",
+    "options": [
+      "A. Attach security groups directly to the Network Load Balancer and configure ingress rules for the broker CIDRs.",
+      "B. Front the NLB with an Application Load Balancer and apply security groups there.",
+      "C. Restrict traffic with stateless NACLs on the subnets the NLB lives in.",
+      "D. Put AWS Network Firewall in front of the NLB and write Suricata rules for each broker CIDR."
+    ],
+    "answer": 0,
+    "explanation": "NLBs now support attached security groups, which give the same stateful, default-deny semantics as ALB security groups and let you restrict ingress to specific CIDRs at the load-balancer layer with native CloudWatch/Flow Log visibility. Fronting an NLB with an ALB inverts the architecture (ALBs are HTTP/HTTPS, not TCP-passthrough for order-entry protocols). NACLs are stateless and subnet-scoped — explicitly rejected. Network Firewall works but is heavier than needed for a CIDR allow-list and introduces additional cost and a new operational tool.",
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — NLBs now support attached security groups, giving stateful default-deny ingress filtering at the load balancer with native visibility — the cleanest fit for a CIDR allow-list.",
+      "ALBs operate at HTTP/HTTPS and are not appropriate for TCP order-entry protocols; you cannot use them as a generic front for an NLB's listeners.",
+      "NACLs are stateless and operate at the subnet level — explicitly rejected by the team for being too coarse and stateless.",
+      "AWS Network Firewall can do this but is heavier than needed for a CIDR allow-list, adds a per-endpoint cost and a new operational surface to manage."
+    ]
+  },
+  {
+    "id": 92,
+    "question": "A genomics team runs Spark on EMR jobs that read millions of small Parquet files during shuffles. The files are produced and consumed within a single Availability Zone in the same Region, and the bottleneck is per-request latency to S3 Standard rather than throughput. They are willing to give up cross-AZ durability for this intermediate dataset in exchange for single-digit-millisecond first-byte latency. Which storage choice fits?",
+    "options": [
+      "A. Store the intermediate dataset in an S3 Express One Zone bucket, co-located with the EMR cluster's AZ.",
+      "B. Keep the dataset in S3 Standard and enable S3 Transfer Acceleration.",
+      "C. Move the dataset to S3 Glacier Instant Retrieval and use the EMR cluster's local HDFS as a cache.",
+      "D. Use S3 Standard-IA across all AZs in the Region."
+    ],
+    "answer": 0,
+    "explanation": "S3 Express One Zone is a single-AZ S3 storage class designed for single-digit-millisecond first-byte latency on small-object request-heavy workloads exactly like shuffle reads. The trade-off is single-AZ durability, which the requirement explicitly accepts for intermediate data. Transfer Acceleration uses CloudFront edges and is for cross-Region uploads — irrelevant intra-Region. Glacier Instant Retrieval has Standard-class latency but retrieval-fee economics that punish small-file shuffle reads. Standard-IA has retrieval fees and higher per-request latency than Express One Zone.",
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — S3 Express One Zone is a single-AZ class with single-digit-millisecond first-byte latency optimized for small-object, request-heavy workloads like Spark shuffles, accepting reduced cross-AZ durability.",
+      "Transfer Acceleration routes uploads through CloudFront edge locations for cross-Region clients; it does not improve intra-Region first-byte latency for Spark workers.",
+      "Glacier Instant Retrieval has retrieval-fee economics that make small-file shuffle reads expensive, and it is not optimized as low-latency hot storage.",
+      "S3 Standard-IA imposes retrieval fees per GB and has higher per-request latency than Express One Zone — wrong direction for this workload."
+    ]
   }
 ]

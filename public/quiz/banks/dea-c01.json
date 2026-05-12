@@ -1328,5 +1328,195 @@
       "Object Lambda redacts content but does not provide auditing of usage.",
       "Macie scans content for sensitive data; it does not audit query history."
     ]
+  },
+  {
+    "id": 71,
+    "question": "A finance org is migrating 200 Glue tables from IAM-only access to Lake Formation centralized permissions over two quarters. During the migration, some analyst roles must keep using direct S3 and Glue IAM grants while data stewards begin issuing LF grants on the same tables. The team wants both permission models to coexist on a per-database basis without breaking running pipelines. Which approach satisfies this requirement?",
+    "options": [
+      "A. Register the data location in Lake Formation and enable Hybrid Access Mode on each database, opting in roles to LF enforcement table by table as they are migrated.",
+      "B. Revoke all IAMAllowedPrincipals from every table on day one and grant equivalent LF permissions to every analyst role.",
+      "C. Place the analyst roles in a separate AWS account and use cross-account LF sharing for the migrated tables only.",
+      "D. Toggle the Lake Formation 'Use only IAM access control' setting per query session via a SageMaker notebook tag."
+    ],
+    "answer": 0,
+    "explanation": "Lake Formation Hybrid Access Mode (HAM) lets IAM-based access continue working on a database while LF permissions are simultaneously granted, with opt-in performed per-principal per-resource so migration can roll out table by table. A flash cutover by revoking IAMAllowedPrincipals risks breaking pipelines. Cross-account separation is unnecessary. There is no per-session toggle.",
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - Hybrid Access Mode allows IAM and Lake Formation permissions to coexist on the same database, with per-principal opt-in so each role moves to LF enforcement only when ready.",
+      "Revoking IAMAllowedPrincipals on day one is a flash cutover and will break pipelines that still rely on direct IAM/S3 grants.",
+      "Moving roles to a separate account adds heavy operational overhead and does not address the coexistence requirement within a single account.",
+      "Lake Formation has no per-session 'use only IAM' toggle controlled by notebook tags; enforcement is configured on the data store, not the query session."
+    ]
+  },
+  {
+    "id": 72,
+    "question": "A platform team adopts Amazon S3 Tables for a managed Iceberg warehouse. They want analysts to query the tables through Athena and Redshift using only IAM identity-based permissions, with no Lake Formation grants required, so existing IAM roles continue to work unchanged. Which configuration aligns with the 2026 S3 Tables IAM-based authorization through the Glue Data Catalog?",
+    "options": [
+      "A. Integrate the S3 Table bucket with the AWS Glue Data Catalog and attach IAM policies allowing glue:GetTable and s3tables:GetTableData actions on the namespace and table ARNs.",
+      "B. Register the S3 Table bucket as a Lake Formation data location and grant SELECT through LF tag-based access control.",
+      "C. Create an Iceberg REST catalog on EC2 and front it with an API Gateway authorizer that validates IAM signatures.",
+      "D. Replicate the S3 Tables into a standard S3 prefix and crawl with Glue so analysts can use ordinary S3 IAM policies."
+    ],
+    "answer": 0,
+    "explanation": "In 2026 S3 Tables added native integration with the Glue Data Catalog using IAM-based authorization: catalog and table actions (glue:GetTable, s3tables:GetTableData, etc.) on the namespace and table ARNs control access, so Athena and Redshift can query via IAM identity policies without Lake Formation. Lake Formation TBAC is optional, not required. A self-hosted REST catalog is unnecessary, and replicating defeats the purpose of managed Iceberg.",
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - S3 Tables integrate natively with the Glue Data Catalog and authorize through IAM actions on the table-bucket, namespace, and table ARNs, allowing existing IAM identities to query through Athena and Redshift without LF grants.",
+      "Lake Formation TBAC adds a second permission layer the team explicitly wants to avoid; it is supported but not required for S3 Tables access.",
+      "S3 Tables provide a managed catalog endpoint; running a self-hosted Iceberg REST catalog defeats the point and is not how IAM auth on S3 Tables works.",
+      "Replicating to a normal S3 prefix discards the managed Iceberg maintenance and snapshot guarantees S3 Tables provide."
+    ]
+  },
+  {
+    "id": 73,
+    "question": "A data quality engineer wants a Glue Data Quality rule that fails when today's row count for the orders table drops more than 20 percent compared to the median of the previous seven daily runs. The rule must reference historical results captured in DataQualityResults without writing a custom Lambda. Which Glue Data Quality DQDL expression fits?",
+    "options": [
+      "A. RowCount > 0.8 * last(7, stat=median)",
+      "B. RowCount between 0 and (avg(7) * 1.2)",
+      "C. RowCount >= prior_run('orders').rows * 0.8",
+      "D. AssertCount('orders') withTolerance 20 percent"
+    ],
+    "answer": 0,
+    "explanation": "Glue Data Quality dynamic rules use the last(k) function to reference the prior k run outcomes captured in DataQualityResults, optionally with stat=median/avg/min/max. Comparing today's RowCount to 0.8 * last(7, stat=median) expresses 'no more than 20 percent below the rolling median.' The other syntaxes are not part of DQDL.",
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - DQDL supports dynamic rules using last(k, stat=...) to compare current metrics to historical run statistics; 0.8 * last(7, stat=median) implements the 20 percent drop threshold.",
+      "avg(7) is not the DQDL function form; the supported syntax is last(k, stat=avg), and the comparison direction here is wrong for a 'drop' check.",
+      "prior_run(...) is invented syntax; DQDL does not expose named prior-run lookups by table.",
+      "AssertCount withTolerance is not a DQDL construct; rule shape is metric op expression."
+    ]
+  },
+  {
+    "id": 74,
+    "question": "A retail data team must catch unexpected dips in daily revenue that traditional fixed thresholds miss because revenue exhibits strong weekly seasonality and slow upward drift. They still need deterministic checks on referential integrity for the same dataset. Which Glue Data Quality combination best matches each need?",
+    "options": [
+      "A. Use ML-based anomaly detection on the revenue metric to learn seasonality and surface anomalies, and keep deterministic DQDL rules (ReferentialIntegrity, Completeness) for integrity checks.",
+      "B. Replace all rules with ML anomaly detection so a single model covers both seasonality and integrity violations.",
+      "C. Use only threshold rules with last(28) windows to approximate seasonality and skip anomaly detection.",
+      "D. Run anomaly detection on referential integrity columns and threshold rules on revenue."
+    ],
+    "answer": 0,
+    "explanation": "Glue Data Quality anomaly detection trains per-metric models that learn seasonality and trend, well-suited to noisy business metrics like revenue. Deterministic rules (ReferentialIntegrity, Completeness, Uniqueness) remain the right tool for binary integrity facts where ML adds no value and can produce false positives. Mixing the two by purpose matches each technique to its strength.",
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - ML anomaly detection learns seasonality and drift for metrics like revenue, while deterministic rules remain best for binary integrity checks where there is a known correct answer.",
+      "Anomaly detection cannot reliably model referential integrity; either a key exists or it does not, which is a deterministic property.",
+      "last(28) windows approximate level but do not model weekly seasonality or trend, producing false positives on weekday/weekend swings.",
+      "This inverts the fit: anomaly detection on integrity is noisy, and threshold rules on seasonal revenue produce many false alarms."
+    ]
+  },
+  {
+    "id": 75,
+    "question": "A producer account publishes a curated 'orders_enriched' asset in Amazon DataZone. A data scientist in a consumer account needs query access to support a model. The platform team requires that the producer's data steward review the use case and grant or deny access, with the entire interaction tracked in DataZone. Which workflow satisfies this?",
+    "options": [
+      "A. The consumer submits a subscription request from the project, the producer's data steward reviews and approves it, and DataZone auto-provisions Lake Formation grants for the asset.",
+      "B. The producer manually shares a Lake Formation resource link cross-account and emails the consumer a confirmation.",
+      "C. The consumer assumes a producer-side IAM role via AWS RAM and queries directly with Athena.",
+      "D. The consumer uses S3 Access Points with an IAM policy attached after a Jira ticket is approved."
+    ],
+    "answer": 0,
+    "explanation": "DataZone's subscription request and approval workflow is the governed mechanism: the consumer initiates a request tied to a project and use case, the producer's data steward approves or rejects, and on approval DataZone provisions the underlying Lake Formation cross-account grants. The other options bypass DataZone, so the interaction is not tracked there.",
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - DataZone subscription requests carry the use case, are approved by the producer's steward, and trigger automated Lake Formation cross-account grant provisioning, with the full audit trail in DataZone.",
+      "Manual resource-link sharing bypasses DataZone governance; the interaction is not tracked there and provenance is lost.",
+      "AWS RAM role assumption skips DataZone entirely and gives broader access than a per-asset subscription.",
+      "S3 Access Points plus a Jira ticket is an out-of-band process with no link to DataZone's catalog or audit trail."
+    ]
+  },
+  {
+    "id": 76,
+    "question": "A team runs a Kinesis Data Stream in provisioned mode with 30 shards 24x7 to handle predictable 25 MB/s ingestion. A new product launch will create unpredictable bursts up to 4x baseline for the first month, then settle. They want to minimize cost while avoiding throttling and want to revert easily. Which approach is best?",
+    "options": [
+      "A. Switch the stream to on-demand mode for the launch month to absorb bursts automatically, monitor IncomingBytes, and switch back to a right-sized provisioned configuration after the burst window closes.",
+      "B. Keep provisioned mode and pre-scale to 120 shards permanently to cover the worst case.",
+      "C. Use on-demand mode permanently because it is always cheaper than provisioned for steady workloads.",
+      "D. Run two streams in parallel, one provisioned and one on-demand, and let producers fan out randomly."
+    ],
+    "answer": 0,
+    "explanation": "On-demand mode auto-scales up to twice the prior 30-day peak per stream and is ideal for unpredictable bursts; for steady predictable workloads, provisioned is typically cheaper above the crossover point (commonly cited around 25 percent average utilization of on-demand). Switching modes is a single API change and supported up to twice per 24 hours, so reverting after the launch is straightforward. Permanent over-provisioning wastes money, and dual streams break ordering.",
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - On-demand mode absorbs unpredictable bursts and can be switched back to provisioned after the launch window, balancing cost during the steady baseline with elasticity during the burst.",
+      "Permanently scaling to 120 shards pays peak cost 24x7 even when traffic is at baseline, which is exactly what on-demand avoids.",
+      "On-demand is not always cheaper; for steady, predictable workloads provisioned is typically lower cost above the utilization crossover point.",
+      "Splitting producers across two streams randomly destroys per-key ordering and complicates consumers without solving the capacity problem."
+    ]
+  },
+  {
+    "id": 77,
+    "question": "An e-commerce company runs OLTP on Aurora PostgreSQL and wants near-real-time analytics in Amazon Redshift with minimal pipeline maintenance. They currently use a DMS task that struggles with schema drift and lags during sales spikes. Which approach replaces DMS with the least operational overhead while keeping data fresh for BI dashboards?",
+    "options": [
+      "A. Enable Aurora to Redshift Zero-ETL integration so committed Aurora transactions are continuously replicated into Redshift without managing a DMS task.",
+      "B. Schedule hourly AWS Glue jobs that snapshot Aurora to S3 in Parquet and COPY into Redshift.",
+      "C. Use Aurora read replicas as the BI source and disable Redshift for OLAP.",
+      "D. Use DMS with full load plus CDC but increase replication instance size to xlarge."
+    ],
+    "answer": 0,
+    "explanation": "Aurora Zero-ETL to Redshift is a managed continuous replication that handles schema evolution and removes the DMS instance, task, and tuning entirely. Hourly Glue snapshots are batch, not near-real-time, and add code to maintain. Aurora read replicas are still OLTP and unsuitable for heavy OLAP. Scaling DMS keeps the maintenance burden the question wants to remove.",
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Zero-ETL provides managed continuous replication from Aurora into Redshift, handles schema evolution, and eliminates the DMS task entirely.",
+      "Hourly Glue batch jobs cannot deliver near-real-time freshness and add ETL code to maintain.",
+      "Aurora read replicas are OLTP storage and not optimized for analytical workloads at scale; this drops the Redshift requirement instead of solving it.",
+      "Upsizing the DMS instance keeps the same operational burden the team is trying to eliminate."
+    ]
+  },
+  {
+    "id": 78,
+    "question": "An EMR Spark job that performs large shuffles between executors runs against data in Standard S3 and is dominated by shuffle read latency. The cluster runs in a single Availability Zone in us-east-1 and the team accepts non-cross-AZ durability for the intermediate dataset. Which S3 option most directly reduces shuffle-stage latency for this analytics workload?",
+    "options": [
+      "A. Stage the shuffle-heavy intermediate dataset in S3 Express One Zone, accessed via the s3express endpoint within the same AZ as the EMR cluster.",
+      "B. Move the dataset to S3 Standard-Infrequent Access to lower per-request cost.",
+      "C. Enable S3 Transfer Acceleration on the source bucket.",
+      "D. Use S3 Glacier Instant Retrieval for the intermediate dataset."
+    ],
+    "answer": 0,
+    "explanation": "S3 Express One Zone is a single-AZ storage class purpose-built for single-digit-millisecond first-byte latency, ideal for shuffle-heavy analytics where the cluster and the bucket are co-located. Standard-IA raises per-GB retrieval cost and adds retrieval latency. Transfer Acceleration optimizes long-haul internet uploads, not in-region EMR access. Glacier Instant Retrieval is for archival, not shuffle staging.",
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - S3 Express One Zone is a single-AZ class optimized for low-latency, high-throughput analytics access and is well-suited for shuffle staging when the EMR cluster sits in the same AZ.",
+      "Standard-IA adds retrieval cost and is meant for cold data; it does not improve shuffle latency.",
+      "Transfer Acceleration speeds long-haul internet transfers via edge locations and has no effect on in-region EMR to S3 access.",
+      "Glacier Instant Retrieval is for rarely accessed archive data; it is not designed for hot shuffle staging."
+    ]
+  },
+  {
+    "id": 79,
+    "question": "A team is upgrading AWS Glue ETL jobs from Glue 4.0 to Glue 5.0 to take advantage of newer engines and reduce custom maintenance code on their Iceberg tables. Which set of differences correctly describes Glue 5.0?",
+    "options": [
+      "A. Glue 5.0 ships with Apache Spark 3.5, Python 3.11, and built-in maintenance for open-table formats (Iceberg, Delta Lake, Hudi) including compaction and snapshot expiration.",
+      "B. Glue 5.0 removes Spark and runs only Ray, requiring teams to rewrite PySpark code as Ray Datasets.",
+      "C. Glue 5.0 drops support for streaming jobs and Iceberg, focusing on batch Parquet only.",
+      "D. Glue 5.0 keeps Spark 3.3 and Python 3.7 but adds a managed Trino engine for interactive queries."
+    ],
+    "answer": 0,
+    "explanation": "Glue 5.0 moves to Spark 3.5 and Python 3.11 and adds managed maintenance for open table formats so teams do not write their own Iceberg/Delta/Hudi compaction and snapshot expiration jobs. Ray is offered as a separate worker type in Glue, not a replacement for Spark. Streaming and Iceberg remain supported. Trino is not the Glue ETL engine.",
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Glue 5.0 ships Spark 3.5 and Python 3.11 and includes built-in maintenance (compaction, snapshot expiration) for Iceberg, Delta, and Hudi tables.",
+      "Glue offers Ray as an additional worker type, not a replacement for Spark; PySpark jobs remain first-class in Glue 5.0.",
+      "Glue 5.0 continues to support streaming jobs and Iceberg; it expands open-table support rather than removing it.",
+      "Glue 5.0 advances the Spark and Python versions; it does not stay on 3.3/3.7, and Trino is not the ETL engine."
+    ]
+  },
+  {
+    "id": 80,
+    "question": "A data engineer connects an SQS queue of order events to a Step Functions state machine. Today a Lambda function reads SQS, drops events where status != 'paid', enriches each event with customer-tier from a DynamoDB lookup, and starts the state machine. The team wants to remove this Lambda while keeping the filter and enrichment. Which AWS-native pattern fits?",
+    "options": [
+      "A. Replace the Lambda with an EventBridge Pipe from SQS to Step Functions, configured with a source filter on status='paid' and an enrichment step that calls the DynamoDB lookup API.",
+      "B. Subscribe Step Functions directly to SQS using an SNS fan-out and rely on a Step Functions Choice state to filter.",
+      "C. Send the SQS messages through Kinesis Data Firehose with a Lambda transformation; Firehose will invoke Step Functions on each record.",
+      "D. Use SQS message attributes plus an SQS-to-Step-Functions direct integration that supports filtering in the queue policy."
+    ],
+    "answer": 0,
+    "explanation": "EventBridge Pipes natively connect sources (SQS) to targets (Step Functions) with optional source filtering and an enrichment step (Lambda, Step Functions Express, API destination, or API Gateway), removing the custom Lambda plumbing. Step Functions cannot be subscribed to SQS via SNS in a way that filters server-side, Firehose targets are storage/analytics not Step Functions, and SQS queue policies do not implement message content filtering for delivery.",
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - EventBridge Pipes provide a managed source-filter-enrich-target flow from SQS to Step Functions, replacing the custom Lambda with a configurable Pipe.",
+      "SNS fan-out plus a Choice state still requires Step Functions to be invoked for every message before filtering, which neither saves cost nor matches the enrichment requirement.",
+      "Kinesis Data Firehose targets are S3, Redshift, OpenSearch, Splunk, and HTTP endpoints; Step Functions is not a Firehose target.",
+      "SQS queue policies control access, not message content filtering for delivery; there is no native SQS-to-Step-Functions integration with content filtering."
+    ]
   }
 ]

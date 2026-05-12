@@ -1138,5 +1138,195 @@
       "Basic Support is free and includes only account/billing help — no technical support SLAs at all."
     ],
     "domain": "Billing, Pricing, and Support"
+  },
+  {
+    "id": 61,
+    "question": "A team wants to call a managed service that exposes multiple foundation models (such as Anthropic Claude and Amazon Titan) through a single API, and to attach guardrails that block disallowed topics in responses. Which AWS service provides this?",
+    "options": [
+      "A. Amazon Bedrock",
+      "B. Amazon SageMaker Ground Truth",
+      "C. Amazon Comprehend",
+      "D. Amazon Kendra"
+    ],
+    "answer": 0,
+    "explanation": "Amazon Bedrock is the managed service that offers access to multiple foundation models through one API and includes Bedrock Guardrails for filtering topics and content. SageMaker Ground Truth is a data-labeling product, Comprehend is an NLP feature service, and Kendra is enterprise search.",
+    "optionExplanations": [
+      "Correct — Amazon Bedrock exposes multiple foundation models behind one API and supports Guardrails for topic and content filtering.",
+      "SageMaker Ground Truth is a managed data-labeling service for building training datasets, not a foundation-model API.",
+      "Comprehend extracts sentiment, entities, and key phrases from text but does not host third-party foundation models.",
+      "Kendra is an enterprise search index over documents; it is not a foundation-model API platform."
+    ],
+    "domain": "Cloud Technology and Services"
+  },
+  {
+    "id": 62,
+    "question": "Developers want an AWS AI coding assistant that integrates directly into their IDE and command line to suggest code, explain errors, and help write tests. Which service is designed for this?",
+    "options": [
+      "A. Amazon Q Developer",
+      "B. Amazon Q Business",
+      "C. Amazon Lex",
+      "D. AWS CodePipeline"
+    ],
+    "answer": 0,
+    "explanation": "Amazon Q Developer is the AI assistant aimed at software developers in the IDE and CLI for code suggestions, debugging help, and test generation. Amazon Q Business is for enterprise knowledge search, Lex builds chatbots, and CodePipeline is a CI/CD orchestrator.",
+    "optionExplanations": [
+      "Correct — Amazon Q Developer is the developer-focused AI assistant integrated into IDEs and the AWS CLI for code generation and debugging help.",
+      "Amazon Q Business is the enterprise-search variant aimed at knowledge workers, not developers writing code in an IDE.",
+      "Amazon Lex is a service for building conversational chatbots and voice interfaces, not an IDE coding assistant.",
+      "AWS CodePipeline orchestrates continuous delivery stages; it does not generate or explain source code."
+    ],
+    "domain": "Cloud Technology and Services"
+  },
+  {
+    "id": 63,
+    "question": "A company wants employees to ask natural-language questions and receive answers grounded in their own SharePoint, S3, and Confluence content, with citations back to the source documents. Which AWS service is purpose-built for this enterprise generative AI assistant?",
+    "options": [
+      "A. Amazon Q Business",
+      "B. Amazon Q Developer",
+      "C. Amazon Polly",
+      "D. AWS Glue DataBrew"
+    ],
+    "answer": 0,
+    "explanation": "Amazon Q Business is the enterprise generative AI assistant that connects to data sources (SharePoint, S3, Confluence, and more) and produces answers grounded in those sources with citations. Q Developer targets coding, Polly is text-to-speech, and DataBrew is visual data preparation.",
+    "optionExplanations": [
+      "Correct — Amazon Q Business connects to enterprise data sources and answers natural-language questions with citations to the source content.",
+      "Amazon Q Developer is aimed at writing and explaining code in an IDE; it is not the enterprise-document search assistant.",
+      "Amazon Polly converts text to lifelike speech audio; it does not search enterprise document repositories.",
+      "Glue DataBrew is a visual data-preparation tool for cleaning datasets; it is not a generative AI knowledge assistant."
+    ],
+    "domain": "Cloud Technology and Services"
+  },
+  {
+    "id": 64,
+    "question": "A marketing team wants to detect the language and overall sentiment of customer reviews without training their own model. Which AWS AI service is the BEST fit?",
+    "options": [
+      "A. Amazon Comprehend",
+      "B. Amazon SageMaker",
+      "C. Amazon Rekognition",
+      "D. Amazon Transcribe"
+    ],
+    "answer": 0,
+    "explanation": "Amazon Comprehend is a managed NLP service that returns language, sentiment, entities, and key phrases out of the box. SageMaker is the build-your-own-model platform, Rekognition handles images and video, and Transcribe converts speech to text.",
+    "optionExplanations": [
+      "Correct — Comprehend is the pre-trained NLP service that returns language detection and sentiment without custom training.",
+      "SageMaker is the do-it-yourself platform for training and hosting custom models; using it would require building the model yourself.",
+      "Rekognition analyzes images and video (faces, objects, moderation) — not text sentiment.",
+      "Transcribe converts speech audio to text; it does not classify sentiment on existing text reviews."
+    ],
+    "domain": "Cloud Technology and Services"
+  },
+  {
+    "id": 65,
+    "question": "A sustainability officer wants to see how much carbon their AWS usage produced last quarter and track the trend over time at no extra charge. Which AWS feature reports this, and which Well-Architected pillar is most aligned with the goal?",
+    "options": [
+      "A. AWS Customer Carbon Footprint Tool — Sustainability pillar",
+      "B. AWS Cost Explorer — Cost Optimization pillar",
+      "C. AWS Compute Optimizer — Performance Efficiency pillar",
+      "D. AWS Trusted Advisor — Operational Excellence pillar"
+    ],
+    "answer": 0,
+    "explanation": "The Customer Carbon Footprint Tool is a free console report estimating emissions from AWS usage, and it directly supports the Sustainability pillar of the Well-Architected Framework. Cost Explorer reports spend, Compute Optimizer reports right-sizing, and Trusted Advisor reports best-practice checks.",
+    "optionExplanations": [
+      "Correct — the Customer Carbon Footprint Tool reports estimated emissions from AWS usage at no extra cost and aligns with the Sustainability pillar.",
+      "Cost Explorer shows spend trends but does not report carbon emissions; Cost Optimization is the wrong pillar for environmental impact.",
+      "Compute Optimizer recommends right-sized instances; while it can indirectly reduce emissions, it does not report carbon and is tied to Performance Efficiency.",
+      "Trusted Advisor surfaces best-practice checks across cost, security, and performance; it does not report carbon emissions."
+    ],
+    "domain": "Cloud Concepts"
+  },
+  {
+    "id": 66,
+    "question": "A bank wants its private application to reach Amazon Kinesis Data Streams from inside its VPC without traffic ever traversing the public internet, and without using a NAT gateway. Which AWS feature is purpose-built for this?",
+    "options": [
+      "A. An interface VPC endpoint powered by AWS PrivateLink",
+      "B. An internet gateway with a 0.0.0.0/0 route",
+      "C. AWS Site-to-Site VPN over the public internet",
+      "D. A public Elastic IP attached to each instance"
+    ],
+    "answer": 0,
+    "explanation": "An interface VPC endpoint (powered by AWS PrivateLink) provides a private ENI inside the VPC that reaches the AWS service without using the public internet or a NAT gateway. The other options either require or rely on public internet paths.",
+    "optionExplanations": [
+      "Correct — interface VPC endpoints / PrivateLink expose AWS services via a private ENI inside the VPC, with no public-internet path required.",
+      "An internet gateway with a default route sends traffic out to the public internet — the exact behavior the bank wants to avoid.",
+      "Site-to-Site VPN traverses the public internet (encrypted) and is intended for on-premises connectivity, not in-VPC AWS service access.",
+      "A public Elastic IP forces traffic onto the public internet; it does not provide a private path to AWS services."
+    ],
+    "domain": "Security and Compliance"
+  },
+  {
+    "id": 67,
+    "question": "An operations team wants a single AWS service to centrally schedule, monitor, and report backups across EC2, EBS, RDS, DynamoDB, EFS, and FSx using one set of policies. Which service is designed for this?",
+    "options": [
+      "A. AWS Backup",
+      "B. Amazon S3 Glacier Deep Archive",
+      "C. AWS Storage Gateway",
+      "D. AWS DataSync"
+    ],
+    "answer": 0,
+    "explanation": "AWS Backup is the central, policy-driven backup service that spans EC2, EBS, RDS, DynamoDB, EFS, FSx, and more. Glacier Deep Archive is a low-cost S3 storage class, Storage Gateway connects on-premises to AWS storage, and DataSync transfers data between locations.",
+    "optionExplanations": [
+      "Correct — AWS Backup centrally schedules, monitors, and reports on backups for many AWS services through policy-based backup plans.",
+      "Glacier Deep Archive is the lowest-cost S3 archive storage class, not a backup-orchestration service.",
+      "Storage Gateway provides on-premises access to AWS storage; it does not centrally orchestrate AWS-side backups across services.",
+      "DataSync transfers data between storage systems; it is not a backup-policy and reporting service."
+    ],
+    "domain": "Cloud Technology and Services"
+  },
+  {
+    "id": 68,
+    "question": "A company is starting a large migration. They need (1) a portfolio view of progress across many migration tools and waves, and (2) automated lift-and-shift of on-premises servers into AWS as EC2 instances. Which pair of services BEST matches these needs, respectively?",
+    "options": [
+      "A. AWS Migration Hub for portfolio tracking; AWS Application Migration Service (MGN) for server lift-and-shift",
+      "B. AWS Application Migration Service (MGN) for portfolio tracking; AWS Migration Hub for server lift-and-shift",
+      "C. AWS Snowball for portfolio tracking; AWS DataSync for server lift-and-shift",
+      "D. AWS Database Migration Service for portfolio tracking; AWS Schema Conversion Tool for server lift-and-shift"
+    ],
+    "answer": 0,
+    "explanation": "AWS Migration Hub is the central dashboard for tracking migration progress across tools and waves; AWS Application Migration Service (MGN) is AWS's recommended service for lift-and-shift of on-premises servers to EC2. The other pairings reverse these roles or pick services for different purposes (data transfer or database migration).",
+    "optionExplanations": [
+      "Correct — Migration Hub is the portfolio dashboard while MGN is the lift-and-shift server-replication service that lands workloads on EC2.",
+      "Reversed — MGN performs server replication; it is not the portfolio dashboard. Migration Hub does not perform the actual server migration.",
+      "Snowball is a physical data-transfer device and DataSync is a data-transfer service; neither tracks portfolios nor lifts-and-shifts servers as EC2 instances.",
+      "DMS and SCT focus on database migration and schema conversion, not portfolio tracking or full-server lift-and-shift."
+    ],
+    "domain": "Cloud Technology and Services"
+  },
+  {
+    "id": 69,
+    "question": "An enterprise already uses Service Control Policies (SCPs) in AWS Organizations to restrict what principals in member accounts can do. They now want a complementary control that restricts what identities outside their organization can do with their resources, helping enforce a data perimeter. Which feature is designed for this?",
+    "options": [
+      "A. Resource Control Policies (RCPs) in AWS Organizations",
+      "B. IAM password policies",
+      "C. Amazon GuardDuty findings",
+      "D. AWS Config conformance packs"
+    ],
+    "answer": 0,
+    "explanation": "Resource Control Policies (RCPs) are the AWS Organizations policy type that constrains what external identities can do with resources in the organization, complementing SCPs to help build a data perimeter. Password policies set credential rules, GuardDuty surfaces threats, and Config conformance packs evaluate configuration compliance.",
+    "optionExplanations": [
+      "Correct — RCPs sit alongside SCPs in AWS Organizations and restrict actions external identities can perform on org resources, supporting data-perimeter goals.",
+      "IAM password policies define credential rules (length, rotation); they do not constrain external-identity access to resources.",
+      "GuardDuty detects and reports suspicious activity but does not preventively restrict what external identities can do.",
+      "Config conformance packs check that resource configurations meet rules; they do not function as preventive Organizations policy controls."
+    ],
+    "domain": "Security and Compliance"
+  },
+  {
+    "id": 70,
+    "question": "A team new to generative AI is sorting out vocabulary. Which statement is MOST accurate at the foundational level?",
+    "options": [
+      "A. Training builds the model's parameters from data; inference uses the trained model to produce outputs from a prompt.",
+      "B. Inference is how a foundation model is created from raw text, and training is how it answers each user request.",
+      "C. A foundation model and a fine-tuned model are identical because fine-tuning is just another name for prompting.",
+      "D. Prompt engineering rewrites the model's weights, while fine-tuning only changes the text sent to the model."
+    ],
+    "answer": 0,
+    "explanation": "Training is the process that learns model weights from data, and inference is when the trained model generates outputs from inputs (prompts). Fine-tuning adjusts weights with additional data, which is different from prompting, which only changes the input text and does not modify the model.",
+    "optionExplanations": [
+      "Correct — training builds the parameters from data, and inference is the runtime step where the trained model produces outputs from a prompt.",
+      "Reversed — training is the offline weight-learning step; inference is the runtime answer generation.",
+      "Incorrect — a fine-tuned model has additional weight adjustments versus the base foundation model; fine-tuning is not the same as prompting.",
+      "Reversed — fine-tuning updates weights with additional training data, while prompt engineering only changes the input text and leaves weights unchanged."
+    ],
+    "domain": "Cloud Concepts"
   }
 ]
