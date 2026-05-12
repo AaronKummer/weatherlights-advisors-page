@@ -274,6 +274,31 @@ html.dark-fallback .path-pill.active {
 }
 html.dark-fallback .cert-pill-tag { background: rgba(40, 200, 120, 0.18) !important; color: #4cdb8c !important; }
 
+/* Study guide modal — dark variant */
+html.dark-fallback .sg-code { color: #00d4aa !important; }
+html.dark-fallback .sg-name { color: #ffffff !important; }
+html.dark-fallback .sg-meta {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .sg-meta-label { color: #8b949e !important; }
+html.dark-fallback .sg-meta-val { color: #ffffff !important; }
+html.dark-fallback .sg-progress { color: #c9d1d9 !important; }
+html.dark-fallback .sg-progress strong { color: #ffffff !important; }
+html.dark-fallback .sg-hint { color: #8b949e !important; }
+html.dark-fallback .sg-mode {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html.dark-fallback .sg-mode:hover { border-color: rgba(0, 212, 170, 0.4) !important; background: rgba(0, 212, 170, 0.05) !important; }
+html.dark-fallback .sg-mode-primary { background: linear-gradient(135deg, #00d4aa 0%, #00a888 100%) !important; border-color: rgba(0, 212, 170, 0.6) !important; }
+html.dark-fallback .sg-mode-primary .sg-mode-title { color: #0a0a0f !important; }
+html.dark-fallback .sg-mode-primary .sg-mode-desc { color: rgba(10, 10, 15, 0.78) !important; }
+html.dark-fallback .sg-mode-title { color: #ffffff !important; }
+html.dark-fallback .sg-mode-desc { color: #8b949e !important; }
+html.dark-fallback .sg-cheats { color: #00d4aa !important; }
+html.dark-fallback .sg-cheats:hover { color: #ffffff !important; }
+
 /* Nav view chips — dark variant */
 html.dark-fallback .nav-view-chips { border-right-color: rgba(255, 255, 255, 0.08) !important; }
 html.dark-fallback .nav-chip { color: #8b949e !important; }

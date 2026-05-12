@@ -896,6 +896,52 @@
   .tg-total-cost:hover::after { opacity: 1; transform: translateY(0); }
 
 
+  /* Cert tags on the objectives panel */
+  .tg-cert-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin: 0.6rem 0 1rem;
+  }
+  .tg-cert-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--bg);
+    border: 1px solid var(--accent-border, var(--border));
+    border-radius: 100px;
+    padding: 0.18rem 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .tg-objective-info {
+    margin-top: 0.85rem;
+    padding: 0.65rem 0.8rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: var(--ink-2);
+  }
+  .tg-objective-info-label {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+  }
+  .tg-objective-info ul { list-style: none; padding: 0; }
+  .tg-objective-info li {
+    padding: 0.15rem 0;
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 0.75rem;
+    color: var(--ink);
+  }
+
   /* Objectives panel */
   .tg-objectives {
     background: var(--panel);
@@ -1321,6 +1367,7 @@
   <aside class="tg-objectives">
     <h2 id="tg-scenario-title">Build a Static Website</h2>
     <p class="brief" id="tg-scenario-brief">Serve static assets globally with low latency. Pick the right two services and wire them together.</p>
+    <div id="tg-scenario-certs" class="tg-cert-tags"></div>
     <h3>Objectives</h3>
     <ul class="tg-objective-list" id="tg-objective-list"></ul>
     <div class="tg-actions">
@@ -1548,6 +1595,9 @@
       id: "static-site",
       title: "Build a Static Website",
       brief: "Serve static assets globally with low latency. Two services, one connection.",
+      level: "associate",
+      certs: ["saa-c03", "clf-c02"],
+      examObjectives: ["SAA-C03 1.2 (Secure architectures)", "SAA-C03 3.1 (High-performing storage)"],
       objectives: [
         { type: "has",  svc: "s3",         label: "Add an S3 bucket" },
         { type: "has",  svc: "cloudfront", label: "Add a CloudFront distribution" },
@@ -1558,6 +1608,9 @@
       id: "serverless-api",
       title: "Build a Serverless API",
       brief: "REST API at the edge, compute on demand, NoSQL for state. Three-hop chain.",
+      level: "associate",
+      certs: ["saa-c03", "dop-c02"],
+      examObjectives: ["SAA-C03 2.1 (Scalable architectures)", "SAA-C03 3.2 (High-performing compute)"],
       objectives: [
         { type: "has",  svc: "apigw",    label: "Add API Gateway" },
         { type: "has",  svc: "lambda",   label: "Add Lambda" },
@@ -1570,6 +1623,9 @@
       id: "three-tier",
       title: "Three-Tier Web App",
       brief: "Edge cache, load balancer, compute fleet, relational database.",
+      level: "associate",
+      certs: ["saa-c03"],
+      examObjectives: ["SAA-C03 2.1 (Scalable architectures)", "SAA-C03 2.2 (Highly available)"],
       objectives: [
         { type: "has",  svc: "cloudfront", label: "Add CloudFront" },
         { type: "has",  svc: "alb",        label: "Add ALB" },
@@ -1584,6 +1640,9 @@
       id: "event-driven",
       title: "Event-Driven Pipeline",
       brief: "API Gateway captures events, EventBridge routes them, two Lambda consumers handle work.",
+      level: "associate",
+      certs: ["saa-c03", "dop-c02"],
+      examObjectives: ["SAA-C03 2.1 (Scalable architectures)", "DOP-C02 1 (SDLC automation)"],
       objectives: [
         { type: "has",  svc: "apigw",       label: "Add API Gateway" },
         { type: "has",  svc: "eventbridge", label: "Add EventBridge" },
@@ -1596,6 +1655,9 @@
       id: "async-job",
       title: "Async Job Queue",
       brief: "Frontend submits jobs to a queue; workers chew through them and write results to a database.",
+      level: "associate",
+      certs: ["saa-c03"],
+      examObjectives: ["SAA-C03 2.1 (Decoupled architectures)", "SAA-C03 4.2 (Cost-optimized compute)"],
       objectives: [
         { type: "has",  svc: "apigw",    label: "Add API Gateway (job submission)" },
         { type: "has",  svc: "sqs",      label: "Add SQS (job queue)" },
@@ -1610,6 +1672,9 @@
       id: "image-pipeline",
       title: "Image Processing Pipeline",
       brief: "Uploads to S3 trigger EventBridge, Lambda processes them and writes metadata to DynamoDB.",
+      level: "associate",
+      certs: ["saa-c03", "dea-c01"],
+      examObjectives: ["SAA-C03 2.1 (Event-driven)", "DEA-C01 1 (Ingestion + transformation)"],
       objectives: [
         { type: "has",  svc: "s3",          label: "Add S3 (uploads bucket)" },
         { type: "has",  svc: "eventbridge", label: "Add EventBridge" },
@@ -1617,6 +1682,87 @@
         { type: "has",  svc: "dynamodb",    label: "Add DynamoDB (metadata)" },
         { type: "edge", from: "eventbridge", to: "lambda",   label: "EventBridge → Lambda" },
         { type: "edge", from: "lambda",      to: "dynamodb", label: "Lambda → DynamoDB" },
+      ],
+    },
+    // ─── DevOps-focused scenarios (DOP-C02) ───
+    {
+      id: "ha-multi-az",
+      title: "Highly Available Multi-AZ",
+      brief: "Same three-tier app, but every layer must survive an AZ failure. EC2 in two AZs, RDS multi-AZ.",
+      level: "professional",
+      certs: ["dop-c02", "saa-c03"],
+      examObjectives: ["DOP-C02 3 (Resilient cloud solutions)", "SAA-C03 2.2 (Highly available)"],
+      objectives: [
+        { type: "has",  svc: "alb",        label: "Add ALB (front-end)" },
+        { type: "has",  svc: "ec2",        label: "Add EC2 fleet" },
+        { type: "has",  svc: "rds",        label: "Add RDS (Multi-AZ)" },
+        { type: "edge", from: "alb",        to: "ec2", label: "ALB → EC2" },
+        { type: "edge", from: "ec2",        to: "rds", label: "EC2 → RDS" },
+      ],
+    },
+    {
+      id: "observability-stack",
+      title: "Observability Stack",
+      brief: "Compute fleet pushing logs + metrics to a central database for analysis. Triage-friendly architecture.",
+      level: "professional",
+      certs: ["dop-c02"],
+      examObjectives: ["DOP-C02 4 (Monitoring + logging)"],
+      objectives: [
+        { type: "has",  svc: "ec2",        label: "Add EC2 fleet (workload)" },
+        { type: "has",  svc: "s3",         label: "Add S3 (log archive)" },
+        { type: "has",  svc: "lambda",     label: "Add Lambda (log processor)" },
+        { type: "has",  svc: "dynamodb",   label: "Add DynamoDB (metric store)" },
+        { type: "edge", from: "ec2",       to: "s3",       label: "EC2 → S3 (logs)" },
+        { type: "edge", from: "s3",        to: "lambda",   label: "S3 → Lambda (via event)" },
+        { type: "edge", from: "lambda",    to: "dynamodb", label: "Lambda → DynamoDB" },
+      ],
+    },
+    {
+      id: "fanout-events",
+      title: "Fan-Out Event Processing",
+      brief: "One event source, multiple consumers. EventBridge routes to several Lambda workers in parallel.",
+      level: "professional",
+      certs: ["dop-c02"],
+      examObjectives: ["DOP-C02 1 (SDLC automation)", "DOP-C02 5 (Incident + event response)"],
+      objectives: [
+        { type: "has",  svc: "apigw",       label: "Add API Gateway (event ingress)" },
+        { type: "has",  svc: "eventbridge", label: "Add EventBridge (router)" },
+        { type: "has",  svc: "lambda",      label: "Add Lambda (consumer)" },
+        { type: "has",  svc: "sqs",         label: "Add SQS (slow-path buffer)" },
+        { type: "edge", from: "apigw",       to: "eventbridge", label: "API Gateway → EventBridge" },
+        { type: "edge", from: "eventbridge", to: "lambda",      label: "EventBridge → Lambda" },
+        { type: "edge", from: "eventbridge", to: "sqs",         label: "EventBridge → SQS" },
+      ],
+    },
+    {
+      id: "containerized-app",
+      title: "Containerized App on Fargate",
+      brief: "Run containers without managing servers. ALB routes to Fargate tasks, persists state in RDS.",
+      level: "professional",
+      certs: ["dop-c02", "saa-c03"],
+      examObjectives: ["DOP-C02 2 (Config mgmt + IaC)", "SAA-C03 2.1 (Scalable architectures)"],
+      objectives: [
+        { type: "has",  svc: "alb",     label: "Add ALB (front-end)" },
+        { type: "has",  svc: "fargate", label: "Add Fargate (app tier)" },
+        { type: "has",  svc: "rds",     label: "Add RDS (data tier)" },
+        { type: "edge", from: "alb",    to: "fargate", label: "ALB → Fargate" },
+        { type: "edge", from: "fargate", to: "rds",    label: "Fargate → RDS" },
+      ],
+    },
+    {
+      id: "secure-vpc-boundary",
+      title: "Secure VPC Boundary",
+      brief: "Public-facing app behind WAF/ALB; private compute talks only to VPC-internal database. Shows defense-in-depth.",
+      level: "professional",
+      certs: ["dop-c02", "scs-c02", "saa-c03"],
+      examObjectives: ["DOP-C02 6 (Security + compliance)", "SAA-C03 1.1 (Secure access)"],
+      objectives: [
+        { type: "has",  svc: "vpc",     label: "Define a VPC boundary" },
+        { type: "has",  svc: "alb",     label: "Add ALB (internet-facing)" },
+        { type: "has",  svc: "ec2",     label: "Add EC2 (private compute)" },
+        { type: "has",  svc: "rds",     label: "Add RDS (private database)" },
+        { type: "edge", from: "alb",    to: "ec2", label: "ALB → EC2" },
+        { type: "edge", from: "ec2",    to: "rds", label: "EC2 → RDS" },
       ],
     },
   ];
@@ -1865,10 +2011,30 @@
     const sc = currentScenario();
     $("tg-scenario-title").textContent = sc.title;
     $("tg-scenario-brief").textContent = sc.brief;
+    renderScenarioMeta();
     buildScenarioTabs();
     renderObjectives();
     render();
     setStatus("Drag a service onto the canvas to begin.");
+  }
+
+  function renderScenarioMeta() {
+    const sc = currentScenario();
+    const el = $("tg-scenario-certs");
+    if (!el) return;
+    const certs = sc.certs || [];
+    const objectives = sc.examObjectives || [];
+    let html = "";
+    if (certs.length) {
+      html += certs.map(c => `<span class="tg-cert-tag">${c.toUpperCase()}</span>`).join("");
+    }
+    if (objectives.length) {
+      html += `<div class="tg-objective-info">
+        <span class="tg-objective-info-label">Practices</span>
+        <ul>${objectives.map(o => `<li>· ${o}</li>`).join("")}</ul>
+      </div>`;
+    }
+    el.innerHTML = html;
   }
 
   // ───────── Validation ─────────
@@ -2792,6 +2958,7 @@
     const sc = currentScenario();
     $("tg-scenario-title").textContent = sc.title;
     $("tg-scenario-brief").textContent = sc.brief;
+    renderScenarioMeta();
     buildScenarioTabs();
     setStatus("Loaded shared design.");
     render();

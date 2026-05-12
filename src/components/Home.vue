@@ -430,7 +430,7 @@
           <h3 class="finance-card-title training-h3">Practice Exams</h3>
           <div class="cert-picker-grid">
             <a v-for="b in quizBanks" :key="b.code"
-               @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#"
+               @click.prevent="openStudyGuide(b)" href="#"
                :class="['cert-pill', { 'off-path': !isPathCert(b.code) }]">
               <div class="cert-pill-row">
                 <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
@@ -443,6 +443,12 @@
 
           <h3 class="finance-card-title training-h3">More Tools</h3>
           <div class="training-tools-grid">
+            <a @click.prevent="openTool('/cheatsheets/index.html', 'AWS Cheat Sheets')" href="#" class="member-card">
+              <div class="member-card-tag">Reference</div>
+              <div class="member-card-title">Cheat Sheets</div>
+              <p>20 quick-reference cards. S3 classes, EC2 families, IAM, KMS, deploy strategies, Well-Architected.</p>
+              <div class="member-card-cta">Open Library <span aria-hidden>→</span></div>
+            </a>
             <a @click.prevent="openTool('/wargame/index.html', 'WeatherLight Wargame')" href="#" class="member-card">
               <div class="member-card-tag">CTF Range</div>
               <div class="member-card-title">Wargame</div>
@@ -450,7 +456,7 @@
               <div class="member-card-cta">Launch <span aria-hidden>→</span></div>
             </a>
             <a @click.prevent="openTool('/lessons/index.html', 'AWS Lessons')" href="#" class="member-card">
-              <div class="member-card-tag">Reference</div>
+              <div class="member-card-tag">Lessons</div>
               <div class="member-card-title">AWS Lessons</div>
               <p>38 services across 6 categories with inline notes and quizzes.</p>
               <div class="member-card-cta">Browse <span aria-hidden>→</span></div>
@@ -721,6 +727,58 @@
     </v-dialog>
 
 
+    <!-- ───────── Study guide modal ───────── -->
+    <v-dialog v-model="studyGuide.open" max-width="560px">
+      <v-card v-if="studyGuide.bank" class="modal-card auth-card">
+        <v-card-title class="modal-title">
+          <div class="sg-code">{{ studyGuide.bank.code.toUpperCase() }}</div>
+          <div class="sg-name">{{ studyGuide.bank.name }}</div>
+        </v-card-title>
+        <v-card-text class="modal-body">
+          <div class="sg-meta-row" v-if="examConfig[studyGuide.bank.code]">
+            <div class="sg-meta">
+              <div class="sg-meta-label">Question bank</div>
+              <div class="sg-meta-val">{{ studyGuide.bank.questions }} original Qs</div>
+            </div>
+            <div class="sg-meta">
+              <div class="sg-meta-label">Real exam</div>
+              <div class="sg-meta-val">{{ examConfig[studyGuide.bank.code].count }} q · {{ examConfig[studyGuide.bank.code].mins }} min</div>
+            </div>
+            <div class="sg-meta">
+              <div class="sg-meta-label">Pass mark</div>
+              <div class="sg-meta-val">{{ examConfig[studyGuide.bank.code].passPct }}%</div>
+            </div>
+          </div>
+          <p class="sg-progress" v-if="domainStrengthForBank(studyGuide.bank.code).total > 0">
+            You've answered <strong>{{ domainStrengthForBank(studyGuide.bank.code).total }}</strong> in this bank · {{ Math.round(100 * domainStrengthForBank(studyGuide.bank.code).correct / domainStrengthForBank(studyGuide.bank.code).total) }}% correct
+          </p>
+          <p class="sg-hint" v-else>
+            No attempts yet on this bank. Pick a starting mode below — Adaptive learns from your wrong answers and steers you toward weak domains.
+          </p>
+          <div class="sg-modes">
+            <button class="sg-mode" @click="launchFromStudyGuide('quick')">
+              <div class="sg-mode-title">Quick Quiz</div>
+              <div class="sg-mode-desc">10 random questions — warm up</div>
+            </button>
+            <button class="sg-mode sg-mode-primary" @click="launchFromStudyGuide('adaptive')">
+              <div class="sg-mode-title">Adaptive Practice</div>
+              <div class="sg-mode-desc">20 questions, weighted toward your weak domains</div>
+            </button>
+            <button class="sg-mode" @click="launchFromStudyGuide('exam')">
+              <div class="sg-mode-title">Mock Exam</div>
+              <div class="sg-mode-desc">{{ examConfig[studyGuide.bank.code]?.count || 65 }} q · {{ examConfig[studyGuide.bank.code]?.mins || 130 }} min · real-exam conditions</div>
+            </button>
+          </div>
+          <a @click.prevent="closeStudyGuide(); openTool('/cheatsheets/index.html', 'AWS Cheat Sheets')" href="#" class="sg-cheats">
+            ▤ Cheat sheets for {{ studyGuide.bank.name }} →
+          </a>
+        </v-card-text>
+        <v-card-actions class="modal-actions">
+          <v-btn variant="text" @click="closeStudyGuide">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- ───────── Generic confirm modal ───────── -->
     <v-dialog v-model="confirm.open" max-width="440px" persistent>
       <v-card class="modal-card auth-card">
@@ -931,6 +989,17 @@ export default {
       embedTitle: "",
       embedToolPath: "",
       embedToolExtra: {},
+      // Study-guide modal (shown before launching a quiz)
+      studyGuide: { open: false, bank: null },
+      examConfig: {
+        "clf-c02": { mins: 90,  count: 65, passPct: 70 },
+        "saa-c03": { mins: 130, count: 65, passPct: 72 },
+        "dea-c01": { mins: 130, count: 65, passPct: 72 },
+        "dop-c02": { mins: 180, count: 75, passPct: 75 },
+        "sap-c02": { mins: 180, count: 75, passPct: 75 },
+        "ans-c01": { mins: 170, count: 65, passPct: 75 },
+        "scs-c02": { mins: 170, count: 65, passPct: 75 },
+      },
       // Active portal tab (post-login navigation)
       activeTab: "overview",
       // "View as" — admin can preview the site as a client or an AWS rep.
@@ -1206,6 +1275,7 @@ export default {
         '/flashcards/index.html': () => import('../../public/flashcards/index.html?raw'),
         '/lessons/index.html': () => import('../../public/lessons/index.html?raw'),
         '/training-ground/index.html': () => import('../../public/training-ground/index.html?raw'),
+        '/cheatsheets/index.html': () => import('../../public/cheatsheets/index.html?raw'),
       };
       this.embedToolPath = path;
       this.embedToolExtra = extra;
@@ -1225,6 +1295,42 @@ export default {
       }
       this.embedTitle = title;
       this.embedOpen = true;
+    },
+    openStudyGuide(bank) {
+      this.studyGuide = { open: true, bank };
+    },
+    closeStudyGuide() {
+      this.studyGuide = { open: false, bank: null };
+    },
+    async launchFromStudyGuide(mode) {
+      const bank = this.studyGuide.bank;
+      if (!bank) return;
+      this.closeStudyGuide();
+      // The quiz engine reads ?bank=<code> and starts on the mode-select
+      // screen. The user picks Quick / Adaptive / Mock / Missed from there.
+      // We don't pass mode through URL — the engine doesn't deep-link to a
+      // mode yet — but the modal pre-frames the choice for the user.
+      await this.openTool('/quiz/index.html', bank.name, { bank: bank.code });
+    },
+    domainStrengthForBank(bankCode) {
+      // Read the same localStorage shape the quiz engine writes.
+      try {
+        const raw = localStorage.getItem('vv-quiz-' + bankCode);
+        if (!raw) return { total: 0, correct: 0, byDomain: [] };
+        const state = JSON.parse(raw);
+        let total = 0, correct = 0;
+        // We don't have the bank loaded here, so we can only show aggregate.
+        // Per-domain breakdown happens inside the quiz; here we surface "X
+        // attempted, Y correct" so the modal isn't empty.
+        Object.keys(state).forEach(function (k) {
+          if (k === '_fp') return;
+          total++;
+          if (state[k] === true) correct++;
+        });
+        return { total, correct, byDomain: [] };
+      } catch (_) {
+        return { total: 0, correct: 0, byDomain: [] };
+      }
     },
     buildSrcdoc(html, path, extra) {
       const fullUrl = this.toolUrl(path, extra);
@@ -2205,6 +2311,87 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.85rem;
 }
+/* Study-guide modal */
+.sg-code {
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2c5aa0;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.25rem;
+}
+.sg-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a3a6e;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.sg-meta-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1.25rem;
+}
+.sg-meta {
+  background: #f7fbff;
+  border: 1px solid #d8e6f3;
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem;
+}
+.sg-meta-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #6b7c93;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+}
+.sg-meta-val { font-size: 0.88rem; font-weight: 700; color: #1a3a6e; }
+.sg-progress {
+  color: #4a5e7e;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.sg-progress strong { color: #1a3a6e; font-weight: 700; }
+.sg-hint {
+  color: #6b7c93;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+.sg-modes { display: flex; flex-direction: column; gap: 0.55rem; margin-bottom: 1.1rem; }
+.sg-mode {
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #d8e6f3;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.sg-mode:hover { border-color: #5b9bd5; background: #f7fbff; }
+.sg-mode-primary {
+  background: linear-gradient(135deg, #1a3a6e 0%, #2c5aa0 100%);
+  border-color: #1a3a6e;
+}
+.sg-mode-primary:hover { filter: brightness(1.1); border-color: #1a3a6e; }
+.sg-mode-primary .sg-mode-title { color: #ffffff; }
+.sg-mode-primary .sg-mode-desc { color: rgba(255, 255, 255, 0.78); }
+.sg-mode-title { font-size: 0.98rem; font-weight: 700; color: #1a3a6e; letter-spacing: -0.005em; margin-bottom: 0.2rem; }
+.sg-mode-desc { font-size: 0.82rem; color: #6b7c93; }
+.sg-cheats {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c5aa0;
+  text-decoration: none;
+  padding-top: 0.5rem;
+}
+.sg-cheats:hover { color: #1a3a6e; }
+
 .path-picker {
   margin: 1rem 0 2rem;
   padding: 1rem 1.25rem;
