@@ -399,13 +399,20 @@
         }
 
         var container = document.getElementById('quiz-container');
-        var state = loadState();
 
         // ---- Persistence ----
+        // Fingerprint the bank so stale state from old/replaced questions
+        // is automatically cleared when the bank content changes.
+        var bankFp = allQuestions.length + ':' + allQuestions.slice(0, 3).map(function (q) { return q.id; }).join(',');
         function loadState() {
-            try { return JSON.parse(localStorage.getItem('vv-quiz-' + bank) || '{}'); } catch (e) { return {}; }
+            try {
+                var saved = JSON.parse(localStorage.getItem('vv-quiz-' + bank) || '{}');
+                if (saved._fp !== bankFp) return { _fp: bankFp };
+                return saved;
+            } catch (e) { return { _fp: bankFp }; }
         }
-        function saveState() { localStorage.setItem('vv-quiz-' + bank, JSON.stringify(state)); }
+        function saveState() { state._fp = bankFp; localStorage.setItem('vv-quiz-' + bank, JSON.stringify(state)); }
+        var state = loadState();
 
         // Set title from bank name
         var BANK_NAMES = {'saa-c03':'AWS Solutions Architect Associate','dop-c02':'AWS DevOps Engineer Professional','scs-c02':'AWS Security Specialty','ans-c01':'AWS Advanced Networking Specialty','clf-c02':'AWS Cloud Practitioner','sap-c02':'AWS Solutions Architect Professional','dea-c01':'AWS Data Engineer Associate'};
@@ -424,9 +431,10 @@
         }
 
         // ---- Show mode select ----
+        function answerKeys() { return Object.keys(state).filter(function (k) { return k !== '_fp'; }); }
         function showModeSelect() {
-            var answered = Object.keys(state).length;
-            var correct = Object.values(state).filter(function (v) { return v; }).length;
+            var answered = answerKeys().length;
+            var correct = answerKeys().filter(function (k) { return state[k]; }).length;
             var domains = {};
             allQuestions.forEach(function (q) { domains[q.domain] = (domains[q.domain] || 0) + 1; });
 
