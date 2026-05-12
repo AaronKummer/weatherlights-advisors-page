@@ -164,8 +164,8 @@
       "C. Disable HTTP/2 on the ALB.",
       "D. Use Cognito hosted UI for sign-up with built-in CAPTCHA, fronted by CloudFront with origin access control."
     ],
-    "answer": 3,
-    "explanation": "The Cognito hosted UI provides built-in CAPTCHA challenges and account-takeover protections against username/email enumeration without any code changes — and it offloads the registration response logic from your app. WAF rate-based rules slow scraping but don't fix the enumeration leak in the response body. Hiding the ALB behind CloudFront doesn't change response semantics. HTTP/2 has no relevance.",
+    "answer": 0,
+    "explanation": "AWS WAF rate-based rules combined with the Account Takeover Prevention (ATP) managed rule group detect and block credential-stuffing and email-enumeration attacks at the WAF layer, transparently in front of the ALB, with zero application code changes. Cognito hosted UI with built-in CAPTCHA would address enumeration, but adopting it requires rewriting the signup flow to delegate registration to Cognito. Moving the ALB behind CloudFront does not change the response body that leaks the information. Disabling HTTP/2 has no relevance to enumeration attacks.",
     "domain": "Design Secure Architectures"
   },
   {
@@ -989,15 +989,15 @@
   },
   {
     "id": 77,
-    "question": "A SaaS firm's multi-AZ RDS for PostgreSQL clusters are on a Reserved Instance from 2022 that doesn't fit current usage; 40% of capacity is wasted. Which option recovers value with the least disruption?",
+    "question": "A company runs a stable production PostgreSQL database on Amazon RDS that will remain at consistent capacity for the next three years. The CFO wants to minimize the total cost of ownership. The database runs 24/7 and downtime windows are pre-scheduled quarterly. Which RDS purchasing option produces the lowest three-year cost?",
     "options": [
-      "A. List the unused portion of the RIs on the AWS Reserved Instance Marketplace.",
-      "B. Cancel the RIs.",
-      "C. Switch to Spot Instances for RDS.",
-      "D. Wait until expiration."
+      "A. 3-year Reserved Instance with All Upfront payment.",
+      "B. 1-year Reserved Instance with Partial Upfront payment, renewed annually.",
+      "C. On-Demand pricing with a Compute Savings Plan applied.",
+      "D. 3-year Reserved Instance with No Upfront payment."
     ],
     "answer": 0,
-    "explanation": "Standard EC2 RIs (and some RDS RIs by program) can be sold on the Marketplace to recoup partial value. Cancellation isn't typically allowed. RDS doesn't support Spot. Waiting recovers nothing.",
+    "explanation": "For a stable, predictable workload committed over three years, a 3-year All Upfront Reserved Instance provides the deepest discount (up to 62% off On-Demand). A 1-year Partial Upfront RI renewed annually costs more because 1-year terms carry a smaller discount and Partial Upfront is less discounted than All Upfront. Compute Savings Plans apply to EC2, Lambda, and Fargate but do not cover RDS. A 3-year No Upfront RI still saves significantly over On-Demand but less than All Upfront because AWS prices in the financing cost of deferred payments.",
     "domain": "Design Cost-Optimized Architectures"
   },
   {

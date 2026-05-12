@@ -255,8 +255,8 @@
       "C. Enable termination protection on every stack.",
       "D. Use CloudTrail event history filtering on AuthorizeSecurityGroupIngress."
     ],
-    "answer": 1,
-    "explanation": "The managed Config rule cloudformation-stack-drift-detection-check runs drift detection on a schedule and reports per-resource drift to Config; from there EventBridge can notify on noncompliance. (A) works but is more code and lacks Config history. (C) prevents deletion, not edits. (D) tells you a call happened but not whether the resource diverges from the template.",
+    "answer": 0,
+    "explanation": "The AWS Config rule cloudformation-stack-drift-detection-check is periodic with a minimum evaluation interval of one hour, so it cannot meet a 'within minutes' requirement. Scheduling cloudformation detect-stack-drift every five minutes via an EventBridge scheduled rule, combined with an EventBridge rule that matches the drift-detected status and publishes to SNS, delivers notification within minutes and includes per-resource property differences from DescribeStackResourceDrifts. (B) fails because the Config rule's minimum period is one hour, not continuous. (C) prevents deletion, not edits. (D) tells you a call happened but not whether the resource diverges from the template.",
     "domain": "Configuration Management and IaC"
   },
   {
@@ -445,13 +445,13 @@
     "id": 35,
     "question": "A healthcare backend uses an SQS standard queue feeding a Lambda. To meet the team's resilience SLO, every poison message must be retained for forensic analysis for 14 days, and processing must continue. Which configuration is correct?",
     "options": [
-      "A. Configure a dead-letter queue with maxReceiveCount=5 and MessageRetentionPeriod=1209600 seconds; on the Lambda also configure on-failure destinations to a separate forensic queue for the asynchronous invocations.",
+      "A. Configure a dead-letter queue on the source SQS queue with a redrive policy of maxReceiveCount=5 and set the DLQ MessageRetentionPeriod=1209600 seconds.",
       "B. Use a FIFO queue and stop processing on failure.",
       "C. Configure VisibilityTimeout=1209600.",
       "D. Use Lambda concurrency 0 to drain manually."
     ],
     "answer": 0,
-    "explanation": "SQS DLQs catch the message after the configured maxReceiveCount; the DLQ retention can be 14 days. Lambda async destinations capture the invocation record, complementing message-level retention. (B) blocks processing. (C) just delays redelivery. (D) blocks processing.",
+    "explanation": "When Lambda is triggered by an SQS event source mapping, failed messages are returned to the queue and retried until maxReceiveCount is exceeded, at which point SQS moves them to the dead-letter queue configured on the source queue itself. The DLQ retention period of 1209600 seconds equals 14 days, satisfying the forensic retention requirement. Note that Lambda on-failure destinations only work with asynchronous invocations and do not apply to SQS event source mappings; for SQS-triggered Lambda, the DLQ and redrive policy must be configured on the SQS queue. (B) blocks processing. (C) just delays redelivery. (D) blocks processing.",
     "domain": "Resilient Cloud Solutions"
   },
   {
@@ -898,15 +898,15 @@
   },
   {
     "id": 70,
-    "question": "A platform team must enforce that IAM roles created in any member account never grant a role-to-role trust to an account outside the Organization. Which mechanism is correct?",
+    "question": "A platform team must ensure that IAM roles in member accounts do not grant trust to principals outside the AWS Organization. They need both a detective control for existing roles and a preventive mechanism for new roles. Which combination is correct?",
     "options": [
-      "A. AWS IAM Access Analyzer at the organization scope to detect external access (zone of trust = the org), plus an SCP using aws:PrincipalOrgID condition keys on iam:CreateRole and iam:UpdateAssumeRolePolicy that denies trust policies whose principal is outside the org.",
-      "B. Trusted Advisor IAM checks.",
-      "C. CloudTrail Insights.",
-      "D. Block all sts:AssumeRole at the network level."
+      "A. Deploy IAM Access Analyzer at the organization scope (zone of trust = the org) to detect existing roles with external trust policies, and create an SCP that denies iam:CreateRole and iam:UpdateAssumeRolePolicy unless the caller's principal tag 'RoleAdmin' equals 'true', restricting who can author trust policies to a vetted set of administrators.",
+      "B. Use an SCP with an aws:PrincipalOrgID condition on iam:CreateRole to block trust policies that reference external accounts.",
+      "C. Enable Trusted Advisor IAM checks and CloudTrail Insights for anomaly detection.",
+      "D. Block all sts:AssumeRole calls at the VPC endpoint policy level."
     ],
     "answer": 0,
-    "explanation": "Access Analyzer at org scope finds existing external access. SCPs with aws:PrincipalOrgID prevent creating trust policies with outside principals. (B) is informational. (C) detects anomalies, not policy. (D) sts:AssumeRole is API, not network.",
+    "explanation": "IAM Access Analyzer with the zone of trust set to the organization continuously identifies roles whose trust policies allow access from external principals, providing the detective control. For prevention, note that aws:PrincipalOrgID is a condition key that checks the organization membership of the API caller, not the content of the trust policy being written, so it cannot filter the trust policy document itself. Instead, an SCP that restricts iam:CreateRole and iam:UpdateAssumeRolePolicy to a small set of vetted administrators (e.g., via principal tags or specific roles) ensures that only trusted operators can author trust policies, providing the preventive guardrail. (B) is incorrect because aws:PrincipalOrgID checks the caller's org, not the trust policy being created. (C) is informational only and provides no enforcement. (D) sts:AssumeRole is an API call, not network traffic, and blocking it at VPC endpoints would break legitimate cross-account access within the org.",
     "domain": "Security and Compliance"
   },
   {

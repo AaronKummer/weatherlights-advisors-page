@@ -391,15 +391,15 @@
   },
   {
     "id": 31,
-    "question": "A startup wants a fully serverless web app: a React SPA, an authenticated REST API, a Postgres-compatible database that scales to zero, file uploads, and CI/CD. Which composition?",
+    "question": "A startup wants a mostly serverless web app with minimal cost during idle periods: a React SPA, an authenticated REST API, a Postgres-compatible database that keeps costs low during off-peak hours, file uploads, and CI/CD. Which composition is most cost-effective while remaining fully managed?",
     "options": [
-      "A. CloudFront + S3 for the SPA, Cognito user pools for auth, API Gateway HTTP API to Lambda, Aurora Serverless v2 with a min ACU of 0 for scale-to-zero, S3 with presigned URLs for uploads, and CodePipeline.",
-      "B. EC2 t3.micro running Nginx and Postgres; auto scaling group of one.",
-      "C. Amplify hosting only; database on a self-managed RDS Multi-AZ M5.",
-      "D. Lightsail container instances."
+      "A. CloudFront + S3 for the SPA, Cognito user pools for auth, API Gateway HTTP API to Lambda, Aurora Serverless v2 with a minimum of 0.5 ACU so the database scales down to near-idle cost during off-peak, S3 with presigned URLs for uploads, and CodePipeline.",
+      "B. CloudFront + S3 for the SPA, Cognito for auth, API Gateway HTTP API to Lambda, Aurora Serverless v2 with a min ACU of 0 for true scale-to-zero, S3 presigned URLs, and CodePipeline.",
+      "C. Amplify hosting only; database on a self-managed RDS Multi-AZ db.m5.large provisioned instance.",
+      "D. EC2 t3.micro running Nginx and Postgres in a single-instance Auto Scaling group with no managed database."
     ],
     "answer": 0,
-    "explanation": "Aurora Serverless v2 supports scaling to 0 ACUs (auto-pause), and the rest is the canonical serverless web stack. EC2 single instance is not serverless (B). Self-managed RDS isn't scale-to-zero (C). Lightsail is fixed-instance pricing (D).",
+    "explanation": "Aurora Serverless v2 scales down to a minimum of 0.5 ACU (not zero); true scale-to-zero with auto-pause was only available in Aurora Serverless v1, which is deprecated. At 0.5 ACU the database cost is still very low during idle periods, making it the most cost-effective fully managed Postgres option for intermittent workloads. Option B is wrong because Aurora Serverless v2 does not support 0 ACU or scale-to-zero. A self-managed RDS Multi-AZ M5 instance runs 24/7 at fixed cost regardless of load (C). A single EC2 instance with no managed database is neither serverless nor highly available (D).",
     "domain": "Design for New Solutions"
   },
   {

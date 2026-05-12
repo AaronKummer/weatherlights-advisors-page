@@ -14,15 +14,15 @@
   },
   {
     "id": 2,
-    "question": "A workload spans three Availability Zones inside a /20 VPC. The architect needs at least 2,000 usable IPs per private subnet, redundant NAT egress, and room to add a fourth AZ later. What CIDR layout best satisfies the requirements?",
+    "question": "A workload spans three Availability Zones inside a /16 VPC. The architect needs at least 2,000 usable IPs per private subnet, redundant NAT egress, and room to add a fourth AZ later. What CIDR layout best satisfies the requirements?",
     "options": [
       "A. Four /23 private subnets and four /28 public subnets",
-      "B. Three /21 subnets carved from the /20 with no growth headroom",
+      "B. Three /21 subnets carved from the /16 with no growth headroom",
       "C. Four /21 private subnets and four /24 public subnets, one set per AZ",
-      "D. One shared /20 subnet across all AZs to maximize address density"
+      "D. One shared /16 subnet across all AZs to maximize address density"
     ],
     "answer": 2,
-    "explanation": "A /21 yields 2,043 usable IPs (after AWS reserves five), fits four AZs into a /20 only if you split the public layer into smaller /24s, which provide 251 usable IPs each — sufficient for NAT Gateways and ELBs. /23 subnets fall short of the 2,000-IP requirement. A subnet cannot span AZs, so option D is invalid. Option B leaves no fourth-AZ room and oversubscribes public space.",
+    "explanation": "A /16 VPC provides 65,536 IPs. A /21 gives 2,048 addresses (2,043 usable after AWS reserves five per subnet), meeting the 2,000-IP requirement. Four /21 private subnets consume 4 x 2,048 = 8,192 IPs, and four /24 public subnets consume 4 x 256 = 1,024 IPs, totaling 9,216 IPs -- well within the 65,536 available. The /24 public subnets provide 251 usable IPs each, sufficient for NAT Gateways and ELBs. Option A fails because /23 subnets yield only 507 usable IPs, far short of the 2,000-IP requirement. Option B provisions only three AZs with no room for a fourth. Option D is invalid because a single subnet cannot span multiple AZs.",
     "domain": "Network Design"
   },
   {
@@ -203,8 +203,8 @@
       "C. Configure TCP keepalives on the client/server below the NLB's 350-second flow timeout",
       "D. Switch to ALB which has configurable idle timeout"
     ],
-    "answer": 2,
-    "explanation": "NLB silently expires idle TCP flows after 350 seconds; the only way to keep them alive is application or kernel TCP keepalives below that threshold. NLB idle timeouts are not adjustable on the listener. Cross-zone is unrelated to idle handling. ALB only helps for HTTP, not raw TCP.",
+    "answer": 0,
+    "explanation": "Since 2023, NLB TCP idle timeout is configurable between 60 and 6000 seconds (default 350). Setting it to 600 seconds accommodates the 8-minute (480-second) idle gap and is a pure infrastructure change with no application modifications. TCP keepalives (option C) also work but require application-level or OS-level configuration changes on both clients and servers, making them operationally heavier. Cross-zone load balancing is unrelated to idle flow handling. ALB supports only HTTP/HTTPS, not raw TCP.",
     "domain": "Network Design"
   },
   {

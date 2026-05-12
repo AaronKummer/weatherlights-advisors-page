@@ -261,15 +261,15 @@
   },
   {
     "id": 21,
-    "question": "A team enabled GuardDuty Foundational Findings and wants to add Lambda Protection and S3 Protection. They need confidence that previously missed S3 exfiltration patterns are detected from this point forward. Which statement most accurately captures the behavior?",
+    "question": "A security team has enabled GuardDuty S3 Protection across a multi-account Organization via the delegated administrator. An engineer asks whether S3 data event logging must be separately enabled and paid for in each account's CloudTrail trails for GuardDuty S3 Protection to function. Which statement is correct?",
     "options": [
-      "A. Enabling S3 Protection retroactively analyses the prior 90 days of CloudTrail data events for findings.",
-      "B. S3 Protection requires enabling CloudTrail S3 data events; without them, S3 access patterns are invisible to GuardDuty. Lambda Protection inspects function invocation telemetry without enabling separate CloudTrail data events.",
-      "C. S3 Protection automatically enables S3 data events on every bucket and bills CloudTrail accordingly.",
-      "D. Lambda Protection mirrors VPC traffic from Lambda functions for inspection."
+      "A. GuardDuty S3 Protection independently accesses CloudTrail S3 data events (such as GetObject, PutObject, and DeleteObject) as a service-linked data source; the customer does not need to enable or pay for S3 data event logging in their own CloudTrail trails.",
+      "B. GuardDuty S3 Protection requires customers to enable CloudTrail S3 data events in at least one trail per account before any S3-related findings can be generated.",
+      "C. GuardDuty S3 Protection monitors S3 activity exclusively through VPC Flow Logs, not through CloudTrail data events.",
+      "D. GuardDuty S3 Protection only analyses S3 server access logs and does not use CloudTrail data events at all."
     ],
-    "answer": 1,
-    "explanation": "GuardDuty S3 Protection consumes CloudTrail S3 data events as one of its primary inputs — those events are needed in CloudTrail. Lambda Protection ingests function-level telemetry from the Lambda service directly. Detection is forward-looking, not retroactive. GuardDuty does not auto-enable bucket-wide CloudTrail data events. Lambda traffic isn't mirrored.",
+    "answer": 0,
+    "explanation": "When GuardDuty S3 Protection is enabled, GuardDuty independently accesses CloudTrail S3 data events as a service-linked data source at no additional CloudTrail cost to the customer. The customer does not need to configure S3 data event logging in their own trails. GuardDuty uses these events to detect anomalous S3 access patterns such as requests from unusual geolocations, API calls that deviate from a baseline, or attempts to disable bucket logging. VPC Flow Logs and S3 server access logs are not the data sources for GuardDuty S3 Protection findings.",
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -300,15 +300,15 @@
   },
   {
     "id": 24,
-    "question": "An engineer needs to retain detailed CloudTrail data events for S3 only for buckets prefixed 'phi-' and only when the request originated outside the company's AWS Organization, to control costs. Which approach is correct?",
+    "question": "A healthcare company stores PHI in S3 buckets whose names all begin with 'phi-'. The security team wants to log CloudTrail S3 data events only for those buckets and only for write operations (PutObject, DeleteObject) to control costs. Which approach is correct?",
     "options": [
-      "A. Create a CloudTrail trail with advanced event selectors specifying resources.ARN starts with arn:aws:s3:::phi- and a not-equals condition on aws:PrincipalOrgID.",
-      "B. CloudTrail data event selectors do not support resource ARN prefix matching; you must list every bucket explicitly.",
-      "C. Enable data events for all buckets and use lifecycle to expire all but the desired logs.",
-      "D. Use an EventBridge rule on S3 events instead of CloudTrail data events."
+      "A. Create a trail with advanced event selectors using a resources.ARN StartsWith condition of arn:aws:s3:::phi- combined with resources.type equals AWS::S3::Object and readOnly equals false.",
+      "B. Advanced event selectors do not support ARN prefix matching; you must list every phi- bucket ARN individually.",
+      "C. Use basic event selectors and specify each bucket; filter out read events using a CloudWatch Logs subscription filter after ingestion.",
+      "D. Enable data events for all S3 buckets and rely on S3 lifecycle rules to delete unwanted log entries."
     ],
     "answer": 0,
-    "explanation": "Advanced event selectors support StartsWith/NotStartsWith on resources.ARN and conditions on contextual fields. While aws:PrincipalOrgID itself is not a CloudTrail field selector, you can include the equivalent vpcEndpoint or sourceIPAddress; modern CloudTrail advanced selectors do support filtering on userIdentity.principalOrgID via condition. EventBridge S3 events don't include the same governance metadata. Listing all buckets is operational debt. Expiry-only wastes money.",
+    "explanation": "CloudTrail advanced event selectors support the StartsWith operator on the resources.ARN field, allowing prefix-based matching such as arn:aws:s3:::phi- to capture events for all buckets beginning with that prefix. The readOnly field can be set to false to log only write operations (PutObject, DeleteObject, etc.), significantly reducing volume and cost. Basic event selectors do not support ARN prefix matching or readOnly filtering, so they would require listing each bucket individually. Filtering after ingestion or logging all buckets wastes money. Note that advanced event selectors support a limited set of fields: eventCategory, eventName, eventSource, eventType, readOnly, resources.type, and resources.ARN. They do not support filtering by IAM condition keys like aws:PrincipalOrgID.",
     "domain": "Security Logging and Monitoring"
   },
   {

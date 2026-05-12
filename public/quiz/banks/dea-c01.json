@@ -536,13 +536,13 @@
     "id": 42,
     "question": "A team uses AWS Glue Schema Registry with the MSK Avro producer. A new field is added with a default value. They want consumers to keep working without redeployment. Which compatibility mode should they use?",
     "options": [
-      "A. BACKWARD compatibility, which allows new schemas to add optional fields with defaults that older readers can ignore.",
+      "A. BACKWARD compatibility, which ensures new readers can process data written by older schemas.",
       "B. NONE compatibility, since defaults make schemas trivially compatible.",
-      "C. FORWARD compatibility, which is meant for older writers and newer readers.",
+      "C. FORWARD compatibility, which allows new schemas to add optional fields with defaults that older readers can ignore.",
       "D. FULL compatibility, which prevents adding any fields."
     ],
-    "answer": 0,
-    "explanation": "BACKWARD compatibility ensures new schemas can be read by old readers, which is exactly the case when adding optional fields with defaults. NONE disables checks. FORWARD is for the inverse direction. FULL is the strictest but does allow some additive changes; BACKWARD most directly matches the scenario.",
+    "answer": 2,
+    "explanation": "FORWARD compatibility ensures old consumers (readers using the previous schema) can still read data produced with the new schema. Adding a field with a default value is the textbook FORWARD-compatible change because old readers simply ignore the unknown field while the default fills in the gap. BACKWARD compatibility is the inverse: it ensures new readers can process old data. NONE disables all checks. FULL requires both directions but is not the most direct match for this scenario.",
     "domain": "Data Store Management"
   },
   {
