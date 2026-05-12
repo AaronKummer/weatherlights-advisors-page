@@ -375,6 +375,23 @@
             if (!res.ok) res = await fetch(bank + '.json');
             if (!res.ok) throw new Error('Bank not found: ' + bank);
             allQuestions = await res.json();
+            // Normalize: new banks use array options + numeric answer;
+            // legacy banks use object options + array-of-letter answer.
+            allQuestions = allQuestions.map(function (q) {
+                if (Array.isArray(q.options)) {
+                    var obj = {};
+                    q.options.forEach(function (v, i) {
+                        var letter = String.fromCharCode(65 + i);
+                        obj[letter] = v;
+                    });
+                    q.options = obj;
+                }
+                if (!Array.isArray(q.answer)) {
+                    var letter = String.fromCharCode(65 + q.answer);
+                    q.answer = [letter];
+                }
+                return q;
+            });
         } catch (e) {
             document.getElementById('quiz-container').innerHTML =
                 '<p style="color:var(--error);font-family:var(--mono)">Failed to load questions for: ' + bank + '</p>';
