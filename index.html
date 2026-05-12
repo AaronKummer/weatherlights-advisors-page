@@ -11,6 +11,20 @@
 
 <body>
   <div id="app"></div>
+  <script>
+  // Guard: if this SPA loaded inside an iframe for a tool path
+  // (Amplify's SPA rewrite serving index.html instead of the static file),
+  // don't mount Vue — it causes infinite nesting.
+  if (window.self !== window.top) {
+    var tp = ['/quiz/','/wargame/','/flashcards/','/lessons/','/training-ground/'];
+    for (var i = 0; i < tp.length; i++) {
+      if (location.pathname.indexOf(tp[i]) === 0) {
+        document.getElementById('app').remove();
+        throw new Error('Blocked SPA in iframe');
+      }
+    }
+  }
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body>
 

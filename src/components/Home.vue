@@ -272,7 +272,8 @@
               </svg>
             </button>
           </div>
-          <iframe :src="embedSrc" class="embed-frame" :title="embedTitle"></iframe>
+          <iframe v-if="embedSrcdoc" :srcdoc="embedSrcdoc" class="embed-frame" :title="embedTitle"></iframe>
+          <iframe v-else :src="embedSrc" class="embed-frame" :title="embedTitle"></iframe>
         </div>
       </section>
 
@@ -926,7 +927,10 @@ export default {
       // Embedded-tool modal (quiz / wargame / lessons / flashcards iframe)
       embedOpen: false,
       embedSrc: "",
+      embedSrcdoc: "",
       embedTitle: "",
+      embedToolPath: "",
+      embedToolExtra: {},
       // Active portal tab (post-login navigation)
       activeTab: "overview",
       // "View as" — admin can preview the site as a client or an AWS rep.
@@ -1193,14 +1197,51 @@ export default {
       const params = new URLSearchParams({ theme, brand: "WeatherLight Advisors", ...extra });
       return `${path}?${params.toString()}`;
     },
-    openTool(path, title, extra = {}) {
-      this.embedSrc = this.toolUrl(path, extra);
+    async openTool(path, title, extra = {}) {
+      // Load tool HTML at build time via raw imports to avoid Amplify's
+      // SPA rewrite serving the Vue app instead of the static tool page.
+      const toolLoaders = {
+        '/quiz/index.html': () => import('../../public/quiz/index.html?raw'),
+        '/wargame/index.html': () => import('../../public/wargame/index.html?raw'),
+        '/flashcards/index.html': () => import('../../public/flashcards/index.html?raw'),
+        '/lessons/index.html': () => import('../../public/lessons/index.html?raw'),
+        '/training-ground/index.html': () => import('../../public/training-ground/index.html?raw'),
+      };
+      this.embedToolPath = path;
+      this.embedToolExtra = extra;
+      const loader = toolLoaders[path];
+      if (loader) {
+        try {
+          const mod = await loader();
+          this.embedSrcdoc = this.buildSrcdoc(mod.default, path, extra);
+          this.embedSrc = "";
+        } catch (_) {
+          this.embedSrc = this.toolUrl(path, extra);
+          this.embedSrcdoc = "";
+        }
+      } else {
+        this.embedSrc = this.toolUrl(path, extra);
+        this.embedSrcdoc = "";
+      }
       this.embedTitle = title;
       this.embedOpen = true;
+    },
+    buildSrcdoc(html, path, extra) {
+      const fullUrl = this.toolUrl(path, extra);
+      // Inject history.replaceState so the tool's own scripts read
+      // window.location.pathname / .search as if loaded normally.
+      const tag = "script";
+      const code = 'try{history.replaceState(null,"","' +
+        fullUrl.replace(/"/g, '\\"') + '")}catch(e){}';
+      const inject = "<" + tag + ">" + code + "</" + tag + ">";
+      return html.replace(/<head([^>]*)>/, "<head$1>" + inject);
     },
     closeTool() {
       this.embedOpen = false;
       this.embedSrc = "";
+      this.embedSrcdoc = "";
+      this.embedToolPath = "";
+      this.embedToolExtra = {};
       // Refresh portal stats since the user may have made progress in the iframe.
       this.computeStats();
     },
@@ -1378,8 +1419,10 @@ export default {
       this.themeOverride = isDark ? "light" : "dark";
       localStorage.setItem("wl-theme", this.themeOverride);
       this.applyThemeClass();
-      // If a tool is currently open, reload its iframe with the new theme.
-      if (this.embedOpen && this.embedSrc) {
+      // If a tool is currently open, reload it with the new theme.
+      if (this.embedOpen && this.embedToolPath) {
+        this.openTool(this.embedToolPath, this.embedTitle, this.embedToolExtra);
+      } else if (this.embedOpen && this.embedSrc) {
         try {
           const url = new URL(this.embedSrc, window.location.origin);
           url.searchParams.set("theme", this.themeOverride === "dark" ? "sapphire" : "weatherlight");
