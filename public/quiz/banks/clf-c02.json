@@ -818,7 +818,7 @@
   },
   {
     "id": 44,
-    "question": "A government department needs an encrypted, software-based connection from headquarters to a VPC in minutes without provisioning physical circuits. Which AWS service BEST fits?",
+    "question": "A government department needs an encrypted IPsec connection from its headquarters network to a VPC, ready in minutes, without provisioning any physical circuits. Which AWS service BEST fits?",
     "options": [
       "A. AWS Site-to-Site VPN",
       "B. AWS Direct Connect dedicated connection",

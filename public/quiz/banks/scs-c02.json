@@ -10,6 +10,12 @@
     ],
     "answer": 1,
     "explanation": "EventBridge fires within seconds of the finding being generated, and a Step Functions workflow can deterministically chain SG swap, snapshot, and an aws:TokenIssueTime-based deny statement that invalidates already-issued STS credentials for the role. The cron poll in A introduces minutes of dwell time. GuardDuty Malware Protection scans for malware but does not auto-quarantine for credential exfiltration findings. SNS-only is reactive and human-paced.",
+    "optionExplanations": [
+      "Polling on a five-minute schedule adds dwell time during which the attacker can continue to use the exfiltrated credentials, and Security Hub is not the right control plane for synchronous containment.",
+      "Correct — EventBridge matches the specific GuardDuty finding type within seconds, and the Step Functions workflow chains ENI isolation, EBS snapshot, and an aws:TokenIssueTime deny statement that invalidates already-issued role credentials.",
+      "GuardDuty Malware Protection scans EBS volumes for malware; it does not auto-isolate instances for credential exfiltration findings, and queuing snapshots until the next maintenance window misses the urgency.",
+      "SNS plus a human-run runbook is reactive and human-paced — it cannot meet the stated requirement of action before a human responds."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -23,6 +29,12 @@
     ],
     "answer": 0,
     "explanation": "Detective's purpose-built entity graph lets you select the IAM user, view its baselined API call profile and geolocation, and pivot to the resources it touched — the fastest scoping path. Flow Logs alone don't tie packets to a key. CloudTrail Lake queries are powerful but require manual joins. Access Analyzer surfaces external sharing, not session anomalies.",
+    "optionExplanations": [
+      "Correct — Detective builds a behaviour graph keyed on entities (IAM user, role, instance) with baselines for API volume and geolocation; pivoting to Resource Interaction enumerates the resources the user touched during the suspect window.",
+      "VPC Flow Logs record packet metadata at the ENI level; they do not associate traffic with an IAM access key, so grepping them cannot answer which resources were touched by the compromised credential.",
+      "CloudTrail Lake can answer this with effort, but it requires hand-built SQL joins and a QuickSight export step — Detective already presents this graph natively.",
+      "Access Analyzer external-access findings describe which resources are shareable with outside principals, not the actual API behaviour of a specific user during an incident."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -36,6 +48,12 @@
     ],
     "answer": 1,
     "explanation": "Macie classifies data after it lands, so to prevent ingress you need a synchronous gate. An API Gateway-fronted Lambda that applies Macie-style Custom Data Identifiers (or pattern matching) before re-emitting the object accomplishes inline blocking; the bucket policy then refuses any direct uploads that bypass the gate. Macie automation scans post-write. BPA blocks public exposure, not the upload itself. Tag-based SCPs don't inspect payload content.",
+    "optionExplanations": [
+      "Macie classifies objects after they are written; even in automated mode the scan happens post-PutObject, which fails the requirement to block at write time.",
+      "Correct — a synchronous gate (API Gateway → Lambda) applies regex- or CDI-style inspection inline and re-emits the object, while the bucket policy refuses any direct PutObject that lacks the gate's classification header.",
+      "Block Public Access prevents public exposure, and Object Lock prevents deletion of already-written objects — neither inspects the payload of an incoming PutObject for sensitive data.",
+      "An SCP can block based on principal attributes such as training tags, but it cannot inspect the body of an S3 upload and so cannot enforce content-based controls."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -49,6 +67,12 @@
     ],
     "answer": 1,
     "explanation": "Traffic Mirroring duplicates packet payloads at the ENI level to a target without affecting the source instance — exactly what's needed for stealthy capture. Flow Logs only record metadata, not payloads. EBS snapshots give disk state, not live network. Detective shows aggregate metrics but not packet content.",
+    "optionExplanations": [
+      "Flow Logs (even with TCP flags) record packet metadata only — no payload — so they cannot reconstruct the network stream needed for forensic analysis of attacker tooling.",
+      "Correct — Traffic Mirroring copies full packets from the suspect ENI to a forensic target (an NLB fronting a Suricata sensor in a separate VPC) with no visible change on the source, ideal for stealthy capture.",
+      "An EBS snapshot captures disk state at a point in time, not live network traffic; you cannot replay packets with tcpdump from a snapshot.",
+      "Detective surfaces aggregate behavioural metrics; the network tab shows totals and trends, not packet content that you could analyse with a Suricata or Zeek pipeline."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -62,6 +86,12 @@
     ],
     "answer": 1,
     "explanation": "GuardDuty suppression rules archive matching findings centrally — they remain searchable for audit, but stop notifying. Disabling GuardDuty in dev removes all visibility, including high-severity finds. Lowering frequency does not suppress noise. Security Hub automation rules can update findings but route management is better at the source — and a Hub rule that hides them removes them from the principal investigative pane while suppression preserves the archived record.",
+    "optionExplanations": [
+      "Disabling GuardDuty in dev removes detection for every finding type — including high-severity ones the team would want to see — and is far broader than the stated need.",
+      "Correct — a suppression rule from the delegated administrator archives matching findings (so they remain queryable for audit) without flowing to dashboards or notification channels.",
+      "Publishing frequency only controls how often findings are exported; it does not suppress low-severity findings, and the Hub insight filter is per-view rather than account-wide policy.",
+      "A blanket Security Hub rule that drops all LOW-severity findings from dev removes findings beyond just the noisy port-probe type, hiding legitimate low-severity findings of other kinds."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -75,6 +105,12 @@
     ],
     "answer": 2,
     "explanation": "EventBridge can match the management event in near-real-time and a Step Functions / SSM Automation document can correlate frequency and execute containment (detach instance profile, deny-all NACL on the ENI). CloudWatch metric filter alarms email humans but don't auto-contain. GuardDuty Runtime Monitoring focuses on host behavior, not CloudTrail policy abuse. CloudTrail Lake scheduled queries cannot run every 30 seconds and add latency.",
+    "optionExplanations": [
+      "A metric-filter alarm with an SNS email is detective only; the playbook requires automated isolation, not a human-paged notification.",
+      "GuardDuty Runtime Monitoring inspects host-level eBPF signals (process, file, network) on instances; it does not detect control-plane CloudTrail API patterns such as ScheduleKeyDeletion bursts.",
+      "Correct — an EventBridge rule on the management event with a Step Functions or SSM Automation document can correlate frequency and immediately detach the instance profile and apply a deny-all NACL.",
+      "CloudTrail Lake scheduled queries run at minutes-to-hours cadence, not every 30 seconds, and an S3 export is not an automated containment path."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -88,6 +124,12 @@
     ],
     "answer": 2,
     "explanation": "CloudTrail Lake stores events in an immutable, queryable format with up to seven years' retention and runs SQL across all Regions in one place — purpose-built for IR queries. Athena works but you must build partitions and write joins. Detective is excellent for graph pivoting but caps at 1 year and aggregates rather than enumerates every call. OpenSearch ingestion is heavy and slow.",
+    "optionExplanations": [
+      "Athena works but requires setting up partition projection, the Glue schema, and the join syntax — slower to operationalise than Lake for an active investigation.",
+      "Detective excels at graph pivots and shows API call volume profiles, but it does not enumerate every individual API call across 90 days — it aggregates and visualises.",
+      "Correct — CloudTrail Lake stores events in an immutable, SQL-queryable event data store across Regions, with the sessionIssuer.arn field letting you scope to assumed-role sessions for the compromised role.",
+      "Pumping the trail into OpenSearch via Logstash is heavyweight (cluster ops, mapping management, cost) and does not finish faster than a Lake query for a one-off IR."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -101,6 +143,12 @@
     ],
     "answer": 0,
     "explanation": "Inspector v2 includes a network reachability analysis that traces routes through SGs, NACLs, route tables, IGWs, and load balancers to determine if the vulnerable port is genuinely reachable from the internet — directly answering the exploitability question. Trusted Advisor flags coarse misconfigurations. Macie inspects data, not exploitability. Config records compliance but not path reachability.",
+    "optionExplanations": [
+      "Correct — Inspector v2's network reachability evaluates SGs, NACLs, route tables, IGWs, and load balancers to determine whether the vulnerable port is reachable from the internet, giving direct exploitability evidence.",
+      "Trusted Advisor flags coarse misconfigurations (open SGs, missing MFA on root); it does not perform path analysis for specific CVE ports.",
+      "Macie inspects S3 object content for sensitive data; it is irrelevant to evaluating whether a CVE on an EC2 instance is network-reachable.",
+      "Config records configuration history of whether a public IP exists but does not analyse end-to-end network reachability to the vulnerable port."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -114,6 +162,12 @@
     ],
     "answer": 0,
     "explanation": "Security Hub automation rules are declarative, evaluated as findings are received, and can mutate severity, workflow status, and notes based on account or resource tag matches — perfect for business-context prioritization. The Lambda approach reinvents this. Detector frequency only adjusts cadence, not severity. Archives don't influence prioritisation.",
+    "optionExplanations": [
+      "Correct — Security Hub automation rules are evaluated declaratively as findings are received; they can update severity, workflow status, and notes based on account ID or resource tags, then EventBridge routes by severity.",
+      "Polling-plus-Lambda reinvents what automation rules already do declaratively and adds operational drift (DynamoDB schema, race conditions, retries).",
+      "Publishing frequency controls cadence (how often GuardDuty exports), not severity or routing; it cannot encode business context.",
+      "EventBridge archive and replay is for replaying past events to rebuild state; it does not influence prioritisation or routing of new findings."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -127,6 +181,12 @@
     ],
     "answer": 3,
     "explanation": "S3 GetObject calls are data events; if not enabled, CloudTrail did not record them. Server access logs are also forward-looking. Macie does not retroactively log exfil — it scans content. Storage Lens reports aggregate trends, not per-principal-per-object access. Honest IR practice is to acknowledge the gap, scope new logging, and rely on circumstantial signals (Flow Logs, billing) for the past.",
+    "optionExplanations": [
+      "Server access logs are forward-looking — enabling them now does not produce records for the past 72 hours.",
+      "Macie scans object content for sensitive data; it does not log who downloaded what and cannot retroactively reconstruct GetObject activity.",
+      "Storage Lens reports aggregate metrics (total bytes, request counts) by bucket or access point; it does not attribute requests to a principal or object.",
+      "Correct — GetObject is an S3 data event, and if data event logging was off, CloudTrail did not record it. Honest IR practice is to admit the gap, enable data events scoped to the bucket and Access Point ARNs going forward, and rely on circumstantial signals (Flow Logs, billing trends) for the past."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -140,6 +200,12 @@
     ],
     "answer": 1,
     "explanation": "Secrets Manager natively integrates with RDS rotation — calling RotateSecret invokes the configured rotation Lambda which generates the new credential, updates the database, and tags the new version AWSCURRENT. Apps that fetch with a TTL pick up the new secret on next call. Nightly Lambda is brittle and not event-driven. Parameter Store does not auto-rotate RDS passwords. Re-creating the DB is heavyweight and breaks RTO.",
+    "optionExplanations": [
+      "A nightly UpdateSecret-plus-restart is brittle (no AWSPENDING/AWSCURRENT staging), not event-triggered, and a database restart for every rotation is unacceptably disruptive.",
+      "Correct — RotateSecret invokes the configured rotation Lambda, which generates the new credential, updates RDS, and stages versions with AWSPENDING/AWSCURRENT labels. Applications using cached fetches with a short TTL pick up the new secret automatically, and CloudTrail records every step.",
+      "Parameter Store SecureString uses KMS for encryption but does not provide rotation against RDS — there is no AWS-managed rotation template for SSM SecureString.",
+      "Snapshot-restore with a new password is heavyweight, changes the instance endpoint, and breaks RTO/RPO objectives."
+    ],
     "domain": "Threat Detection and Incident Response"
   },
   {
@@ -153,6 +219,12 @@
     ],
     "answer": 1,
     "explanation": "CloudTrail Lake offers up to 7-year (2555-day) retention, immutable storage, integrated SQL, and log-file integrity. The S3+Athena combination works but requires additional partition projection and re-glueing. CloudWatch Logs storage cost at 7 years is uneconomic and querying TB-scale Logs Insights is slow. OpenSearch demands index management and has higher TCO.",
+    "optionExplanations": [
+      "S3 plus Glacier Deep Archive is cheap, but querying archived data requires restore time and Athena needs partition projection / Glue maintenance to stay queryable — adding friction to ad-hoc analysis.",
+      "Correct — CloudTrail Lake offers up to 2555-day retention with immutable storage, integrated SQL via the Lake editor, and log-file integrity, requiring no Athena/Glue setup.",
+      "CloudWatch Logs at seven years' retention is expensive, and Logs Insights queries against multi-terabyte log groups become slow and chunked.",
+      "OpenSearch with ILM works but requires cluster sizing, mapping management, and operational cost that exceed a Lake event data store for this requirement."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -166,6 +238,12 @@
     ],
     "answer": 0,
     "explanation": "An organization trail captures management events for every member account into a single S3 bucket and the matching events propagate to EventBridge in any chosen account; pattern-matching on the AssumeRole call to the management account's root role lets you alert organization-wide. A management-account-only metric filter misses calls logged in the source account. SCPs cannot deny actions on the management account, and you'd still want to detect attempts. The Config rule is unrelated.",
+    "optionExplanations": [
+      "Correct — an organization trail records management events in every member account, EventBridge propagates the matching AssumeRole event to a central security bus, and a pattern rule alerts via SNS regardless of where the call originated.",
+      "AssumeRole is recorded in the calling account, not only the target account, so a metric filter in the management account misses many of the calls the team wants to see.",
+      "SCPs do not apply to the management account, and even if they did, denying assume does not address the requirement to detect attempts; you would still want telemetry.",
+      "The iam-root-access-key-check Config rule detects whether root access keys exist, which is unrelated to AssumeRole telemetry."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -179,6 +257,12 @@
     ],
     "answer": 1,
     "explanation": "Flow Logs can be scoped to VPC, subnet, or ENI; the ENI scope is the most specific. A custom format with action and log-status fields shows ACCEPT/REJECT and any NODATA/SKIPDATA conditions. Traffic Mirroring captures payload, but for accept/reject diagnosis Flow Logs are the appropriate tool. Reachability Analyzer is static-config analysis, not live traffic.",
+    "optionExplanations": [
+      "Subnet-level Flow Logs aggregate every ENI in the subnet; for diagnosing a single ENI, the more specific ENI scope removes noise from other workloads.",
+      "Correct — ENI-level Flow Logs are the most specific scope. The action field shows ACCEPT/REJECT, log-status surfaces NODATA/SKIPDATA, and traffic-path indicates the egress path (IGW, gateway endpoint, peering, etc.), with CloudWatch Logs live tail for real-time monitoring.",
+      "Traffic Mirroring copies packet payloads; you can infer drops but it is much heavier than Flow Logs and is overkill when accept/reject metadata answers the question.",
+      "Reachability Analyzer is a static configuration analyser — it does not observe live traffic, so it cannot confirm whether packets are currently being dropped."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -192,6 +276,12 @@
     ],
     "answer": 0,
     "explanation": "Config can deliver configuration snapshots and history to a central S3 bucket, where Object Lock in compliance mode (with retention) provides write-once-read-many immutability. Audit Manager pulls from Config, CloudTrail, and Security Hub to assemble evidence frameworks. Aggregator-only setups don't store immutable history. Security Hub doesn't store full Config item history. Console scraping is unsupportable.",
+    "optionExplanations": [
+      "Correct — Config delivers configuration snapshots and change history to a central S3 bucket; Object Lock in compliance mode provides WORM immutability, and Audit Manager assembles framework-shaped evidence from Config plus CloudTrail and Security Hub.",
+      "Aggregator-only setups store current compliance state in the aggregator, not an immutable history of every configuration item over time.",
+      "Security Hub stores conformance pack scoring (pass/fail) but does not retain the underlying Config item history.",
+      "Console scraping with Selenium is unsupported, brittle (DOM changes break it), and has no chain-of-custody guarantees auditors would accept."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -205,6 +295,12 @@
     ],
     "answer": 0,
     "explanation": "Route 53 Resolver query logging records every DNS query made through the VPC resolver, including the queried name, type, and source ENI. A CloudWatch metric filter on the FQDN gives precise detection. Flow Logs don't capture DNS query content. Network Firewall works if traffic egresses through it but is heavier for pure DNS detection. GuardDuty DNS findings rely on Amazon's threat list — a custom domain not on that list will be missed.",
+    "optionExplanations": [
+      "Correct — Resolver query logging records the queried name, type, and source ENI for every VPC DNS lookup; a CloudWatch metric filter on the FQDN provides precise detection with no custom code.",
+      "Flow Logs record packet metadata (5-tuple) but not DNS query payloads, so they cannot identify specific queried domain names.",
+      "Network Firewall with Suricata DNS rules can detect this but requires routing all egress through a central inspection VPC — more architecture than needed for pure DNS visibility.",
+      "GuardDuty DNS findings rely on Amazon's threat intelligence; a custom or freshly-registered evil.example domain not yet on the list would be missed."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -218,6 +314,12 @@
     ],
     "answer": 1,
     "explanation": "When log file validation is enabled, CloudTrail writes hourly digest files signed by an Amazon private key. The aws cloudtrail validate-logs command verifies the digest chain and detects any altered or deleted log files — this is the documented integrity proof. ETag comparison only verifies upload, not subsequent modification. SSE-KMS encrypts but doesn't prevent overwrite by the writer. Retroactive Object Lock wouldn't help past data.",
+    "optionExplanations": [
+      "S3 ETag changes if an object is replaced but the bucket writer can produce a new ETag, and there is no signed manifest from CloudTrail in the S3 prefix the auditor could trust.",
+      "Correct — CloudTrail writes hourly digest files signed by an Amazon private key; aws cloudtrail validate-logs walks the digest chain and detects any altered or missing log file, which is the documented integrity proof.",
+      "Object Lock applied retroactively does not help — it cannot prove that already-delivered objects were untouched before the lock began.",
+      "SSE-KMS encrypts data at rest but a writer with PutObject can still replace the ciphertext; encryption is not an integrity proof."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -231,6 +333,12 @@
     ],
     "answer": 0,
     "explanation": "WAF supports logging directly to Kinesis Data Firehose, CloudWatch Logs, or S3. For 13-month retention and ad hoc analysis, Firehose to S3 with Athena is cost-effective and durable, including matched rule, headers, and the first 8 KB of body when configured. Sampled requests are limited (~5 minutes). CloudWatch Logs at 13 months is feasible but pricier and retention granularity differs. ALB logs do not include WAF rule match details.",
+    "optionExplanations": [
+      "Correct — WAF supports logging to Firehose-to-S3, and with Glue-catalogued partitions Athena queries are cheap and ad-hoc. S3 lifecycle handles the 13-month retention, and the matched rule, headers, and first 8 KB of body are included when configured.",
+      "Sampled requests are a console feature limited to the past five minutes and capped sample — useless for 13-month forensic reconstruction.",
+      "CloudWatch Logs can stream WAF logs and supports custom retention, but at 13 months of dense WAF traffic the storage cost dominates and Logs Insights becomes slow on large volumes.",
+      "ALB access logs record request metadata but not the WAF rule that matched or the request body — they cannot reconstruct WAF decisions."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -244,6 +352,12 @@
     ],
     "answer": 0,
     "explanation": "Identity Center sign-in surfaces appear as sso:Federate or sts:AssumeRoleWithSAML in CloudTrail; querying for the latest event per principalId over 90 days yields stale users. The iam-user-unused-credentials-check rule covers IAM users, not Identity Center users. Access Advisor gives service last-used per role, not user sign-in. Trusted Advisor lists IAM users and is not aware of Identity Center principals.",
+    "optionExplanations": [
+      "Correct — Identity Center sign-ins surface as sso:Federate and sts:AssumeRoleWithSAML in CloudTrail; a Lake query for the latest event per principalId over 90 days enumerates stale users.",
+      "iam-user-unused-credentials-check evaluates IAM users (whose credential metadata IAM tracks); Identity Center users are not IAM users and are not in scope of that rule.",
+      "Access Advisor reports services-last-accessed per IAM principal but does not enumerate Identity Center users or their sign-in dates organisation-wide.",
+      "Trusted Advisor's idle IAM user check is limited to IAM users in the account; it has no awareness of Identity Center principals."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -257,6 +371,12 @@
     ],
     "answer": 0,
     "explanation": "The CloudWatch Agent supports hybrid hosts, talks TLS, and an interface VPC endpoint plus Direct Connect/VPN keeps traffic off the public internet. Log group KMS encryption covers at-rest. Tarball SCP is unencrypted by default and lossy. A syslog EC2 layer is unnecessary infrastructure. Storage Gateway is a file/object protocol, not a log pipeline.",
+    "optionExplanations": [
+      "Correct — the CloudWatch Agent is supported on hybrid hosts, transmits over TLS to a PrivateLink interface endpoint (kept off the internet), and the destination log group is encrypted with a customer-managed KMS key.",
+      "Nightly tarball transfer is lossy (delays detection by 24 hours), and SCP without explicit encryption configuration is not auditable as end-to-end encrypted.",
+      "Running a self-managed syslog EC2 fleet adds unnecessary infrastructure to operate and patch when the agent talks to CloudWatch Logs natively.",
+      "Storage Gateway in file mode is for filesystem semantics, not a log-ingestion pipeline; it does not provide near-real-time log streaming for SIEM ingestion."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -270,6 +390,12 @@
     ],
     "answer": 0,
     "explanation": "When GuardDuty S3 Protection is enabled, GuardDuty independently accesses CloudTrail S3 data events as a service-linked data source at no additional CloudTrail cost to the customer. The customer does not need to configure S3 data event logging in their own trails. GuardDuty uses these events to detect anomalous S3 access patterns such as requests from unusual geolocations, API calls that deviate from a baseline, or attempts to disable bucket logging. VPC Flow Logs and S3 server access logs are not the data sources for GuardDuty S3 Protection findings.",
+    "optionExplanations": [
+      "Correct — S3 Protection consumes S3 data events through a service-linked data source independently of the customer's CloudTrail configuration, so no per-account data event logging is required and no CloudTrail data-event charges are incurred for GuardDuty's consumption.",
+      "Customer-managed S3 data events in CloudTrail are not required for GuardDuty S3 Protection to generate findings.",
+      "VPC Flow Logs are not the data source for S3 Protection findings; S3 traffic to the public endpoint does not necessarily traverse a VPC and Flow Logs do not capture S3 API semantics.",
+      "S3 server access logs are not the data source for GuardDuty S3 Protection."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -283,6 +409,12 @@
     ],
     "answer": 0,
     "explanation": "Partner integrations are subscribed per member account; the partner's findings appear in that account's Security Hub. With finding aggregation enabled, they propagate to the delegated administrator's Region. EventBridge forwarding bypasses Security Hub's normalization and dedupe. Partners always submit findings in the originating account. Direct S3 writes don't reach Security Hub.",
+    "optionExplanations": [
+      "Correct — partner integrations are subscribed per account; findings land in the originating account's Security Hub and propagate to the delegated administrator's aggregation Region.",
+      "Forwarding raw EDR events via EventBridge bypasses Security Hub's ASFF normalisation and dedupe — you lose the standardised finding format and the partner integration metadata.",
+      "Partners always publish findings in the account where the workload runs; there is no mechanism for a partner to bypass the originating account.",
+      "Direct S3 writes do not enter Security Hub; the BatchImportFindings API is the entry point for partner findings."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -296,6 +428,12 @@
     ],
     "answer": 2,
     "explanation": "AWS Firewall Manager security group policies operate organization-wide, can audit and remediate non-compliant rules, and support resource exclusion lists by tag — exactly the operational pattern. SCPs can deny but cannot remediate already-existing rules and the condition logic is brittle. The hourly Lambda lacks tag-aware exceptions. Config without remediation is detection-only.",
+    "optionExplanations": [
+      "SCPs filter API actions but do not remediate already-existing non-compliant rules, and the condition syntax for matching port ranges and CIDRs on authorize-security-group-ingress is brittle.",
+      "An hourly indiscriminate revoke breaks approved exceptions and operates only at hourly resolution — both fail the requirement.",
+      "Correct — Firewall Manager security-group policies audit and remediate disallowed rules organisation-wide, with exclusion lists driven by resource tags such as ApprovedException=true.",
+      "restricted-ssh is detection-only without remediation, leaving the work to humans and failing the continuous-remediation requirement."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -309,6 +447,12 @@
     ],
     "answer": 0,
     "explanation": "CloudTrail advanced event selectors support the StartsWith operator on the resources.ARN field, allowing prefix-based matching such as arn:aws:s3:::phi- to capture events for all buckets beginning with that prefix. The readOnly field can be set to false to log only write operations (PutObject, DeleteObject, etc.), significantly reducing volume and cost. Basic event selectors do not support ARN prefix matching or readOnly filtering, so they would require listing each bucket individually. Filtering after ingestion or logging all buckets wastes money. Note that advanced event selectors support a limited set of fields: eventCategory, eventName, eventSource, eventType, readOnly, resources.type, and resources.ARN. They do not support filtering by IAM condition keys like aws:PrincipalOrgID.",
+    "optionExplanations": [
+      "Correct — advanced event selectors support StartsWith on resources.ARN combined with resources.type AWS::S3::Object and readOnly=false to capture only write data events on phi-prefixed buckets.",
+      "Advanced event selectors do support StartsWith on resources.ARN — this answer is factually incorrect.",
+      "Basic event selectors do not support readOnly filtering, so post-ingestion filtering still incurs CloudTrail data event charges for read calls — defeating the cost goal.",
+      "Logging all buckets then deleting unwanted entries still pays for ingestion of every data event, which is the cost the team wants to avoid."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -322,6 +466,12 @@
     ],
     "answer": 0,
     "explanation": "AWS partners with code hosts; when keys leak publicly, AWS's automated scanner attaches the AWSCompromisedKeyQuarantine managed policy (currently v3) which denies high-risk APIs and notifies the customer. Macie scans S3 only. The unused-credentials rule is unrelated. AWS very much does run this scanning, so D is wrong.",
+    "optionExplanations": [
+      "Correct — AWS partners with code hosts (GitHub among them); leaked keys detected by AWS's automated scanner have the AWSCompromisedKeyQuarantineV3 managed policy attached, denying high-risk APIs while the customer is notified.",
+      "Macie scans S3 object content for sensitive data; it does not scan GitHub repositories.",
+      "iam-user-unused-credentials evaluates whether credentials have gone unused; it does not detect leakage.",
+      "AWS does in fact run automated leaked-key detection — this answer is factually wrong."
+    ],
     "domain": "Security Logging and Monitoring"
   },
   {
@@ -335,11 +485,17 @@
     ],
     "answer": 0,
     "explanation": "ALB terminates public TLS using ACM-issued public certs and supports TLS 1.3 plus HSTS via response headers; mTLS between internal services is best handled with ACM Private CA-issued certs distributed to sidecars (Envoy/Linkerd) which natively perform mTLS. NLB passthrough delegates TLS to instances and self-signed certs fail public trust. Lambda@Edge cannot mint certificates. API Gateway HTTP API supports mTLS for ingress but does not solve service-to-service mTLS internally.",
+    "optionExplanations": [
+      "Correct — ALB terminates public TLS with ACM certificates and supports TLS 1.3 plus HSTS response headers; internal service-to-service mTLS uses Private CA-issued certificates distributed to Envoy/Linkerd sidecars in each task.",
+      "TLS passthrough delegates termination to each service, and self-signed certificates fail public trust, breaking HSTS and OCSP stapling at the edge.",
+      "Lambda@Edge cannot mint certificates on the fly — certificate issuance requires a CA and proper enrolment.",
+      "API Gateway HTTP API supports mTLS for ingress to the API, but does not solve service-to-service mTLS for an internal microservice mesh."
+    ],
     "domain": "Infrastructure Security"
   },
   {
     "id": 27,
-    "question": "An engineer must design a centralised egress filter for 30 spoke VPCs, allowing only an allow-list of FQDNs and inspecting TLS SNI without breaking TLS. Which design is best?",
+    "question": "A team must design a centralised egress filter for 30 spoke VPCs, allowing only an allow-list of FQDNs and inspecting TLS SNI without breaking TLS. Which design is best?",
     "options": [
       "A. Transit Gateway with a central inspection VPC running AWS Network Firewall using Suricata stateful rules with TLS SNI inspection and domain allow-list, and Route 53 Resolver DNS Firewall.",
       "B. Each spoke VPC runs its own NAT Gateway and applies SG rules referencing FQDN.",
@@ -348,6 +504,12 @@
     ],
     "answer": 0,
     "explanation": "AWS Network Firewall in a centralized inspection VPC, fed by Transit Gateway, supports stateful Suricata rules that inspect TLS ClientHello SNI for domain allow/deny without MITM, and DNS Firewall complements at the resolver. Per-VPC NAT cannot reference FQDNs. EC2 squid fleets are operational overhead and don't scale as cleanly. CloudFront is ingress, not egress.",
+    "optionExplanations": [
+      "Correct — Transit Gateway plus a central inspection VPC running Network Firewall with Suricata stateful rules inspects TLS ClientHello SNI for domain allow/deny without MITM, and DNS Firewall complements at the resolver layer.",
+      "Security group rules cannot reference FQDNs (only CIDRs, SG IDs, or prefix lists), and per-VPC NAT scales poorly across 30 spokes.",
+      "A squid proxy fleet behind an NLB in each VPC introduces operational overhead, duplicates configuration, and does not centralise inspection.",
+      "CloudFront is an ingress CDN and does not filter outbound traffic from VPCs."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -361,6 +523,12 @@
     ],
     "answer": 0,
     "explanation": "WAF rate-based rules support composite aggregate keys that combine multiple fields (IP plus header values), and Bot Control fingerprints automated traffic. Shield Advanced focuses on DDoS, not bot abuse. A single per-IP limit fails when attackers rotate IPs. Forcing API keys breaks the public access pattern.",
+    "optionExplanations": [
+      "Correct — WAF rate-based statements accept composite aggregate keys combining IP, header values, query parameters, and labels; Bot Control adds JA3 fingerprinting and managed bot detection on top.",
+      "A single per-IP limit is defeated by attackers rotating across many distinct IPs, which the question explicitly calls out.",
+      "Shield Advanced is focused on network/transport-layer DDoS; it does not perform sophisticated bot fingerprinting and rate-limiting for L7 scraping.",
+      "Forcing API keys breaks the public access pattern; the requirement is to throttle abuse while remaining open."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -374,6 +542,12 @@
     ],
     "answer": 0,
     "explanation": "An endpoint policy uses IAM JSON to scope which principals and conditions are allowed through the endpoint regardless of any resource policy elsewhere. aws:PrincipalOrgID enforces org membership; aws:SourceVpc pins the VPC. SG limits source IPs but doesn't enforce identity. Resource policies can drift. Disabling DNS doesn't enforce identity restrictions.",
+    "optionExplanations": [
+      "Correct — VPC endpoint policies are evaluated for every call through the endpoint; aws:PrincipalOrgID enforces org membership and aws:SourceVpc pins the VPC, independent of any secret's resource policy.",
+      "Security groups restrict by source IP/SG but cannot evaluate identity claims like organisation membership.",
+      "Resource policies on the secret are exactly what the question says might drift; endpoint policies provide an independent guardrail.",
+      "Public DNS settings affect resolution behaviour, not principal-level authorisation."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -387,6 +561,12 @@
     ],
     "answer": 0,
     "explanation": "Security groups can reference other security groups as source, which is the most precise way to limit ingress to ENIs that share the referenced SG (the Lambda function's). NACLs work at subnet/CIDR level, less precise. RDS does not support a resource policy. Lambda function URLs are unrelated.",
+    "optionExplanations": [
+      "Correct — referencing the Lambda function's SG ID as source in the RDS SG ingress rule binds access to ENIs that carry that SG, the most precise identity-bound control available.",
+      "NACL rules match subnet CIDRs, so any other ENI in the same subnet would also pass; this is not precise to the Lambda function.",
+      "RDS does not expose an IAM resource policy on the DB instance for network-level access control.",
+      "Lambda function URLs are for invoking the Lambda; they have nothing to do with controlling access to RDS."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -400,6 +580,12 @@
     ],
     "answer": 0,
     "explanation": "AWS PrivateLink is purpose-built for service exposure across accounts/VPCs without peering or public exposure. The provider creates an endpoint service backed by an NLB; the consumer creates an interface endpoint, optionally accepted by the provider. Peering exposes whole VPCs to each other. VPN is heavier and not service-scoped. RAM cannot share subnets across organizations for this use case.",
+    "optionExplanations": [
+      "Correct — PrivateLink is purpose-built for one-way service exposure across accounts without peering; the provider runs an endpoint service behind an NLB and the consumer creates an interface endpoint that the provider accepts.",
+      "VPC peering exposes whole VPCs bidirectionally, which is the opposite of the least-privilege one-service exposure the question describes.",
+      "Site-to-Site VPN is heavier (network-layer tunnel) and not service-scoped; both sides see network connectivity, not a service handle.",
+      "RAM shares resources like subnets within an organisation; it does not provide service-scoped access to a partner outside the organisation."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -413,6 +599,12 @@
     ],
     "answer": 0,
     "explanation": "AWS supports an account-wide default for instance metadata options, ensuring all new instances launch with IMDSv2 required. Combined with the ec2-imdsv2-check Config rule for ongoing detection and SSM Automation for fleet remediation, you get end-to-end coverage. Blocking 169.254.169.254 breaks legitimate IMDS use entirely. User-data hardening misses other code paths. The SCP catches launches but not existing instances.",
+    "optionExplanations": [
+      "Correct — account-level instance metadata defaults guarantee new instances launch with IMDSv2 required; SSM Automation remediates existing instances, and ec2-imdsv2-check provides ongoing detection.",
+      "Blocking 169.254.169.254 breaks all IMDS use (including IMDSv2 and the role-credential fetch by SDKs), not just v1.",
+      "User-data hardening only addresses the boot script; any subsequent code on the instance can still query IMDSv1 if the instance allows it.",
+      "An SCP catches future RunInstances calls but leaves the existing fleet on IMDSv1, and on its own is incomplete coverage."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -426,6 +618,12 @@
     ],
     "answer": 0,
     "explanation": "ALB integrates with Cognito for authentication actions, and a WAF Web ACL on the ALB can apply geo-match rules and Bot Control. Security groups can't enforce by country. CloudFront with Lambda@Edge is feasible but less direct given the ALB+Cognito requirement. API Gateway IAM auth doesn't fit a Cognito-backed web app naturally.",
+    "optionExplanations": [
+      "Correct — ALB supports an authenticate-cognito action on the listener rule, and a WAF Web ACL attached to the ALB enforces geo-match and Bot Control rules in a single composition.",
+      "Health checks validate target health, not user auth tokens, and security groups have no awareness of country codes.",
+      "CloudFront with Lambda@Edge can work but is heavier than the native ALB+Cognito integration the requirement points to.",
+      "API Gateway IAM auth is for signed AWS-style requests, not Cognito-backed web apps with browser sessions."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -439,6 +637,12 @@
     ],
     "answer": 0,
     "explanation": "Session Manager via Identity Center grants short-lived federated access without an IAM user, supports run-as for individual Linux users, and streams the entire session to CloudWatch Logs with KMS. EIC Endpoint is fine but lacks built-in keystroke recording centrally. Opening 22 violates the requirement. Sharing key pairs is unauditable.",
+    "optionExplanations": [
+      "Correct — Session Manager via Identity Center grants short-lived federated access without an IAM user, supports run-as for Linux user impersonation, and streams the entire session to CloudWatch Logs encrypted with KMS.",
+      "EIC Endpoint provides identity-bound SSH without opening 22, but it lacks built-in central keystroke recording with KMS encryption that the requirement asks for.",
+      "Opening port 22 to the contractor's IP violates the explicit no-inbound-22 requirement.",
+      "Sharing the PEM file is unauditable, cannot be time-bounded, and provides no session recording."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -452,6 +656,12 @@
     ],
     "answer": 0,
     "explanation": "Firewall Manager centralizes WAF, Shield Advanced, and Network Firewall policies across an organization, propagating an IP set to ALB, API Gateway, CloudFront, and AppSync resources. Per-account ACLs duplicate work. Network Firewall doesn't protect ALB/API Gateway directly. NACLs are stateless and per-subnet — operationally untenable.",
+    "optionExplanations": [
+      "Correct — Firewall Manager centralises WAF policy across the organisation, propagating a shared IP set to ALB, API Gateway, CloudFront, and AppSync resources.",
+      "Per-account duplication does not scale and drifts; the question explicitly asks for a single point of management.",
+      "Network Firewall protects VPC east-west and north-south at the network layer; it is not attached to ALB or API Gateway resources.",
+      "NACLs are per-subnet, stateless, and have no central management across 200 accounts."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -465,6 +675,12 @@
     ],
     "answer": 0,
     "explanation": "Truly internet-isolated tasks need no default route at all and reach AWS services through gateway and interface endpoints. The S3 endpoint handles S3; ECR, CloudWatch Logs, STS, and Secrets Manager have interface endpoints to satisfy task lifecycle. NAT still allows internet egress. Public IP assignment with deny-all SGs is fragile. There is no such 'transit gateway peering with the AWS public network'.",
+    "optionExplanations": [
+      "Correct — removing the default route guarantees no internet egress; an S3 Gateway endpoint and interface endpoints for ECR, Logs, STS, and Secrets Manager cover the task lifecycle dependencies.",
+      "NAT permits internet egress by definition; restrictive egress rules can narrow it but the requirement is no public internet at all.",
+      "A public-IP task with deny-all SG is fragile (drift risk) and still has a route to the IGW; defence-in-depth prefers no route at all.",
+      "There is no such service as Transit Gateway peering with the AWS public network."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -478,6 +694,12 @@
     ],
     "answer": 0,
     "explanation": "Shield Advanced provides proactive engagement with the Shield Response Team during incidents and refunds for scaling costs caused by DDoS. Shield Standard is automatic but lacks SRT engagement. WAF rate-based rules complement but do not include the Shield Advanced perks. CloudFront's protection is essentially Shield Standard.",
+    "optionExplanations": [
+      "Correct — Shield Advanced includes Shield Response Team proactive engagement and DDoS-related cost-protection billing credits for scaling caused by attacks.",
+      "Shield Standard is automatic and free but lacks SRT engagement and cost protection.",
+      "Rate-based rules complement Shield Advanced but do not include SRT engagement or billing credits.",
+      "CloudFront's default protection is essentially Shield Standard — same gap."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -491,6 +713,12 @@
     ],
     "answer": 0,
     "explanation": "ACM-issued certificates can be deployed onto AWS-managed integrations directly; for EC2 you must export and rotate. Using AWS Private CA with an automation that fetches and reloads certs (for example via SSM or a cert-manager sidecar) is the standard pattern. Public ACM certificates aren't designed for internal mTLS. Self-signed perpetual certs violate basic crypto hygiene. Disabling encryption violates defense-in-depth.",
+    "optionExplanations": [
+      "Correct — ACM Private CA issues short-lived internal certificates; an SSM document or a sidecar (cert-manager-style) pulls fresh certificates and reloads them on schedule, automating renewal.",
+      "Public ACM certificates are not designed for issuance to private hostnames on EC2 targets, and the chain-of-trust does not match an internal CA model.",
+      "Self-signed certificates that never expire fail basic crypto hygiene (no revocation, no rotation, no chain of trust).",
+      "Disabling HTTPS between the ALB and targets removes defence-in-depth and violates many compliance frameworks even within a VPC."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -504,6 +732,12 @@
     ],
     "answer": 0,
     "explanation": "Inbound Resolver endpoints let on-prem hosts query VPC DNS for AWS-private records; outbound endpoints with forwarding rules send corp.example queries to the on-prem DCs. NAT does not handle DNS. Public DNS records expose internal names. Shared Managed AD addresses identity, not DNS resolution forwarding.",
+    "optionExplanations": [
+      "Correct — Site-to-Site VPN or Direct Connect provides the network path; Route 53 Resolver inbound endpoints let on-prem query VPC DNS, and outbound endpoints with conditional forwarding send corp.example queries to the on-prem DCs.",
+      "NAT Gateway provides IPv4 SNAT for internet egress; it is not a DNS forwarder.",
+      "Publishing corp.example records publicly exposes internal hostnames and is the opposite of private DNS resolution.",
+      "Shared Managed AD addresses identity (authentication) but does not solve DNS resolution forwarding between on-prem and VPC."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -517,6 +751,12 @@
     ],
     "answer": 0,
     "explanation": "Verified Access is AWS's zero-trust application access broker: per-request identity and device posture checks via trust providers, evaluated by Cedar policies, no client VPN. Client VPN provides network access, not per-request authz with device posture. Site-to-Site VPN is network-to-network. Transfer Family is for file transfer.",
+    "optionExplanations": [
+      "Correct — Verified Access is AWS's zero-trust application broker; it composes an identity trust provider (Identity Center) and a device trust provider (Jamf, CrowdStrike, JumpCloud), evaluating Cedar policies per request without a VPN client.",
+      "Client VPN gives network reachability after auth; it does not perform per-request authorisation with device posture.",
+      "Site-to-Site VPN is a network-to-network tunnel for site connectivity, not application access for individual users.",
+      "Transfer Family is for SFTP/FTPS file transfer, unrelated to internal HTTP app access."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -530,6 +770,12 @@
     ],
     "answer": 0,
     "explanation": "Reachability Analyzer is a static configuration analyser that simulates the path through SGs, NACLs, route tables, gateways, and ENI attachments and tells you precisely what blocks the traffic — without sending packets. Flow Logs and Traffic Mirroring need actual traffic. Network Manager is a global topology tool, not a per-path analyser.",
+    "optionExplanations": [
+      "Correct — Reachability Analyzer simulates the path through SGs, NACLs, route tables, gateways, and ENI attachments without sending packets, identifying the exact blocking component.",
+      "Flow Logs require actual traffic to capture; the requirement is to validate the path without sending real traffic.",
+      "Traffic Mirroring also requires traffic in flight to capture; it does not reason about configuration.",
+      "Network Manager is a global topology and event view, not a per-path analyser."
+    ],
     "domain": "Infrastructure Security"
   },
   {
@@ -543,6 +789,12 @@
     ],
     "answer": 0,
     "explanation": "IAM Roles Anywhere lets workloads outside AWS use X.509 certificates from a trusted CA to assume IAM roles via STS, returning short-lived credentials — exactly the use case. Long-lived access keys violate the requirement. Identity Center is for human SSO. Cognito user pools are for end-user authentication.",
+    "optionExplanations": [
+      "Correct — IAM Roles Anywhere trusts a customer CA via a trust anchor, profiles map certificate attributes to assumable roles, and the aws_signing_helper returns short-lived STS credentials, with no long-lived keys or SAML federation.",
+      "Long-lived access keys violate the explicit requirement to avoid them.",
+      "Identity Center is for human SSO with SAML/OIDC; it does not consume the existing corporate X.509 PKI for workload identity.",
+      "Cognito user pools authenticate end users, not on-prem servers needing AWS IAM role assumption."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -556,6 +808,12 @@
     ],
     "answer": 0,
     "explanation": "Cross-account assume requires both sides: the trust policy on the target role allows the source account, and the calling principal in the source account must have an identity-based policy allowing sts:AssumeRole on the target role ARN. Without B-side, you get AccessDenied. Org membership is irrelevant for cross-account assume. Trust by account is a valid form. STS endpoints are typically enabled.",
+    "optionExplanations": [
+      "Correct — cross-account assume requires both sides: the target's trust policy and the caller's identity-based policy granting sts:AssumeRole on the target role ARN. Missing the caller side returns AccessDenied.",
+      "Organisation membership is not required for cross-account AssumeRole; trust by account ID works across organisations.",
+      "Trust by account ID is a valid form; the trust policy does not need to list each user ARN.",
+      "STS regional endpoints are typically enabled; disabling them would make matters worse, not fix the failure."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -569,6 +827,12 @@
     ],
     "answer": 0,
     "explanation": "SCPs are the only mechanism that can deny actions even for account-administrator principals across an Organization, including the management account if scoped (note: SCPs don't apply to the management account by default). Permission boundaries must be applied per-principal; missed principals slip through. Config rules detect/remediate after the fact. Log file validation detects tampering, doesn't prevent disablement.",
+    "optionExplanations": [
+      "Correct — SCPs filter the maximum permissions for every principal in member accounts, including account admins, so a deny on StopLogging/DeleteTrail/UpdateTrail/PutEventSelectors is binding org-wide.",
+      "Permission boundaries must be attached to each principal; any principal without the boundary slips through.",
+      "Config with auto-remediation reacts after the fact and can be defeated if the same principal also disables Config.",
+      "Log file validation detects tampering of delivered files but does not prevent disablement of the trail."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -582,6 +846,12 @@
     ],
     "answer": 0,
     "explanation": "IAM Access Analyzer can generate a policy from CloudTrail history (up to 90 days), surfacing the actions actually invoked by the role. Config rules are coarse compliance checks. Trusted Advisor flags over-broad policies but doesn't synthesise refined ones. Manual inspection is slow and error-prone.",
+    "optionExplanations": [
+      "Correct — Access Analyzer policy generation reads CloudTrail history (up to 90 days) and emits a refined policy reflecting the role's actual API usage.",
+      "Config rules check policy text for admin statements; they do not synthesise tighter policies from usage.",
+      "Trusted Advisor flags overly broad IAM policies heuristically; it does not generate a least-privilege replacement.",
+      "Manually walking CloudTrail Lake is slow and error-prone across hundreds of roles when an automated generator exists."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -595,6 +865,12 @@
     ],
     "answer": 0,
     "explanation": "ExternalId is the canonical defense against the confused-deputy: only the legitimate caller knows the per-customer secret to pass, so a third party cannot trick the SaaS into assuming a role on their behalf. MFA doesn't fit machine-to-machine. IAM user credentials per customer are unmanageable. Org membership is unrelated.",
+    "optionExplanations": [
+      "Correct — ExternalId is the documented defence against the confused-deputy problem in cross-account SaaS access; only the legitimate caller knows the per-customer value to pass on AssumeRole.",
+      "MFA does not fit machine-to-machine SaaS access patterns and is impractical for automated calls.",
+      "IAM users per customer are unmanageable and require long-lived credentials, defeating the cross-account role pattern.",
+      "Organisations membership does not exist between the SaaS provider and unrelated customer accounts and is not the answer to confused-deputy."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -608,6 +884,12 @@
     ],
     "answer": 0,
     "explanation": "Identity Center supports AD as an identity source and lets you assign group-to-permission-set mappings per account or OU, with permission sets being JSON blueprints that materialize as roles in member accounts. Per-developer-per-account roles are the anti-pattern Identity Center exists to replace. Cognito and Roles Anywhere serve different purposes.",
+    "optionExplanations": [
+      "Correct — Identity Center supports AD as an identity source; permission sets materialise as roles in member accounts and AD group assignments per-account or per-OU drive the dev-vs-prod scoping.",
+      "Per-developer-per-account IAM roles are exactly the operational anti-pattern Identity Center exists to replace.",
+      "Cognito user pools are for end-user authentication, not workforce SSO into AWS accounts.",
+      "Roles Anywhere is for workload (X.509 cert) identity, not human SSO."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -621,6 +903,12 @@
     ],
     "answer": 0,
     "explanation": "KMS grants are designed for temporary, narrowly-scoped, programmatic delegation with constraints like EncryptionContextEquals/Subset. Modifying the key policy is heavyweight and risky. IAM-only grants without key-policy permission don't work for customer-managed keys unless the key policy delegates to IAM. Public KMS keys are not a thing.",
+    "optionExplanations": [
+      "Correct — KMS grants are purpose-built for temporary, narrowly-scoped programmatic delegation, with EncryptionContextEquals/Subset constraints binding to the bucket/prefix.",
+      "Editing the key policy each time is heavy, risky, and not designed for fine-grained temporary delegation.",
+      "Identity-based kms:Decrypt requires the key policy to delegate to IAM (\"Enable IAM User Permissions\"); without that line, identity policy alone does not grant access to a customer-managed key.",
+      "There is no concept of a public KMS key — KMS authorisation is always principal-and-policy bound."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -634,6 +922,12 @@
     ],
     "answer": 0,
     "explanation": "aws:SourceIp restricts by request origin (be careful that it does not apply when the call is via a VPC endpoint — use aws:VpcSourceIp there); aws:PrincipalOrgID asserts the principal is in the organization. These are global condition keys usable in identity-, resource-, and SCP policies. NACLs don't apply to API control plane calls. UserAgent is spoofable. KMS keys don't gate IAM API calls.",
+    "optionExplanations": [
+      "Correct — aws:SourceIp pins the source IP (use aws:VpcSourceIp when the call traverses a VPC endpoint) and aws:PrincipalOrgID enforces org membership; both can appear in identity policies and SCPs.",
+      "NACLs are subnet-level packet filters; they do not evaluate IAM API calls at the control plane.",
+      "aws:UserAgent is client-controllable and easily spoofed, so it is not a sound authorisation gate.",
+      "KMS condition keys gate KMS operations; they do not apply to arbitrary AWS API calls from the role."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -647,6 +941,12 @@
     ],
     "answer": 0,
     "explanation": "Conditions like iam:PassedToService, ec2:InstanceProfile, and ec2:Subnet enable fine-grained ABAC-style enforcement on RunInstances. Permission boundaries are useful for max permissions but don't substitute for the contextual conditions. SCPs that deny all RunInstances kill self-service. NACLs are subnet network filters, not IAM controls.",
+    "optionExplanations": [
+      "Correct — ec2:InstanceProfile and ec2:Subnet condition keys (with iam:PassedToService for the role-passing aspect) enforce the precise scoping at API time and scale via tags or ARN lists.",
+      "Permission boundaries set maximum permissions per principal; they do not encode contextual conditions on RunInstances parameters.",
+      "Denying RunInstances org-wide and forcing tickets defeats self-service and is far broader than required.",
+      "NACLs control network packets in subnets; they have nothing to do with which EC2 launches are permitted."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -660,19 +960,31 @@
     ],
     "answer": 0,
     "explanation": "Session policies (inline or managed) constrain a particular STS session without modifying the role itself, computing an intersection. Editing the role policy affects all sessions. Permission boundaries cap a principal's max permissions but are not session-scoped. SCPs apply to all principals at the org level — too broad.",
+    "optionExplanations": [
+      "Correct — session policies passed to AssumeRole/GetFederationToken constrain a single session via intersection, leaving the underlying role unchanged.",
+      "Editing the role policy affects all sessions, not just this call chain.",
+      "Permission boundaries cap maximum permissions per principal but are not scoped to a single STS session.",
+      "SCPs operate at the org/OU level and affect all principals in scope, far broader than a single session."
+    ],
     "domain": "Identity and Access Management"
   },
   {
     "id": 52,
     "question": "An auditor asks for evidence that a specific resource cannot be accessed externally. Which AWS service produces this evidence with provable reasoning over IAM and resource policies?",
     "options": [
-      "A. IAM Access Analyzer external-access analyzer findings; for proactive verification, use IAM Access Analyzer custom policy checks (CheckAccessNotGranted) before deployment.",
+      "A. IAM Access Analyzer external-access findings; for proactive verification, use IAM Access Analyzer custom policy checks (CheckAccessNotGranted) before deployment.",
       "B. AWS Trusted Advisor.",
       "C. AWS Config evaluation history.",
       "D. AWS Audit Manager."
     ],
     "answer": 0,
     "explanation": "Access Analyzer uses automated reasoning (Zelkova) to identify resources shareable outside the trust zone, and custom policy checks programmatically validate that proposed policies do not grant a forbidden action. Trusted Advisor performs heuristic checks. Config records configuration state. Audit Manager assembles evidence but does not itself prove access restrictions.",
+    "optionExplanations": [
+      "Correct — Access Analyzer uses automated reasoning (Zelkova) for external-access findings, and CheckAccessNotGranted programmatically proves a forbidden action is not allowed by a policy.",
+      "Trusted Advisor performs heuristic checks; it does not provide formal reasoning over policies.",
+      "Config records configuration state and runs rules; it does not produce automated-reasoning proofs about policy reachability.",
+      "Audit Manager assembles framework evidence; it does not itself prove access restrictions with formal reasoning."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -686,6 +998,12 @@
     ],
     "answer": 0,
     "explanation": "Cross-account roles with trust by the vendor's account ID and an ExternalId (to prevent confused deputy) are the standard pattern for vendor read access. Sharing access keys violates least privilege and is unauditable. CloudWatch metrics aren't 'public'. Cognito identity pools are for end-users, not partners.",
+    "optionExplanations": [
+      "Correct — a cross-account role with trust by vendor account ID plus an ExternalId is the documented pattern for vendor access without creating IAM users.",
+      "Sharing long-lived access keys violates least privilege and is unauditable.",
+      "CloudWatch metrics are not exposable publicly to anonymous viewers — the concept does not apply.",
+      "Cognito identity pools issue AWS credentials to end users of a mobile/web app, not vendor partner integrations."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -699,6 +1017,12 @@
     ],
     "answer": 0,
     "explanation": "An SCP using aws:RequestedRegion preventatively blocks API calls to disallowed regions. Permission boundaries miss principals not assigned the boundary. Config-based auto-deletion is destructive and reactive. Control Tower's region deny guardrail is implemented as an SCP under the hood — but the question asks which control, and the SCP itself is the mechanism; Option D limits to Control Tower-managed accounts only and is a subset.",
+    "optionExplanations": [
+      "Correct — an SCP with aws:RequestedRegion in the disallowed list preventatively blocks the API call, regardless of who the caller is.",
+      "Permission boundaries must be attached to every principal; any principal without the boundary slips through.",
+      "Auto-deletion of buckets is destructive, reactive, and risky in production.",
+      "Control Tower's Region deny guardrail is itself implemented as an SCP under the hood, and only applies to Control Tower-managed accounts; the SCP mechanism is the direct answer."
+    ],
     "domain": "Identity and Access Management"
   },
   {
@@ -712,6 +1036,12 @@
     ],
     "answer": 0,
     "explanation": "Decryption requires both the secret-side permissions and KMS permissions. Either the KMS key policy delegates to IAM (so the developer's identity policy granting kms:Decrypt suffices) or the key policy grants the role directly. Without both, the GetSecretValue call returns AccessDenied at decryption. Secrets Manager doesn't store on S3 in user-visible form.",
+    "optionExplanations": [
+      "Correct — both the secret-side (secretsmanager:GetSecretValue) and the KMS-side (kms:Decrypt, plus the key policy's IAM delegation or direct grant) are required; missing either yields AccessDenied at decryption.",
+      "GetSecretValue alone fails when the secret is encrypted with a customer-managed key the role cannot decrypt.",
+      "KMS-only without the Secrets Manager permission also fails — the Secrets Manager API call is denied before decryption.",
+      "Secrets Manager stores secrets internally; there is no user-visible S3 bucket whose policy needs to be set."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -725,6 +1055,12 @@
     ],
     "answer": 0,
     "explanation": "AWS-managed CMKs (aws/ebs) cannot be shared cross-account; you need a customer-managed KMS key whose policy permits the target account to decrypt and create grants. Sharing unencrypted snapshots violates basic encryption requirements. KMS is fundamentally involved in encrypted snapshot use.",
+    "optionExplanations": [
+      "Correct — only customer-managed KMS keys can be shared cross-account; the key policy must grant the target account kms:Decrypt and kms:CreateGrant (and the snapshot must be re-encrypted with a key the target controls when copied).",
+      "AWS-managed keys (aws/ebs) are not shareable cross-account — this answer is factually wrong.",
+      "Sharing unencrypted snapshots ignores encryption requirements and is not the standard for regulated workloads.",
+      "KMS is fundamentally involved in any encrypted EBS snapshot lifecycle."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -738,6 +1074,12 @@
     ],
     "answer": 0,
     "explanation": "Multi-region keys share key material across regions while each region performs crypto locally — the only AWS-managed way to decrypt cross-region without re-encryption. Manual key material copying is not supported and is risky. Alias mapping doesn't share material. CloudHSM is single-cluster-bound and would need its own replication.",
+    "optionExplanations": [
+      "Correct — multi-region keys share the same key material across primary and replicas; each region performs crypto locally and ciphertext from one region is decryptable by the replica in another.",
+      "Manual export and copy of key material is not supported by KMS for managed keys and would be operationally dangerous.",
+      "Aliases are just name pointers; they do not share key material across regions.",
+      "CloudHSM clusters are region-bound; replicating key material across clusters is a separate, customer-managed problem."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -751,6 +1093,12 @@
     ],
     "answer": 0,
     "explanation": "CloudHSM provides single-tenant FIPS 140-2 Level 3 HSM clusters; KMS Custom Key Store ties KMS to your CloudHSM so applications continue to call KMS APIs. KMS itself is multi-tenant validated to Level 3 for many operations as a service but the question requires single-tenant. Secrets Manager and SSM Parameter Store are not HSM-backed independently.",
+    "optionExplanations": [
+      "Correct — CloudHSM provides single-tenant FIPS 140-2 Level 3 HSM clusters; a KMS custom key store maps KMS API calls onto your HSM so applications keep using the KMS surface.",
+      "Default KMS is a multi-tenant service; while individual modules are validated, it does not give the customer single-tenant HSM control the question requires.",
+      "Secrets Manager is a secret store, not an HSM, and uses KMS underneath.",
+      "Parameter Store SecureString uses KMS, not customer-controlled HSMs."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -764,6 +1112,12 @@
     ],
     "answer": 0,
     "explanation": "S3 replication of KMS-encrypted objects requires the replication role to be permitted to decrypt source-key ciphertext and re-encrypt with the destination key, plus the replication configuration must enable SseKmsEncryptedObjects. Versioning is required but not a cause of failure. Cross-account replication is supported with extra ownership configuration.",
+    "optionExplanations": [
+      "Correct — replication of SSE-KMS objects requires the replication role to Decrypt the source key and Encrypt with the destination key, and SourceSelectionCriteria.SseKmsEncryptedObjects must be enabled.",
+      "KMS-encrypted objects can be replicated — this answer is wrong.",
+      "Versioning is a prerequisite for replication, not a cause of failure.",
+      "Cross-account replication is supported with the destination ownership override; the destination being in another account is not by itself a failure cause."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -777,6 +1131,12 @@
     ],
     "answer": 0,
     "explanation": "kms:Encrypt is limited to 4 KB; for larger payloads use envelope encryption with a KMS-generated data key. The AWS Encryption SDK / S3 Encryption Client implement this safely with proper key derivation, AES-GCM, and metadata. Direct kms:Encrypt on a 5 GB blob will fail. Secrets Manager doesn't encrypt arbitrary user files. Base64 is encoding, not encryption.",
+    "optionExplanations": [
+      "Correct — the AWS Encryption SDK / S3 Encryption Client implement envelope encryption with KMS-issued data keys, proper key derivation, AES-GCM, and a portable header format.",
+      "kms:Encrypt is limited to 4 KB plaintext; calling it directly on a 5 GB file fails.",
+      "Secrets Manager is for storing small secrets, not encrypting arbitrary user files.",
+      "Base64 is text encoding, not encryption."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -790,6 +1150,12 @@
     ],
     "answer": 0,
     "explanation": "KMS automatic rotation rotates the underlying material while retaining old versions for historical decryption; the key ID and ARN remain stable. As of recent updates, rotation period is configurable. Asymmetric KMS keys do not support automatic rotation. AWS-managed keys are rotated by AWS.",
+    "optionExplanations": [
+      "Correct — automatic rotation generates new backing key material (default annually, configurable between 90 and 2560 days) while retaining old versions so existing ciphertext remains decryptable; the key ID/ARN are stable.",
+      "Old material is retained, not deleted — without it, prior ciphertext could not be decrypted.",
+      "Automatic rotation is not supported for asymmetric KMS keys, HMAC keys, or imported key material.",
+      "AWS-managed keys are rotated by AWS automatically (annually), not by the customer."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -803,6 +1169,12 @@
     ],
     "answer": 0,
     "explanation": "Rotation Lambdas for private RDS instances must be in the VPC; they reach Secrets Manager via an interface endpoint to keep traffic private and need network reachability to the RDS endpoint. Making RDS public is unsafe. Manual rotation defeats the purpose. SSM Parameter Store SecureString does not natively rotate RDS passwords.",
+    "optionExplanations": [
+      "Correct — the rotation Lambda must run in the VPC with egress permitted to RDS and to a Secrets Manager interface endpoint (or NAT), and its execution role must have the rotation permissions Secrets Manager grants the template.",
+      "Making the RDS instance public to fix a Lambda network path is a serious security regression.",
+      "Manual rotation defeats the automation requirement and is error-prone.",
+      "Parameter Store SecureString does not natively rotate RDS passwords."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -816,6 +1188,12 @@
     ],
     "answer": 0,
     "explanation": "Governance mode is overridable with explicit IAM permission. Compliance mode is non-overridable, even by the account root, until the retention period expires. Object Lock applies to S3 standard buckets with versioning, not Glacier vaults specifically.",
+    "optionExplanations": [
+      "Correct — governance mode allows override by principals with s3:BypassGovernanceRetention; compliance mode is non-overridable even by root until the retention period expires.",
+      "Governance mode is overridable with the BypassGovernanceRetention permission, so it does not prevent all deletion.",
+      "Compliance mode does not allow root to bypass — that is the entire point of compliance mode.",
+      "Object Lock applies to S3 buckets with versioning enabled; Glacier vaults have their own Vault Lock mechanism."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -829,6 +1207,12 @@
     ],
     "answer": 0,
     "explanation": "External Key Store (XKS) keeps the actual key material in the customer's external HSM/key manager outside AWS; AWS cannot perform crypto without the customer's external system being available. AWS-managed and SSE-S3 keys are AWS-controlled. Default EBS encryption is AWS-managed.",
+    "optionExplanations": [
+      "Correct — XKS keeps the actual key material in the customer's external HSM/key manager; KMS proxies crypto operations to the external system, and AWS cannot perform crypto without the customer's system being available.",
+      "AWS-managed keys are entirely controlled and accessible by AWS.",
+      "SSE-S3 uses AWS-managed keys; the provider holds them.",
+      "Default EBS encryption uses an AWS-managed CMK by default."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -842,6 +1226,12 @@
     ],
     "answer": 0,
     "explanation": "Vault Lock in compliance mode, after the cooling-off period, becomes immutable — even the account root cannot delete or shorten retention. Governance mode is removable by privileged principals. Tags do not enforce. KMS encrypts but does not lock retention.",
+    "optionExplanations": [
+      "Correct — Vault Lock compliance mode is immutable after the cooling-off period; not even root can shorten retention or delete recovery points during the period.",
+      "Governance mode is overridable by privileged principals; it does not meet the even-root requirement.",
+      "Tags are advisory and do not enforce retention.",
+      "KMS encrypts data but does not prevent deletion of recovery points."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -855,6 +1245,12 @@
     ],
     "answer": 0,
     "explanation": "S3 supports condition keys s3:x-amz-server-side-encryption and s3:x-amz-server-side-encryption-aws-kms-key-id to enforce algorithm and key on PutObject. SourceIp constrains origin, not encryption. BPA prevents public exposure. CloudFront field-level is for CDN ingestion, not S3 PutObject.",
+    "optionExplanations": [
+      "Correct — the s3:x-amz-server-side-encryption and s3:x-amz-server-side-encryption-aws-kms-key-id condition keys enforce both the algorithm and the specific key on every PutObject.",
+      "Source IP is unrelated to which encryption was used on the PutObject.",
+      "Block Public Access prevents public exposure; it does not enforce server-side encryption choice.",
+      "CloudFront field-level encryption is for CDN ingestion of form fields, not S3 server-side encryption enforcement."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -868,6 +1264,12 @@
     ],
     "answer": 0,
     "explanation": "Account-level EBS encryption-by-default ensures any volume created defaults to encrypted, and an SCP with ec2:Encrypted=false condition catches explicit overrides. Config detects but doesn't prevent. NACL and CloudWatch alarms are unrelated.",
+    "optionExplanations": [
+      "Correct — EBS encryption-by-default at the account level ensures new volumes are encrypted, and an SCP with ec2:Encrypted=false denies any explicit override on RunInstances.",
+      "encrypted-volumes is detective; without remediation it does not prevent launches.",
+      "NACLs are subnet-level packet filters and unrelated to RunInstances parameters.",
+      "An alarm is detective and reactive; it does not prevent the launch."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -881,6 +1283,12 @@
     ],
     "answer": 0,
     "explanation": "Three-way alignment is required: secret resource policy, KMS key policy (only customer-managed keys can be shared cross-account; the AWS-managed aws/secretsmanager key cannot be), and consumer IAM. Moving to S3 reduces controls. Emailing is unsafe. AWS-managed Secrets Manager keys do not support cross-account use; the secret must use a customer-managed KMS key for sharing.",
+    "optionExplanations": [
+      "Correct — three-way alignment is required: secret resource policy on the producer, KMS key policy on a customer-managed key (the AWS-managed aws/secretsmanager key cannot be shared cross-account), and the consumer's identity policy.",
+      "S3 storage removes the secret-management controls and is a serious downgrade.",
+      "Emailing is unsafe and unauditable.",
+      "AWS-managed aws/secretsmanager keys do not support cross-account use; sharing requires a customer-managed KMS key."
+    ],
     "domain": "Data Protection"
   },
   {
@@ -894,6 +1302,12 @@
     ],
     "answer": 0,
     "explanation": "Control Tower automates landing zones, integrates Account Factory for new accounts, ships preventative/detective guardrails, and CfCT extends baselines via StackSets. Bash scripts and manual checklists are fragile and unauditable. Service Catalog provides product vending but doesn't cover the org-wide baseline.",
+    "optionExplanations": [
+      "Correct — Control Tower automates landing zones, ships preventative/detective guardrails, vends accounts via Account Factory, and CfCT extends baselines via StackSets with full audit trail.",
+      "A bash script is fragile, manually maintained, and lacks audit trail and idempotency.",
+      "Manual checklists drift across operators and do not guarantee consistency.",
+      "Service Catalog vends applications/products; it does not establish the organisation-wide account baseline."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -907,6 +1321,12 @@
     ],
     "answer": 0,
     "explanation": "Security Hub provides continuous control evaluation (CIS, PCI, NIST) with aggregation; Audit Manager pulls evidence from across services into framework-shaped reports for auditors. Spreadsheets aren't continuous. Trusted Advisor is heuristic and not framework-aligned. Tagging policies don't evaluate compliance controls.",
+    "optionExplanations": [
+      "Correct — Security Hub provides continuous control evaluation across CIS, PCI, and NIST 800-53; Audit Manager pulls evidence from CloudTrail, Config, and Security Hub into framework-shaped reports for auditors.",
+      "Spreadsheets are not continuous, not auditable, and not aligned with the frameworks.",
+      "Trusted Advisor is heuristic and not framework-aligned.",
+      "Tagging policies enforce tag schema, not framework compliance."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -920,6 +1340,12 @@
     ],
     "answer": 0,
     "explanation": "SCPs are organization-wide guardrails attached to OUs/accounts that bound effective permissions for all principals in scope. Permission boundaries must be set per-principal. RCPs (newer Org policy type) restrict resource access regardless of who, but the question asks for actor restriction. Tag policies enforce tag schemas, not permissions.",
+    "optionExplanations": [
+      "Correct — SCPs attach to an OU and filter the maximum effective permissions of every principal in member accounts of that OU, including admins.",
+      "Permission boundaries must be set per-IAM-principal; any new principal without the boundary slips through.",
+      "RCPs restrict who can access resources regardless of identity; the question is about restricting what principals in the OU can do, which is the SCP's role.",
+      "Tag policies enforce tag schemas (key/value standardisation); they do not restrict permissions."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -933,6 +1359,12 @@
     ],
     "answer": 0,
     "explanation": "Resource Control Policies are an Organizations policy type that filter the effective resource policies of supported services (initially including S3) — adding a final org-wide deny that even a misconfigured bucket policy cannot circumvent. SCPs constrain principals, not resource access. Config conformance packs detect, not prevent. Firewall Manager S3 BPA policy enforces public-access settings, not org-membership.",
+    "optionExplanations": [
+      "Correct — RCPs apply org-wide to the effective resource policies of supported services (S3, KMS, SQS, Secrets Manager, etc.) and add a deny that no bucket policy author can circumvent.",
+      "SCPs filter the permissions of principals in the org, not access by outside principals to org resources.",
+      "Config conformance packs detect drift; they do not preventatively block external access.",
+      "Firewall Manager S3 policies enforce BPA settings; they do not assert org-only access at the request level."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -946,6 +1378,12 @@
     ],
     "answer": 0,
     "explanation": "Audit Manager assessments scope a framework to resources, automate evidence collection, allow delegating control reviews to owners, and produce a finalised assessment report — designed for the auditor handoff. Security Hub workflow status is part of finding triage, not evidence sign-off. Email exports lack chain of custody. Config aggregator queries are inputs, not the assembled framework report.",
+    "optionExplanations": [
+      "Correct — Audit Manager assessments scope a framework to accounts/services, automate evidence collection, delegate control review to owners, and produce a finalised assessment report designed for auditor handoff.",
+      "Security Hub workflow status is for triaging findings, not signing off auditor evidence.",
+      "Emailing snapshots lacks chain of custody and is not Audit Manager's workflow.",
+      "Config aggregator queries are inputs to Audit Manager evidence collection, not the finalised binder itself."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -959,6 +1397,12 @@
     ],
     "answer": 0,
     "explanation": "Delegated administration centralises management; an SCP plus drift remediation prevents and corrects unauthorised disablement, with CloudTrail Lake providing query history. Manual review drifts. Disabling in members loses local enforcement. Trusted Advisor is unrelated.",
+    "optionExplanations": [
+      "Correct — delegated administration centralises management; an SCP blocks disable actions for non-approved roles, CloudTrail Lake records admin actions, and auto-remediation reverts drift.",
+      "Manual quarterly review drifts and is not real-time.",
+      "Disabling Config and Security Hub in member accounts loses local control evaluation entirely.",
+      "Trusted Advisor is heuristic and unrelated to Config/Security Hub administration."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -972,6 +1416,12 @@
     ],
     "answer": 0,
     "explanation": "Account Factory automates account creation with Control Tower's baseline; CfCT (or AFT) adds custom IaC on top, fully auditable and idempotent. Bespoke Lambdas reinvent Control Tower. Manual flows lack consistency. AppRegistry catalogues applications; it does not vend accounts.",
+    "optionExplanations": [
+      "Correct — Account Factory (or AFT) vends accounts with the Control Tower baseline; CfCT layers networking and security stacks via StackSets idempotently, with full audit trail.",
+      "A bespoke Lambda reinvents Control Tower without its built-in guardrails, drift detection, or audit features.",
+      "Manual ticket-driven creation drifts and is not minimal-code.",
+      "AppRegistry catalogues applications and metadata; it does not vend AWS accounts."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -985,6 +1435,12 @@
     ],
     "answer": 0,
     "explanation": "Image Builder pipelines build hardened AMIs, run validation tests, and produce versioned outputs; Inspector v2 scans the AMIs and running instances; SSM Patch Manager applies patch baselines on long-lived instances. Manual processes drift. Trusted Advisor lacks pipeline capability. Config rule ec2-managed-by-ssm is a precondition, not a patching solution.",
+    "optionExplanations": [
+      "Correct — Image Builder pipelines produce hardened, versioned AMIs with tests; Inspector v2 scans them and running instances for vulnerabilities; SSM Patch Manager maintains patch baselines on long-lived hosts.",
+      "Manual monthly patching drifts and lacks pipeline reproducibility.",
+      "Trusted Advisor flags AMI age heuristically; it does not provide the build/test pipeline.",
+      "ec2-managed-by-ssm is a precondition for Patch Manager but not itself a hardening/patching solution."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -998,6 +1454,12 @@
     ],
     "answer": 0,
     "explanation": "An SCP with aws:MultiFactorAuthPresent=false deny applies organization-wide and at the API layer. Limiting to S3 leaves other services exposed. Console-only MFA is bypassable via APIs. Cognito MFA is for end-user pools, not IAM principals.",
+    "optionExplanations": [
+      "Correct — an SCP with aws:MultiFactorAuthPresent=false deny applies at the API layer org-wide; a NotAction list permits the minimum actions needed to set up MFA in the first place.",
+      "Limiting the condition to s3:* leaves every other service unprotected.",
+      "Console-only MFA is bypassable by direct API calls with long-lived access keys.",
+      "Cognito MFA is for end-user pools, not for IAM principals."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -1011,6 +1473,12 @@
     ],
     "answer": 0,
     "explanation": "Access Analyzer at the org level evaluates resource policies across many services (S3, IAM, KMS, Lambda, SQS, etc.) and surfaces external-access findings, including via Org membership awareness. CloudTrail Lake is for events. Trusted Advisor and Config rule cover narrow slices.",
+    "optionExplanations": [
+      "Correct — Access Analyzer's external-access analyzer at the org level evaluates resource policies across many services (S3, IAM, KMS, Lambda, SQS, etc.) and surfaces findings for resources shared outside the org trust zone.",
+      "CloudTrail Lake records API events; it does not analyse resource policies for external sharing.",
+      "Trusted Advisor's S3 check is a narrow slice (S3 only) and does not cover IAM, KMS, Lambda, SQS, etc.",
+      "s3-bucket-public-read-prohibited is a narrow S3-only Config rule."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -1024,6 +1492,12 @@
     ],
     "answer": 0,
     "explanation": "Cognito's Advanced Security Features provide risk scoring (adaptive auth), breach checks against known compromised credentials, and risk-based MFA challenges. Identity pool roles are for AWS credentials issuance. Cognito Sync is data sync. Federation alone doesn't add risk analysis.",
+    "optionExplanations": [
+      "Correct — Cognito Advanced Security Features (available at the Plus tier) provide adaptive authentication with risk scoring, breached-credential detection, and risk-based MFA challenges.",
+      "Identity pool roles issue AWS credentials to authenticated users; they do not perform risk-based auth.",
+      "Cognito Sync is a deprecated data-sync feature, unrelated to risk-based auth.",
+      "Federation alone (SAML/OIDC) does not add risk analysis or breach detection."
+    ],
     "domain": "Management and Security Governance"
   },
   {
@@ -1037,6 +1511,12 @@
     ],
     "answer": 0,
     "explanation": "Access Analyzer's unused-access analyzer identifies inactive IAM principals and unused permissions across the org. The Config rule checks policy attachment, not usage. Trusted Advisor checks key activity but not the broader unused-roles picture. CloudWatch doesn't track IAM activity.",
+    "optionExplanations": [
+      "Correct — the unused-access analyzer reports unused IAM users, roles, and access keys at the organisation level, including unused permissions on otherwise-active principals.",
+      "iam-user-no-policies-check evaluates whether IAM users have policies attached, not whether they are used.",
+      "Trusted Advisor flags inactive access keys but does not cover the broader unused-roles and unused-permissions picture.",
+      "CloudWatch metrics do not track IAM principal activity."
+    ],
     "domain": "Management and Security Governance"
   }
 ]

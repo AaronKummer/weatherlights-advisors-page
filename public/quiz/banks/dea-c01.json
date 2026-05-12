@@ -10,7 +10,13 @@
     ],
     "answer": 0,
     "explanation": "On-demand mode auto-scales shard capacity and removes the need to predict throughput, while keeping customer_id as the partition key preserves per-session ordering. Random partition keys break ordering. Firehose is a delivery service and does not solve producer-side throughput limits the same way, and enhanced fan-out raises consumer (not producer) throughput.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - On-demand mode auto-scales shard capacity and keeps using customer_id as the partition key, preserving per-session order without manual tuning.",
+      "More shards help capacity but randomizing partition keys destroys per-session ordering, which the scenario requires.",
+      "Firehose buffers and reorders within batches; it cannot solve producer ProvisionedThroughputExceededException on a Kinesis stream and disabling buffering is not how Firehose works.",
+      "Enhanced fan-out raises consumer egress throughput, not producer ingestion; the throttle is on the producer side."
+    ]
   },
   {
     "id": 2,
@@ -23,7 +29,13 @@
     ],
     "answer": 0,
     "explanation": "Firehose natively supports record format conversion to Parquet (or ORC) using a Glue Data Catalog table for the schema, and dynamic partitioning lets you derive partition keys via inline JSON parsing or jq expressions. Lambda cannot reliably emit columnar Parquet within Firehose buffers, and the EMR option adds unnecessary infrastructure. GZIP JSON still incurs row-oriented scan costs.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Firehose natively converts to Parquet via a Glue table schema and supports dynamic partitioning with inline JSON parsing or jq expressions for partition keys.",
+      "Inserting Kinesis Data Streams plus EMR Serverless adds infrastructure and cost for something Firehose can do natively.",
+      "A Lambda transformation operates on the raw record buffer and cannot reliably emit columnar Parquet there; conversion is a separate Firehose feature.",
+      "GZIP JSON is still row-oriented; Athena must read every column on each row, so scan cost stays high."
+    ]
   },
   {
     "id": 3,
@@ -36,7 +48,13 @@
     ],
     "answer": 0,
     "explanation": "Job bookmarks track previously processed S3 objects and JDBC rows so subsequent runs only handle new data. Crawlers update the catalog but do not control which records a job processes. Workflows orchestrate jobs but do not deduplicate inputs, and Auto Scaling addresses cluster size, not idempotency.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Job bookmarks persist watermarks for S3 sources and JDBC, so subsequent runs only process newly arrived data.",
+      "Crawlers maintain the catalog and add partitions but do not control which input records an ETL job re-reads.",
+      "Workflows orchestrate jobs but do not deduplicate inputs across runs.",
+      "Auto Scaling changes worker count; it does not skip already-processed data."
+    ]
   },
   {
     "id": 4,
@@ -49,7 +67,13 @@
     ],
     "answer": 0,
     "explanation": "Full load + CDC migrates the existing data and continuously applies changes from Oracle redo/archive logs to Redshift. Full load only would miss live changes between runs. CDC-only without an initial load leaves the target empty until every row eventually mutates. The fourth option is not near real time.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - DMS full load + ongoing replication (CDC) seeds the target then continuously applies Oracle redo/archive log changes to Redshift in near real time.",
+      "Full load only takes a static copy and misses everything that mutates between runs.",
+      "Starting CDC with no initial load leaves the target empty until each row eventually changes; rows that never mutate are never copied.",
+      "Homogeneous Oracle-to-Oracle plus weekly bulk export is not near real time and adds an unneeded staging system."
+    ]
   },
   {
     "id": 5,
@@ -62,7 +86,13 @@
     ],
     "answer": 0,
     "explanation": "MSK Serverless supports IAM authentication exclusively, using the aws-msk-iam-auth library and the SASL mechanism AWS_MSK_IAM. SASL/SCRAM is not supported on Serverless. Network isolation alone is not authentication, and Kafka does not have a mechanism to assume IAM roles per record.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - MSK Serverless supports only IAM authentication; clients use the aws-msk-iam-auth library with SASL mechanism AWS_MSK_IAM.",
+      "SASL/SCRAM credentials in Secrets Manager are supported on provisioned MSK, not MSK Serverless.",
+      "PrivateLink and TLS provide network isolation and server-cert validation but do not authenticate the producer identity.",
+      "Kafka has no built-in mechanism to call STS per record; this is not how MSK IAM auth works."
+    ]
   },
   {
     "id": 6,
@@ -75,7 +105,13 @@
     ],
     "answer": 0,
     "explanation": "EventBridge Pipes supports source-stage filtering with event patterns; matching is performed before enrichment, which avoids paying for unnecessary Lambda invocations. DynamoDB Streams does not support server-side filter expressions. EventBridge rules are independent of Pipes and would not gate the Pipe. A Step Functions wrapper adds cost without removing the enrichment invocations.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - EventBridge Pipes evaluates an event-pattern filter at the source stage, before enrichment, so non-matching events never invoke the Lambda.",
+      "An EventBridge rule on the default bus is independent of the Pipe and cannot gate the Pipe's polling.",
+      "DynamoDB Streams does not support server-side filter expressions on the stream specification.",
+      "Wrapping in Step Functions adds another paid orchestrator and still invokes the enrichment Lambda from the Pipe."
+    ]
   },
   {
     "id": 7,
@@ -88,7 +124,13 @@
     ],
     "answer": 0,
     "explanation": "Glue Streaming jobs support Spark Structured Streaming checkpointing; combined with a transactional sink such as Apache Hudi or Apache Iceberg you can achieve effectively exactly-once writes. Job bookmarks are for batch jobs. TRIM_HORIZON only sets where reading begins. Glue for Ray is for distributed Python (e.g., model inference), not micro-batch streaming with exactly-once.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Spark Structured Streaming checkpointing plus a transactional sink such as Hudi or Iceberg yields effectively exactly-once writes from a Glue Streaming job.",
+      "TRIM_HORIZON only sets where the consumer starts reading; it has nothing to do with exactly-once semantics.",
+      "Job bookmarks are for batch (non-streaming) jobs and do not apply across micro-batches.",
+      "Glue for Ray is intended for distributed Python (for example model inference), not Spark micro-batch streaming with exactly-once."
+    ]
   },
   {
     "id": 8,
@@ -101,7 +143,13 @@
     ],
     "answer": 0,
     "explanation": "KPL aggregation packs many user records into a single Kinesis record, dramatically increasing per-shard throughput up to the 1 MB/s limit. Disabling aggregation worsens throttling. Reducing shards reduces capacity. PutRecord is single-record and slower than PutRecords.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - KPL aggregation packs many user records into one Kinesis record, raising effective per-shard throughput toward the 1 MB/s and 1000 records/s caps.",
+      "Disabling aggregation increases the per-record overhead and worsens throttling.",
+      "Fewer shards lowers stream capacity; throttling will get worse, not better.",
+      "PutRecord submits one record per HTTP call and gives lower throughput than PutRecords with KPL."
+    ]
   },
   {
     "id": 9,
@@ -114,7 +162,13 @@
     ],
     "answer": 0,
     "explanation": "Hudi provides compaction (for merge-on-read) and clustering operations that consolidate small files and improve query performance. Disabling the metadata table degrades performance further. CSV is row-oriented and worsens analytics. Glacier Instant Retrieval is unsuitable for hot analytic workloads.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Scheduled Hudi compaction (for merge-on-read) and clustering combine small files and rewrite columnar data for efficient downstream scans.",
+      "Disabling the Hudi metadata table forces full file listings on S3, which is slower, not faster.",
+      "CSV is row-oriented and inflates scan size; it does not solve the small-files problem.",
+      "Glacier Instant Retrieval is intended for rarely accessed data and is unsuitable for hot analytic queries."
+    ]
   },
   {
     "id": 10,
@@ -127,7 +181,13 @@
     ],
     "answer": 0,
     "explanation": "Step Functions Standard workflows offer native retries, error handling, and a Distributed Map that scales to tens of thousands of parallel iterations with checkpointing. MWAA charges for the environment regardless of usage. Glue Workflows lack rich conditional logic. Data Pipeline is on a deprecation path and generally discouraged for new builds.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Step Functions Standard workflows price per state transition, support native retry/back-off, and the Distributed Map state scales to tens of thousands of parallel iterations.",
+      "MWAA is environment-priced (you pay for the always-on environment) and adds operational overhead for a serverless requirement.",
+      "Glue Workflows are good for Glue triggers but lack rich conditional branching and parallel-map at scale.",
+      "AWS Data Pipeline is largely deprecated and not recommended for new builds."
+    ]
   },
   {
     "id": 11,
@@ -140,7 +200,13 @@
     ],
     "answer": 0,
     "explanation": "Flink's event-time processing with watermarks plus allowed lateness is the canonical pattern for out-of-order data. Processing-time windows ignore event timestamps and produce incorrect results. Retention controls replay, not late event handling. Firehose does not perform stateful event-time aggregation.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Event-time processing with a watermark strategy that tolerates the observed lateness, plus allowed lateness on windows, is the canonical Flink pattern for out-of-order events.",
+      "Processing-time windows ignore the event timestamp and produce incorrect aggregations whenever data is late.",
+      "Retention controls how long records remain replayable; it does not change window correctness.",
+      "Firehose performs micro-batch delivery, not stateful event-time aggregation with allowed lateness."
+    ]
   },
   {
     "id": 12,
@@ -153,7 +219,13 @@
     ],
     "answer": 0,
     "explanation": "DataBrew recipes are sequences of transformations that can be versioned and referenced by jobs. Glue Data Quality runs DQDL rule evaluations; it does not transform data. Exporting to Glue Studio is not necessary for this in-DataBrew use case, and a lineage view does not perform transformations.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - DataBrew recipes are versioned, reusable sequences of transformation steps that DataBrew jobs reference for cleansing and normalization.",
+      "Glue Data Quality evaluates DQDL rules; it reports rule outcomes but does not perform value transformations.",
+      "Exporting to Glue Studio leaves DataBrew entirely; the engineer's stated goal is to do it within DataBrew.",
+      "A DataBrew lineage view shows column-level lineage; it has no automated remediation capability."
+    ]
   },
   {
     "id": 13,
@@ -166,7 +238,13 @@
     ],
     "answer": 0,
     "explanation": "Idempotent downstream consumers keyed on the LSN, plus a transactional sink such as Iceberg, eliminate duplicates regardless of upstream redelivery. A single worker reduces availability and does not solve duplicates fundamentally. Disabling CDC defeats the purpose. Replication factor improves durability, not deduplication.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Downstream consumers that key on the Debezium LSN/transaction id and write to a transactional sink (Iceberg with MERGE/MoR) deduplicate idempotently regardless of upstream redeliveries.",
+      "Pinning to a single worker reduces availability and is not how MSK Connect autoscaling delivers exactly-once.",
+      "Switching to DMS without CDC defeats the requirement of capturing changes.",
+      "Replication factor improves broker durability but does not deduplicate logical events."
+    ]
   },
   {
     "id": 14,
@@ -179,7 +257,13 @@
     ],
     "answer": 0,
     "explanation": "Athena Federated Query lets you run SQL across S3 and external sources via Lambda-based connectors (including JDBC for Postgres), so no copy is required. Blueprints and DMS create copies. Redshift Spectrum federates Redshift with S3, not Postgres.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Athena Federated Query with the JDBC connector executes joins across S3 and Postgres without copying the operational data.",
+      "Lake Formation Blueprints copies Postgres into S3 on a schedule, which the scenario explicitly wants to avoid.",
+      "Redshift Spectrum federates Redshift with S3; it is not a Postgres federation feature for Athena.",
+      "DMS continuous replication creates a copy of the source data in S3, which is the data movement the scenario forbids."
+    ]
   },
   {
     "id": 15,
@@ -192,7 +276,13 @@
     ],
     "answer": 0,
     "explanation": "Glue ETL jobs use Spark, bill per DPU-second, and provide native PII detection transforms or integration with redaction logic. Athena CTAS is SQL-only and not ideal for nested transforms with PII redaction at this scale. Lambda has a 15-minute limit. EMR on EC2 is not serverless and adds cluster management overhead.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Glue ETL jobs run Spark with per-DPU-second pricing and include native Detect-PII transforms (or integration with Macie-driven masking) for nested JSON-to-Parquet conversions.",
+      "Athena CTAS is SQL only and not well suited to nested JSON transforms with conditional PII redaction at scale.",
+      "Lambda has a 15-minute execution cap and is awkward for 50 GB Spark-class workloads.",
+      "EC2 Spot Spark on EMR is not serverless and adds cluster management work."
+    ]
   },
   {
     "id": 16,
@@ -205,7 +295,13 @@
     ],
     "answer": 0,
     "explanation": "Parquet with Snappy plus partitioning by date and a low-cardinality column dramatically reduces Athena scan size by enabling columnar pruning and partition pruning. Zstandard JSON is still row-oriented. Athena does not have a native Kinesis Streams connector for ad-hoc SQL. Faster crawlers do not change file format.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Converting to Parquet with Snappy plus dynamic partitioning on date and event_type enables Athena column pruning and partition pruning, slashing scan size.",
+      "Increasing the buffer and switching JSON to Zstandard still leaves row-oriented data that Athena must scan in full.",
+      "Athena has no direct ad-hoc SQL connector to Kinesis Data Streams; rerouting through Streams does not help SQL scan cost.",
+      "More frequent crawls update partitions on the same JSON files; format and partitioning are what cut cost."
+    ]
   },
   {
     "id": 17,
@@ -218,7 +314,13 @@
     ],
     "answer": 0,
     "explanation": "Iceberg requires a catalog that supports atomic commits (Glue with Iceberg, DynamoDB-locked Hadoop catalog, etc.) to ensure readers only see committed snapshots. Disabling caching does not fix non-atomic commits. Hive ACID is unrelated and weaker. MoR/compaction does not address atomicity.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Iceberg correctness requires an atomic-commit catalog (Glue Iceberg catalog or DynamoDB-backed Hadoop locking) so each MERGE installs a single new snapshot atomically and readers never see partial state.",
+      "Disabling metadata caching does not make a non-atomic catalog atomic; it only avoids staleness.",
+      "Hive ACID is unrelated to Iceberg snapshot atomicity and has weaker semantics overall.",
+      "MoR and per-MERGE compaction do not address commit atomicity at the catalog level."
+    ]
   },
   {
     "id": 18,
@@ -231,7 +333,13 @@
     ],
     "answer": 0,
     "explanation": "Flink SQL TUMBLE windows over an event_time attribute with a watermark strategy align directly with KDA SQL ROWTIME/INTERVAL semantics. countWindow is record-count based, not time. Processing-time windows lose event-time correctness. RisingWave is a third-party product.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Flink SQL TUMBLE windows over an event_time attribute with a watermark strategy directly mirror KDA SQL ROWTIME and INTERVAL semantics.",
+      "countWindow buckets by record count, not by time, which changes the semantics.",
+      "Processing-time-only windows lose event-time correctness for late or out-of-order data.",
+      "RisingWave is a third-party product; deploying it on Lambda is not the canonical migration path."
+    ]
   },
   {
     "id": 19,
@@ -244,7 +352,13 @@
     ],
     "answer": 0,
     "explanation": "EventBridge provides cron-based scheduling and event filtering, so it can gate when SNS-driven invocations actually trigger MWAA. Per-minute polling DAGs are wasteful and noisy. Always-on polling DAGs cost more and add complexity. Re-creating environments adds outage and operational risk.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - EventBridge can receive the SNS notification, gate it with a cron schedule expression for business hours, and invoke MWAA via the API only inside the allowed window.",
+      "Per-minute scheduled DAGs waste resources and create noisy log/task volume.",
+      "An always-on polling DAG costs the most and is the antithesis of event-driven.",
+      "Re-creating MWAA environments to save cost adds outage risk and operational complexity."
+    ]
   },
   {
     "id": 20,
@@ -257,7 +371,13 @@
     ],
     "answer": 0,
     "explanation": "Native DynamoDB exports to S3 (full or incremental) require PITR but are managed, consistent, and avoid the cost and complexity of building stream processors. Custom Lambda writers risk duplicates and require careful state. Parallel scans consume RCUs and are not snapshot-consistent. DMS from DynamoDB is limited and operationally heavier than native exports.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Native DynamoDB exports to S3 (full or incremental) require PITR and produce snapshot-consistent files without consuming RCUs or building stream processors.",
+      "A Lambda-driven Stream writer can duplicate or miss records on retries and requires custom checkpointing logic.",
+      "Parallel scans burn RCUs and do not produce a snapshot-consistent point-in-time export.",
+      "DMS from DynamoDB is supported but operationally heavier than native exports for analytics use cases."
+    ]
   },
   {
     "id": 21,
@@ -270,7 +390,13 @@
     ],
     "answer": 0,
     "explanation": "Glue Data Quality uses DQDL with rules such as Completeness '%column%' > 0.95; Glue jobs can fail on rule failure to stop the pipeline. A trigger condition based on row count does not capture per-column completeness. Athena/DataBrew options either lack pipeline-level enforcement or detect issues only after the fact.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - A DQDL ruleset with per-column Completeness rules combined with a Glue job action that fails on rule failure gives fail-fast enforcement.",
+      "A Glue trigger condition on row count does not catch per-column completeness drops.",
+      "An Athena scheduled query runs after the data is written; it does not gate the pipeline up front.",
+      "DataBrew profiling reports metrics but does not enforce pipeline failure on rule violations."
+    ]
   },
   {
     "id": 22,
@@ -283,7 +409,13 @@
     ],
     "answer": 0,
     "explanation": "You can change crawler schema-update behavior so it only adds new partitions to the existing table without modifying the schema, eliminating drift from sparse fields. Sample size helps but does not eliminate inference drift. CSV is lossy for nested data. Recrawling all data does not solve schema instability.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Setting the crawler to update partitions only (and not the table schema) with an explicit schema definition prevents inferred drift on sparse fields.",
+      "A larger sample reduces drift probability but does not guarantee stability when sparse fields are missing in a sample.",
+      "Converting nested JSON to CSV loses structure and is the wrong remediation for schema instability.",
+      "Recrawling all data on each run does not change how the schema is inferred from sparse fields."
+    ]
   },
   {
     "id": 23,
@@ -296,7 +428,13 @@
     ],
     "answer": 0,
     "explanation": "ISM policies define states (hot, warm, cold) and transitions/actions (rollover, force_merge, delete) declaratively per index. UltraWarm alone does not implement transitions. Cron-driven DELETE is brittle. Snapshots are for backups, not lifecycle tiers.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - Index State Management (ISM) policies define states (hot, warm, cold) and conditional transitions/actions such as rollover, force_merge, and delete.",
+      "UltraWarm-only retention does not implement rollover or multi-state transitions.",
+      "Scheduling DELETE _index via CloudWatch is brittle and lacks state-based rollover semantics.",
+      "Snapshot lifecycle management is for backups, not tier transitions."
+    ]
   },
   {
     "id": 24,
@@ -309,7 +447,13 @@
     ],
     "answer": 0,
     "explanation": "KCL stores lease state in a DynamoDB table; workers acquire leases and rebalance automatically. Enhanced fan-out provides dedicated read throughput per consumer but does not assign shards. Firehose is a delivery service. Manual assignment defeats the purpose of KCL.",
-    "domain": "Data Ingestion and Transformation"
+    "domain": "Data Ingestion and Transformation",
+    "optionExplanations": [
+      "Correct - The Kinesis Client Library coordinates per-shard leases via a DynamoDB lease table and rebalances automatically; tuning lease and shard-sync intervals controls failover behavior.",
+      "Enhanced fan-out gives dedicated read throughput per consumer but does not assign shards to workers.",
+      "Firehose is a delivery service, not a KCL consumer mechanism.",
+      "Manual DescribeStream shard assignment defeats the lease-balancing the KCL is designed to provide."
+    ]
   },
   {
     "id": 25,
@@ -322,7 +466,13 @@
     ],
     "answer": 0,
     "explanation": "Intelligent-Tiering automatically moves objects between access tiers, eliminating early-deletion or retrieval surprises while still optimizing cost. Standard-IA and One Zone-IA penalize access patterns that turn out to be frequent. Glacier Instant Retrieval is for rarely accessed data only.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - S3 Intelligent-Tiering auto-tiers objects between frequent, infrequent, and archive access tiers (optionally Deep Archive) based on observed access patterns, with no retrieval fees in the active tiers.",
+      "Standard-IA charges retrieval fees and minimum object durations; wrong if access turns out frequent.",
+      "One Zone-IA halves price but only stores in one AZ, reducing durability for unknown workloads.",
+      "Glacier Instant Retrieval is for rarely accessed data; using it from day one penalizes hotter access patterns."
+    ]
   },
   {
     "id": 26,
@@ -335,7 +485,13 @@
     ],
     "answer": 0,
     "explanation": "S3 Tables run automatic Iceberg maintenance, including compaction, snapshot expiration, and orphan/unreferenced file cleanup. They are integrated with Glue/Athena/EMR. Disabling snapshots would break time travel and atomicity, which is not the case.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Amazon S3 Tables perform built-in Iceberg maintenance: compaction, snapshot expiry, and unreferenced/orphan file cleanup, fully integrated with Glue, Athena, and EMR.",
+      "S3 Tables include managed maintenance; you do not need an external Glue job to compact.",
+      "Snapshots remain enabled; they are how Iceberg provides time travel and atomic commits.",
+      "Athena, EMR, Redshift, and Glue can all query S3 Tables."
+    ]
   },
   {
     "id": 27,
@@ -348,7 +504,13 @@
     ],
     "answer": 0,
     "explanation": "Redshift supports row-level security policies that filter rows based on a SQL expression evaluated for the session user/role. Column-level grants do not filter rows. Federated identity controls authentication. Data Sharing exposes whole datasets, not row subsets.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Redshift row-level security policies attached to a table filter rows per session role/user via a SQL predicate.",
+      "Column-level grants control which columns are visible, not which rows.",
+      "Federated identity governs authentication; it does not perform row-level filtering.",
+      "Data Sharing exposes entire datashare objects without per-row filtering."
+    ]
   },
   {
     "id": 28,
@@ -361,7 +523,13 @@
     ],
     "answer": 0,
     "explanation": "KEY distribution on the join column places matching rows on the same slice, eliminating redistribution for joins on order_id. ALL replicates the table to every slice (great for small dims, not large facts). EVEN ignores the join. AUTO can pick KEY but explicit declaration is best for known patterns.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - DISTSTYLE KEY on the shared join column co-locates rows on the same slice, eliminating redistribution for joins on order_id.",
+      "DISTSTYLE ALL replicates the table to every slice; that is fine for small dimensions but wasteful for large facts.",
+      "DISTSTYLE EVEN ignores join semantics and forces redistribution at join time.",
+      "DISTSTYLE AUTO may pick KEY eventually, but with a known frequent join the explicit declaration is the most direct answer."
+    ]
   },
   {
     "id": 29,
@@ -374,7 +542,13 @@
     ],
     "answer": 0,
     "explanation": "Spectrum reads data in S3 without loading; Data Sharing exposes objects (including materialized views) to consumer clusters. COPY ingests instead of querying in place. Streaming Ingestion is for Kinesis/MSK, not S3. RA3 storage is internal to Redshift and not S3.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Redshift Spectrum reads S3 Parquet without ingestion, while Redshift Data Sharing exposes objects (including materialized views) to consumer clusters.",
+      "COPY ingests data into Redshift; Federated Query targets RDS/Aurora, not Redshift-to-Redshift sharing.",
+      "Streaming Ingestion is for Kinesis/MSK, not S3 file analytics; external schemas alone do not share materialized views across clusters.",
+      "RA3 managed storage is internal to Redshift; zero-ETL is for operational sources, not cross-cluster MV sharing."
+    ]
   },
   {
     "id": 30,
@@ -387,7 +561,13 @@
     ],
     "answer": 0,
     "explanation": "Composite SK with order_date prefix supports the time-range query and the per-customer query, while a GSI keyed by order_id supports point lookups by order_id. LSIs share the table's partition key, so option B's LSI definition is invalid. Scans are inefficient. Single-attribute keys cannot satisfy the per-customer query.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - PK customer_id with SK order_date#order_id enables both per-customer listing and time-range queries; a GSI keyed by order_id covers point lookups.",
+      "Local secondary indexes share the table's partition key, so an LSI keyed by customer_id is invalid when the table PK is order_id.",
+      "Without an index on date or a sort key prefixed by date, the time-range query degrades to a scan/filter.",
+      "A single-attribute order_id PK forces a full-table scan for any per-customer query."
+    ]
   },
   {
     "id": 31,
@@ -400,7 +580,13 @@
     ],
     "answer": 0,
     "explanation": "Partition projection lets Athena compute partition locations from query predicates rather than listing them in Glue, dramatically reducing planning time on large partition counts. Result caching helps repeated queries, not planning. Athena Spark and Glue throttling do not address partition explosion.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Partition projection computes partition values from query predicates without listing Glue partitions, eliminating planning overhead for tables with millions of partitions.",
+      "Result caching helps repeated queries; it does not reduce planning time on a fresh query.",
+      "Athena Spark parallelism does not change Athena SQL partition planning.",
+      "There is no Athena setting to override Glue catalog throttling that would help here."
+    ]
   },
   {
     "id": 32,
@@ -413,7 +599,13 @@
     ],
     "answer": 0,
     "explanation": "OpenSearch supports hot, UltraWarm, and cold tiers, with ISM automating transitions. Cross-cluster search adds complexity without benefit here. Pure Glacier breaks search SLAs. OpenSearch Serverless time-series has different limits and does not natively model three tiers in this way.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - OpenSearch hot data nodes plus UltraWarm and cold storage tiers, with ISM driving transitions, models the hot/warm/cold lifecycle natively.",
+      "Two separate domains with cross-cluster search adds operational complexity without meaningful benefit.",
+      "Sending everything to Glacier breaks search SLAs because retrieval is slow and asynchronous.",
+      "OpenSearch Serverless time-series collections have different sizing and retention semantics and do not directly model three explicit tiers."
+    ]
   },
   {
     "id": 33,
@@ -426,7 +618,13 @@
     ],
     "answer": 0,
     "explanation": "Global Tables use last-writer-wins conflict resolution per attribute based on the timestamp of the writes. There is no first-writer-wins option, no built-in custom resolver, and no required exception. Applications can add their own logic on top, but the default is LWW.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - DynamoDB Global Tables resolve concurrent regional writes with last-writer-wins based on the write timestamp at the originating endpoint.",
+      "There is no first-writer-wins option in Global Tables.",
+      "Global Tables do not invoke a custom conflict resolver; LWW is automatic.",
+      "Global Tables do not surface a ConflictException for cross-region writes; the resolution is silent LWW."
+    ]
   },
   {
     "id": 34,
@@ -439,7 +637,13 @@
     ],
     "answer": 0,
     "explanation": "DocumentDB is API compatible with a documented subset of MongoDB; you must verify that operators/commands you depend on are listed as supported in the targeted version. Port compatibility is trivial. DocumentDB uses managed storage, not BYO. Community plugins are not supported.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - DocumentDB implements a documented subset of MongoDB API features per version, so validating that every required operator and command is supported in the targeted version is the key compatibility task.",
+      "Port choice is a trivial configuration detail and is not the migration blocker.",
+      "DocumentDB uses managed storage; bring-your-own-storage is not a feature.",
+      "MongoDB community plugins are not supported on DocumentDB."
+    ]
   },
   {
     "id": 35,
@@ -452,7 +656,13 @@
     ],
     "answer": 0,
     "explanation": "Athena supports Iceberg time travel using FOR TIMESTAMP AS OF or FOR VERSION AS OF. The other syntaxes are not valid. Calling rollback would mutate the table, not provide a read-only time-travel query, and the WHERE clause does not access historical snapshots.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Athena supports Iceberg time travel via FOR TIMESTAMP AS OF '<ts>' and FOR VERSION AS OF <snapshot_id>.",
+      "WITH (snapshot=...) is not valid Athena Iceberg syntax.",
+      "CALL system.rollback_to_snapshot mutates the table state rather than performing a read-only time-travel query.",
+      "Filtering on a snapshot_ts column does not access older snapshot data; it only filters within the current snapshot."
+    ]
   },
   {
     "id": 36,
@@ -465,7 +675,13 @@
     ],
     "answer": 0,
     "explanation": "Bucketing distributes high-cardinality columns across a fixed number of files within each partition, enabling pruning without partition explosion. Adding country as a second partition with high cardinality leads to small files and slow planning. CSV is row-oriented and worse. Removing partitioning increases scan size.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Keeping date partitioning and bucketing by country (Hive bucketing or Iceberg hidden partitioning) prunes high-cardinality columns without exploding partition counts.",
+      "Adding country as a second partition layer creates thousands of small partitions per day, harming planning and file size.",
+      "CSV is row-oriented and discards Parquet's columnar advantages.",
+      "Removing partitioning forces full-table scans on every predicate."
+    ]
   },
   {
     "id": 37,
@@ -478,7 +694,13 @@
     ],
     "answer": 0,
     "explanation": "Redshift Streaming Ingestion supports an external schema over Kinesis (or MSK) and lets you build incremental materialized views with AUTO REFRESH. Spectrum/S3-based polling is a workaround. Federated Query does not target Kinesis. The Data API approach is custom and inefficient.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Redshift Streaming Ingestion attaches an external schema to a Kinesis (or MSK) stream and supports incremental materialized views with AUTO REFRESH YES.",
+      "Spectrum over Firehose's S3 output requires polling and scheduled REFRESH; it is not native streaming ingestion.",
+      "Federated Query targets RDS/Aurora/Postgres-like sources, not Kinesis streams.",
+      "Polling via the Data API is custom code and does not provide streaming materialized views."
+    ]
   },
   {
     "id": 38,
@@ -491,7 +713,13 @@
     ],
     "answer": 0,
     "explanation": "Iceberg provides expire_snapshots and remove_orphan_files (and rewrite_data_files for compaction) procedures to manage history and storage. VACUUM FULL is Postgres syntax. Dropping/recreating loses time travel and is destructive. You cannot disable snapshot creation in Iceberg writes.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - Iceberg provides expire_snapshots and remove_orphan_files (and rewrite_data_files for compaction) procedures to manage history and clean up unreferenced data.",
+      "VACUUM FULL is PostgreSQL syntax; it does not exist in Iceberg.",
+      "Dropping and recreating destroys time travel and is high risk.",
+      "You cannot disable snapshot creation on Iceberg writes; snapshots are the unit of atomicity."
+    ]
   },
   {
     "id": 39,
@@ -504,7 +732,13 @@
     ],
     "answer": 0,
     "explanation": "Storage Lens advanced metrics and recommendations include prefix-level visibility, anomaly detection, and cost optimization tips - the deepest first-party insight. Inventory plus CloudTrail provides raw data but requires significant work. Cost Explorer is coarse-grained. Access Analyzer is for permissions, not cost.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - S3 Storage Lens advanced metrics with prefix-level aggregation expose granular activity, anomaly detection, and cost optimization recommendations across hundreds of buckets.",
+      "S3 Inventory plus CloudTrail in Athena requires custom ETL and queries; Storage Lens already provides cost recommendations.",
+      "Cost Explorer is coarse and cannot drill down to prefix-level S3 usage.",
+      "Access Analyzer audits permissions, not cost or storage patterns."
+    ]
   },
   {
     "id": 40,
@@ -517,7 +751,13 @@
     ],
     "answer": 0,
     "explanation": "S3 Lifecycle has a built-in 'AbortIncompleteMultipartUpload' action that cleans up parts older than N days at no additional code cost. A Lambda accomplishes the same but adds operational overhead. Versioning rules apply to object versions, not orphan upload parts.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - An S3 Lifecycle rule with the AbortIncompleteMultipartUpload action cleans up orphan upload parts after a defined number of days, with no code.",
+      "A custom Lambda achieves the same thing but adds operational overhead and cost.",
+      "Versioning NoncurrentVersionExpiration applies to object versions, not orphan upload parts.",
+      "There is no retention setting that overwrites stale uploads; that is not how multipart uploads work."
+    ]
   },
   {
     "id": 41,
@@ -530,7 +770,13 @@
     ],
     "answer": 0,
     "explanation": "Redshift COPY with Parquet performs parallel ingestion across many files (preferably one per slice) and is the recommended bulk-load mechanism. Row-by-row INSERTs are extremely slow. A single large file underutilizes the cluster. The Data API with batch INSERTs is for OLTP-like patterns, not 500 GB loads.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "Correct - COPY with FORMAT AS PARQUET and a manifest of many files leverages Redshift's parallel ingestion across slices, which is the recommended bulk-load path.",
+      "Row-by-row INSERT ... SELECT through an external table is dramatically slower than COPY.",
+      "Single-file COPY underutilizes the cluster's slices and parallelism.",
+      "Data API batch INSERTs are designed for small OLTP-style workloads, not 500 GB bulk loads."
+    ]
   },
   {
     "id": 42,
@@ -543,7 +789,13 @@
     ],
     "answer": 2,
     "explanation": "FORWARD compatibility ensures old consumers (readers using the previous schema) can still read data produced with the new schema. Adding a field with a default value is the textbook FORWARD-compatible change because old readers simply ignore the unknown field while the default fills in the gap. BACKWARD compatibility is the inverse: it ensures new readers can process old data. NONE disables all checks. FULL requires both directions but is not the most direct match for this scenario.",
-    "domain": "Data Store Management"
+    "domain": "Data Store Management",
+    "optionExplanations": [
+      "BACKWARD compatibility ensures new readers can read old data; here, however, the consumers stay on the old schema while the producer writes the new schema, so we need the other direction.",
+      "NONE disables checks; relying on coincidence rather than the schema-registry contract is not how managed compatibility is intended to work.",
+      "Correct - FORWARD compatibility ensures old readers can read data written by a newer schema; adding a field with a default value is the textbook FORWARD-compatible change because old readers ignore the unknown field.",
+      "FULL compatibility requires both directions and does not forbid adding fields; the description in the option is wrong, and FORWARD alone is the most direct match."
+    ]
   },
   {
     "id": 43,
@@ -556,7 +808,13 @@
     ],
     "answer": 0,
     "explanation": "Glue job metrics (DPU usage, executor counts), continuous logging, and the Spark history server give the most actionable performance data; CloudWatch alarms enable proactive monitoring. S3-plus-Athena is offline. X-Ray does not deeply trace Spark executors. The Glue run dashboard summarizes but is not the full Spark UI.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Glue job metrics plus continuous logging, the Spark history server, and CloudWatch alarms on driver/executor metrics give the most actionable performance signal.",
+      "Logs in S3 queried via Athena are offline forensic data, not real-time diagnostics.",
+      "X-Ray does not instrument Spark executor internals.",
+      "The Glue run dashboard shows summary status; it does not embed the full Spark UI by default."
+    ]
   },
   {
     "id": 44,
@@ -569,7 +827,13 @@
     ],
     "answer": 0,
     "explanation": "Iceberg's snapshot mechanism enables atomic rollback to a previous good state. S3 versioning alone risks restoring partial sets of files inconsistently. CloudTrail Data Events do not record content. Full reload is high-risk and slow.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Iceberg's rollback_to_snapshot (or set_current_snapshot) atomically reverts the table to a previously committed snapshot, the fastest recovery path.",
+      "S3 versioning works at the object level and can leave a partial set of files inconsistent across data and metadata.",
+      "CloudTrail Data Events log API calls, not object contents; they cannot reconstruct the table.",
+      "Rerunning the full pipeline is slow and risks the same error reoccurring."
+    ]
   },
   {
     "id": 45,
@@ -582,7 +846,13 @@
     ],
     "answer": 0,
     "explanation": "Auto WLM with query priorities and short query acceleration (SQA) directs interactive BI queries to a high-priority lane. A single queue cannot isolate workloads. Disabling concurrency scaling reduces, not increases, capacity. Spectrum is for S3 data, not BI queries against Redshift-resident tables.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Auto WLM with query priorities (and short query acceleration for sub-second BI queries) isolates and prioritizes interactive workloads over heavy ETL.",
+      "A single WLM queue with all memory cannot isolate workloads.",
+      "Disabling concurrency scaling removes additional capacity and worsens contention.",
+      "Spectrum reads S3 external tables; it does not bypass contention for Redshift-resident BI tables."
+    ]
   },
   {
     "id": 46,
@@ -595,7 +865,13 @@
     ],
     "answer": 0,
     "explanation": "Athena workgroups support per-query and per-workgroup data usage limits to cap scan size and trigger alerts. Disabling Athena entirely is too broad. SCP denies are heavy-handed and slow to deploy. Glacier breaks legitimate workloads.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Athena workgroups enforce per-query and per-workgroup data-scanning limits (DataUsageControlLimit) that cap scan size and trigger alerts.",
+      "Disabling Athena in the region blocks every legitimate user too.",
+      "An SCP denying athena:* is too broad and takes time to roll out account-wide.",
+      "Moving data to Glacier breaks every other query against the dataset."
+    ]
   },
   {
     "id": 47,
@@ -608,7 +884,13 @@
     ],
     "answer": 0,
     "explanation": "Custom operators belong in plugins.zip uploaded to the configured S3 path; MWAA loads them as Airflow plugins. requirements.txt is for PyPI dependencies. Inline imports in dags/ are not the supported plugin pattern. Lambda Layers are unrelated to MWAA workers.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - MWAA loads custom operators from the plugins.zip uploaded to the configured S3 path; airflow.plugins_manager picks them up at scheduler start.",
+      "requirements.txt installs PyPI packages by name; it cannot package arbitrary custom operator source.",
+      "Placing operator source in dags/ may import locally but is not the documented MWAA plugin pattern and can cause inconsistent loading.",
+      "Lambda Layers are unrelated to MWAA workers; they cannot supply operators to Airflow."
+    ]
   },
   {
     "id": 48,
@@ -621,7 +903,13 @@
     ],
     "answer": 0,
     "explanation": "Memory pressure typically requires larger workers (e.g., G.2X) or more parallelism, with tuned executor memory and overhead. Capping autoscaling to 2 workers worsens it. Python shell may not handle the data volume. Bookmarks consume negligible memory.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Switching to G.2X (or higher) workers and/or adding workers, with tuned executor memory and overhead, is the standard fix for YARN OOM kills.",
+      "Capping autoscaling at 2 workers reduces available memory and increases the pressure.",
+      "Glue Python shell jobs cannot replace Spark-scale ETL.",
+      "Job bookmarks consume negligible memory; disabling them does not free meaningful headroom."
+    ]
   },
   {
     "id": 49,
@@ -634,7 +922,13 @@
     ],
     "answer": 0,
     "explanation": "Step Functions Standard workflows can stream execution data (including state inputs/outputs) to CloudWatch Logs and emit events to EventBridge; built-in metrics support alarming on ExecutionTime. Express is for high-volume, short workflows. Tailing only on demand is reactive. Lambda Destinations cannot replace orchestration.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Standard workflow execution data logging records state inputs/outputs, CloudWatch alarms on ExecutionTime catch SLA breaches, and EventBridge events drive downstream alerts.",
+      "On-demand tailing is reactive and misses real-time alerting.",
+      "Express workflows are for high-volume short-lived flows; they have different durability and history semantics.",
+      "Lambda Destinations route async invoke results; they do not provide orchestration with state-level audit."
+    ]
   },
   {
     "id": 50,
@@ -647,7 +941,13 @@
     ],
     "answer": 0,
     "explanation": "Iterator age indicates the consumer is falling behind. More shards (or enhanced fan-out per consumer) increase aggregate throughput; tuning the consumer's concurrency drains faster. Decreasing retention only causes data loss. Producer changes do not help consumer lag. Smaller batches typically reduce throughput.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Iterator age means the consumer is behind; more shards (or enhanced fan-out per consumer) plus higher consumer concurrency drain the backlog.",
+      "Decreasing retention does not help the consumer keep up; it only loses data that the consumer has not yet read.",
+      "Producer changes do not affect consumer-side lag.",
+      "Smaller batch sizes typically reduce throughput, making the lag worse."
+    ]
   },
   {
     "id": 51,
@@ -660,7 +960,13 @@
     ],
     "answer": 0,
     "explanation": "Advanced event selectors scope Data Events to specific buckets/prefixes, dramatically lowering volume; Intelligent-Tiering further reduces cost. Server access logs are not as detailed or queryable. Insights detect anomalies, not detailed events. Infinite retention only increases cost.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Advanced event selectors scope Data Events to specific buckets/prefixes (and optionally specific API verbs), dramatically reducing volume; Intelligent-Tiering further reduces log storage cost.",
+      "S3 server access logs are less detailed and harder to query than CloudTrail Data Events.",
+      "CloudTrail Insights detects anomalies in management activity; it is not a substitute for Data Events.",
+      "CloudWatch Logs with infinite retention only increases cost."
+    ]
   },
   {
     "id": 52,
@@ -673,7 +979,13 @@
     ],
     "answer": 0,
     "explanation": "PITR allows restoring to any second within the last 35 days into a new table for inspection. DynamoDB Streams retain only 24 hours and are not whole-state snapshots. DAX is a cache and has no snapshot history. Lambda dry-runs do not reconstruct state.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - PITR can restore a DynamoDB table to any second within the last 35 days into a new table for forensic analysis.",
+      "DynamoDB Streams retain only 24 hours and provide per-item change events, not a complete prior table state.",
+      "DAX is an in-memory cache; it has no historical snapshots.",
+      "Dry-running the original Lambda triggers does not recreate the table data they ran against."
+    ]
   },
   {
     "id": 53,
@@ -686,7 +998,13 @@
     ],
     "answer": 0,
     "explanation": "DataZone provides a business-friendly catalog with publishing, search, subscription requests, and approvals across accounts. Lake Formation handles permissions but is not a self-service discovery portal. Data Quality measures dataset health. Service Catalog is for IT product portfolios.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Amazon DataZone is purpose-built for business-friendly data discovery, publishing, subscription requests, and approvals across accounts.",
+      "Lake Formation enforces fine-grained permissions but is not the self-service catalog portal.",
+      "Glue Data Quality measures dataset health, not discovery or access.",
+      "Service Catalog is for IT product portfolios, not data product discovery."
+    ]
   },
   {
     "id": 54,
@@ -699,7 +1017,13 @@
     ],
     "answer": 0,
     "explanation": "Athena Spark exposes per-calculation Spark UI and CloudWatch logs from the notebook session for debugging. Explain plans are SQL-only. X-Ray does not instrument Spark calculations. CloudShell cannot attach to managed Athena Spark sessions.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Athena Spark exposes a per-calculation Spark UI from the execution details, plus CloudWatch logs from the notebook session, for end-to-end debugging.",
+      "Explain plans are SQL-only and do not apply to PySpark calculations.",
+      "X-Ray does not trace inside Athena Spark calculations.",
+      "CloudShell cannot attach to managed Athena Spark sessions; they are not user-accessible."
+    ]
   },
   {
     "id": 55,
@@ -712,7 +1036,13 @@
     ],
     "answer": 0,
     "explanation": "EMR managed scaling with On-Demand core for stable storage and Spot task nodes (in instance fleets) balances cost and reliability. Spot masters lose the cluster on interruption. Single instance has no parallelism. Disabling HDFS and relying on local NVMe risks data loss.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Managed scaling with diversified instance fleets, On-Demand core nodes for stability, and Spot task nodes for elasticity gives both savings and SLA stability.",
+      "Running master and core on Spot risks complete cluster loss on Spot interruption.",
+      "A single On-Demand instance loses parallelism and is the opposite of cost-optimized for Spark.",
+      "Disabling HDFS in favor of only local NVMe risks data loss on node loss."
+    ]
   },
   {
     "id": 56,
@@ -725,7 +1055,13 @@
     ],
     "answer": 0,
     "explanation": "EventBridge receives near-real-time Glue job state change events; filtering for FAILED and using an input transformer enriches the SNS message with runId and error details. Polling is not 1-minute reliable. Log metric filters can be slow and noisy. Glue jobs do not have a built-in email setting.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - Glue job state change events are emitted to EventBridge; filtering on FAILED and using an input transformer enriches SNS with the run id and error message in near real time.",
+      "Polling the Glue API every 5 minutes cannot guarantee 1-minute alert latency.",
+      "CloudWatch Logs metric filters on 'ERROR' are noisy and slower than native state-change events.",
+      "Glue jobs do not have a built-in email notification setting."
+    ]
   },
   {
     "id": 57,
@@ -738,7 +1074,13 @@
     ],
     "answer": 0,
     "explanation": "EMR Serverless lets you configure worker disk size; shuffle/spill can also be reduced by repartitioning and setting spark.local.dir to the configured volume. Disabling shuffle compression typically increases disk pressure. Reducing executor memory increases spill. Glue Python shell does not handle large Spark workloads.",
-    "domain": "Data Operations and Support"
+    "domain": "Data Operations and Support",
+    "optionExplanations": [
+      "Correct - EMR Serverless allows configuring worker disk allocation; repartitioning reduces per-task spill and setting spark.local.dir on the configured volume puts shuffle on the larger disk.",
+      "Disabling shuffle compression typically increases shuffle data volume and worsens disk pressure.",
+      "Reducing executor memory increases on-disk spill, the opposite of what is needed.",
+      "Glue Python shell is too small for Spark-scale shuffle workloads."
+    ]
   },
   {
     "id": 58,
@@ -751,7 +1093,13 @@
     ],
     "answer": 0,
     "explanation": "Lake Formation grants column-level (and optionally row-level) permissions on Data Catalog tables. Bucket policies and IAM alone do not understand columns. KMS keys protect ciphertext blobs, not specific columns within Parquet files.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - Lake Formation supports column-level (and optional row/cell-level) permissions on Data Catalog tables, granted per principal.",
+      "S3 bucket policies cannot reason about columns inside Parquet files.",
+      "Glue table-level IAM grants do not enforce column-level filtering for query engines.",
+      "KMS key policies grant decrypt access to whole ciphertext blobs; they cannot scope to specific columns."
+    ]
   },
   {
     "id": 59,
@@ -764,7 +1112,13 @@
     ],
     "answer": 0,
     "explanation": "Glue Data Catalog supports KMS encryption for metadata and connection passwords; jobs need kms:Decrypt on the key to use encrypted connections. SSE-S3 does not encrypt the catalog metadata itself. Secrets rotation alone does not encrypt the catalog.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - Glue Data Catalog supports encryption with a customer-managed KMS key for metadata and connection passwords; ETL job roles need kms:Decrypt to use encrypted connections.",
+      "SSE-KMS on data files does not encrypt the catalog metadata itself.",
+      "SSE-S3 (AES-256) on the catalog is not how catalog encryption is configured; connections need their own KMS protection.",
+      "Secrets rotation alone does not encrypt the catalog metadata; the catalog still must be configured for KMS."
+    ]
   },
   {
     "id": 60,
@@ -777,7 +1131,13 @@
     ],
     "answer": 0,
     "explanation": "Object Lambda transforms S3 GET responses through a Lambda; large objects require streaming responses or chunking to stay within Lambda response limits. There is no content-type restriction. AZ alignment is irrelevant; Lambda is regional. KMS-encrypted objects work normally with proper IAM/KMS permissions.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - Object Lambda runs per GetObject and must respect Lambda response size and timeout limits, so very large redactions need streaming responses or chunked transformation.",
+      "Object Lambda is not restricted to text/plain; it can transform any content type.",
+      "Object Lambda is regional; there is no AZ-alignment requirement with the underlying bucket.",
+      "Object Lambda can access KMS-encrypted objects given the right IAM and KMS grants."
+    ]
   },
   {
     "id": 61,
@@ -790,7 +1150,13 @@
     ],
     "answer": 0,
     "explanation": "Both Kinesis Data Streams and Firehose support SSE with KMS using customer-managed keys; TLS protects data in transit. Client-side encryption is optional, not required. Firehose does not automatically inherit the stream's key. SSE-S3 alone provides only AES-256 with AWS-managed keys, not customer-managed control.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - KDS supports SSE with KMS using customer-managed keys, Firehose supports KMS for the S3 destination, and TLS 1.2 protects data in transit end to end.",
+      "KMS-based SSE on Kinesis Data Streams is a supported native feature; client-side encryption is optional, not required.",
+      "Firehose does not automatically inherit the source stream's KMS key; you must configure the destination key.",
+      "SSE-S3 (AES-256) uses AWS-managed keys and does not provide customer-managed key control."
+    ]
   },
   {
     "id": 62,
@@ -803,7 +1169,13 @@
     ],
     "answer": 0,
     "explanation": "Macie scans S3 for sensitive data using managed and custom identifiers and reports findings with severity. GuardDuty detects threats, not PII content. Config audits configurations. Audit Manager assembles evidence; none classify content like Macie.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - Amazon Macie scans S3 at scale using managed and custom data identifiers and reports findings with severity, designed for sensitive-data discovery.",
+      "GuardDuty (including S3 protection) detects threats and anomalous activity, not data-content classification.",
+      "AWS Config audits resource configurations, not file content.",
+      "Audit Manager assembles compliance evidence; it does not classify content."
+    ]
   },
   {
     "id": 63,
@@ -816,7 +1188,13 @@
     ],
     "answer": 0,
     "explanation": "Workgroups can enforce a result location and encryption setting that overrides client-side configuration, ensuring uniform compliance. Lake Formation governs catalog access, not result encryption. Denying GetQueryResults breaks Athena. Object Lock prevents deletion, not encryption configuration.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - Athena workgroups with 'Override client settings' force a configured result location and required encryption (SSE-KMS or SSE-S3) regardless of client overrides.",
+      "Lake Formation governs catalog access, not query result encryption.",
+      "Denying athena:GetQueryResults breaks Athena entirely instead of enforcing encryption.",
+      "Object Lock prevents deletion but does not enforce that newly written objects are encrypted."
+    ]
   },
   {
     "id": 64,
@@ -829,7 +1207,13 @@
     ],
     "answer": 0,
     "explanation": "Lake Formation supports column-level permissions and data filters that can effectively hide or transform values per principal. The Glue catalog itself has no masking flags. Object Lambda is per-bucket and not principal-aware via Lake Formation grants. Redshift DDM only applies inside Redshift.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - Lake Formation column-level grants combined with data filters can omit or mask the SSN column for analyst principals while granting cleartext to engineers.",
+      "The Glue Data Catalog has no native column-masking flag.",
+      "Object Lambda runs per S3 access point, not per Lake Formation principal, and does not align with catalog-level grants.",
+      "Redshift Dynamic Data Masking only applies inside Redshift, not across a Lake Formation governed lake."
+    ]
   },
   {
     "id": 65,
@@ -842,7 +1226,13 @@
     ],
     "answer": 0,
     "explanation": "Object Lock Compliance mode prevents any user (including the root account) from deleting or overwriting locked object versions for the retention period. IAM/SCP/bucket policies can be changed by privileged users. Versioning preserves prior versions but does not prevent deletion.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - S3 Object Lock in Compliance mode prevents any principal, including the root account, from deleting or overwriting locked object versions for the retention period.",
+      "Bucket policies can be modified by privileged users, so they do not meet the 'least bypass risk' bar.",
+      "Versioning preserves prior versions but allows new versions and lifecycle deletion; it is not write-once-read-many.",
+      "SCPs can be relaxed by the org's management account; they are not immutable for the data itself."
+    ]
   },
   {
     "id": 66,
@@ -855,7 +1245,13 @@
     ],
     "answer": 0,
     "explanation": "RAM-based Lake Formation cross-account sharing with LF-Tags supports scalable, auditable, least-privilege multi-account governance. Sharing keys violates security best practices. IP-based bucket policies are fragile and not identity based. Lambdas with long-lived tokens are an antipattern.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - RAM-backed Lake Formation cross-account grants with LF-Tags enable scalable, least-privilege, auditable governance across producer accounts.",
+      "Sharing IAM user secret keys across teams is a serious security antipattern.",
+      "IP CIDR-based bucket policies are fragile and are not identity-based access control.",
+      "Lambdas with long-lived tokens introduce shared secrets that violate least privilege and rotation requirements."
+    ]
   },
   {
     "id": 67,
@@ -868,7 +1264,13 @@
     ],
     "answer": 0,
     "explanation": "The Redshift Data API supports IAM authentication using temporary credentials assumed by the Lambda role, eliminating long-lived secrets. Plaintext passwords in env vars are insecure. SSH tunneling is unsupported. Static keys are an antipattern.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - The Redshift Data API supports IAM authentication using temporary credentials assumed by the Lambda execution role; no static secrets are required.",
+      "Plaintext master passwords in environment variables are insecure and discouraged by AWS.",
+      "Lambdas cannot SSH-tunnel to a Redshift cluster; that is not a supported architecture.",
+      "Static IAM user access keys with full Redshift permissions violate least privilege and rotation guidance."
+    ]
   },
   {
     "id": 68,
@@ -881,7 +1283,13 @@
     ],
     "answer": 0,
     "explanation": "Glue jobs that need VPC access use a Glue VPC connection; VPC endpoints (Gateway for S3, Interface for the rest) keep traffic on AWS network. Glue jobs without a connection cannot reach private resources. NAT introduces internet egress and cost. Public subnets are unnecessary and less secure.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - A Glue VPC connection plus Gateway endpoints for S3 and Interface endpoints for Glue, KMS, Secrets Manager, and CloudWatch Logs keeps traffic on the AWS network; the self-referencing security group is required for Glue workers.",
+      "Glue jobs without a connection use AWS-managed networking and cannot reach VPC-private resources.",
+      "Routing through a NAT gateway leaves the AWS network and adds cost; the scenario requires no internet access.",
+      "Placing Glue jobs in a public subnet is unnecessary and weakens the security posture."
+    ]
   },
   {
     "id": 69,
@@ -894,7 +1302,13 @@
     ],
     "answer": 0,
     "explanation": "EventBridge Schema Registry can auto-discover event schemas and generate code bindings for consumers. Glue Schema Registry serves MSK/Kinesis producers, not EventBridge. AppSync is GraphQL. CloudFormation types are unrelated.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - EventBridge Schema Registry auto-discovers event schemas and generates code bindings for Java, Python, and TypeScript consumers.",
+      "Glue Schema Registry serves Kafka/MSK and Kinesis producers; it is not integrated with EventBridge buses.",
+      "AppSync schema introspection is for GraphQL APIs, not EventBridge events.",
+      "CloudFormation type bindings are for IaC resource types, not event payloads."
+    ]
   },
   {
     "id": 70,
@@ -907,6 +1321,12 @@
     ],
     "answer": 0,
     "explanation": "CloudTrail captures Athena API calls; workgroup configurations retain query history; Object Lock plus access logging on the result bucket protect and audit results. Default history is not durable for SOX. Object Lambda transforms results but does not audit usage. Macie scans content, not query history.",
-    "domain": "Data Security and Governance"
+    "domain": "Data Security and Governance",
+    "optionExplanations": [
+      "Correct - CloudTrail management events for Athena APIs, workgroup query-history retention, and an audited result bucket with Object Lock and access logging provide full SOX auditability of who queried what and where the results went.",
+      "The default 7-day Athena query history is not durable enough for SOX-class retention.",
+      "Object Lambda redacts content but does not provide auditing of usage.",
+      "Macie scans content for sensitive data; it does not audit query history."
+    ]
   }
 ]

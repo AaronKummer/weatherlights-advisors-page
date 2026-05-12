@@ -262,7 +262,7 @@
       "The S3 console upload caps single-PUT at 5 GB and the multipart console flow is awkward for 200 GB files; federated console roles don't help with that limit.",
       "Transfer Family SFTP works but is operationally expensive overkill for a small research team where the CLI already handles the use case.",
       "Correct — AWS CLI v2 supports IAM Identity Center sso login for short-lived STS credentials, and aws s3 cp does multipart with integrity checksums and supports --sse aws:kms.",
-      "Emailed STS keys are still long-lived enough (up to 36 hours) to be a credential-leak risk, and a weekly Excel-macro process is operationally awful."
+      "Emailed STS keys are still long-lived enough (up to 12 hours per permission-set duration) to be a credential-leak risk, and a weekly Excel-macro process is operationally awful."
     ]
   },
   {
@@ -343,7 +343,7 @@
   },
   {
     "id": 19,
-    "question": "A retail chain is rolling out 600 store-level VPN tunnels back to a hub VPC. Each store needs sub-second failover if the primary tunnel drops, and the security team requires that traffic be encrypted in transit using IKEv2 with PFS. The network team does not want to manage 600 VPN concentrators. Which design is appropriate?",
+    "question": "A retail chain is rolling out 600 store-level VPN tunnels back to a hub VPC. Each store needs rapid (under 30-second) failover if the primary tunnel drops, and the security team requires that traffic be encrypted in transit using IKEv2 with PFS. The network team does not want to manage 600 VPN concentrators. Which design is appropriate?",
     "options": [
       "A. AWS Site-to-Site VPN with two tunnels per connection terminating on a Transit Gateway, using BGP-based ECMP and the AWS-managed VPN endpoint.",
       "B. AWS Client VPN endpoints, one per store.",
@@ -484,10 +484,10 @@
       "D. Kinesis Data Stream with three consumer applications in different shards."
     ],
     "answer": 0,
-    "explanation": "SNS->SQS fanout decouples each consumer; SQS retains messages up to 14 days by default, so a 6-hour downstream outage is absorbed without loss. SNS direct-to-Lambda will retry briefly then DLQ — without an SQS buffer in front, you risk losing or DLQ'ing during long outages. EventBridge has retry/DLQ but the SNS+SQS pattern is the canonical resilience play and is also cheaper for 3 consumers. Kinesis is pull-based with 24h-365d retention but has shard contention between consumers unless using enhanced fan-out, which costs more.",
+    "explanation": "SNS->SQS fanout decouples each consumer; SQS retains messages for 4 days by default and up to 14 days when configured, so a 6-hour downstream outage is absorbed without loss. SNS direct-to-Lambda will retry briefly then DLQ — without an SQS buffer in front, you risk losing or DLQ'ing during long outages. EventBridge has retry/DLQ but the SNS+SQS pattern is the canonical resilience play and is also cheaper for 3 consumers. Kinesis is pull-based with 24h-365d retention but has shard contention between consumers unless using enhanced fan-out, which costs more.",
     "domain": "Design Resilient Architectures",
     "optionExplanations": [
-      "Correct — SNS-to-SQS fanout decouples each consumer; SQS retains messages up to 14 days, so a 6-hour downstream outage is absorbed with zero loss.",
+      "Correct — SNS-to-SQS fanout decouples each consumer; SQS retains messages for 4 days by default (configurable up to 14 days), so a 6-hour downstream outage is absorbed with zero loss.",
       "SNS direct-to-Lambda retries briefly then sends to a DLQ — without an SQS buffer in front, a 6-hour outage will overwhelm the retry window and risk losing events.",
       "EventBridge has retry and DLQ but the SNS+SQS pattern is the canonical resilience play and is cheaper for three fixed consumers.",
       "Kinesis is pull-based with 24h-365d retention but shard reads are shared between consumers without enhanced fan-out, which adds cost and complexity over SNS+SQS."

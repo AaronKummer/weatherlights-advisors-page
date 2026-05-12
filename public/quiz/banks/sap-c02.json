@@ -10,6 +10,12 @@
     ],
     "answer": 0,
     "explanation": "Removing each account from the source org and inviting it to the destination is the supported AWS path; you then re-enroll under the new Control Tower so guardrails and the account factory baseline apply. There is no 'Account Migration Service' for orgs (B is fabricated). Recreating accounts loses CloudTrail history and breaks RIs (C). Two organizations cannot share a single consolidated bill (D); only one management account can be the payer.",
+    "optionExplanations": [
+      "Correct — leaving and re-inviting each member account preserves resources, IAM, and history; re-enrolling into the destination Control Tower applies the new guardrails. Reserved Instances stay with the linked account and the RI Marketplace handles any unsellable commitments.",
+      "There is no AWS 'Account Migration Service' for moving accounts between organizations. Account moves are leave-and-invite, and Control Tower re-enrollment is a separate explicit step.",
+      "Recreating accounts loses CloudTrail history, breaks Reserved Instance ownership, and forces you to reissue every IAM role and resource ARN.",
+      "An account can only belong to one organization at a time; consolidated billing across two organizations is not supported, and RIs/Savings Plans cannot be shared across separate payers."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -23,6 +29,12 @@
     ],
     "answer": 0,
     "explanation": "Control Tower plus AFT gives a Git-driven account factory, mandatory guardrails, and delegated security tooling. Running Lambdas in the management account violates the auditor's no-workloads constraint and is an AWS anti-pattern (B). Permission boundaries don't replace SCPs across accounts (C). Identity Center governs sign-in, not API surface, so it can't prevent workloads from being created in management (D).",
+    "optionExplanations": [
+      "Correct — Control Tower plus AFT provides Git-driven account vending, mandatory guardrails, and delegated administration of security services so the management account stays workload-free.",
+      "Running governance Lambdas in the management account directly violates the auditor's no-workloads constraint, and a hand-rolled StackSets landing zone re-implements what Control Tower already provides.",
+      "Permission boundaries are an identity construct on principals inside an account and do not replicate the cross-account preventative scope of SCPs; per-account Service Catalog also breaks central governance.",
+      "Organizations without Control Tower lacks an account factory and baselined controls, and Identity Center governs federation rather than what services can run inside the management account."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -36,6 +48,12 @@
     ],
     "answer": 1,
     "explanation": "SCPs evaluate at the API call across the entire org and cannot be overridden by identity policies. Config and CloudTrail-based rules are reactive (volume already exists). Permission boundaries scoped per-role are brittle at 80 accounts and miss any role created between Lambda runs.",
+    "optionExplanations": [
+      "Config remediation runs after a non-compliant volume already exists, which violates the 'at the API call' requirement.",
+      "Correct — an SCP denying ec2:CreateVolume with ec2:Encrypted=false and denying DisableEbsEncryptionByDefault prevents the action across every account at the API surface, regardless of any future identity policy.",
+      "Permission boundaries must be re-attached to every new principal; a nightly sweeper leaves a window where new roles bypass the control.",
+      "An EventBridge-driven Lambda is reactive — the unencrypted volume exists for some interval before deletion, failing the 'evaluated at the API call' constraint."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -49,6 +67,12 @@
     ],
     "answer": 0,
     "explanation": "Per-Region TGW keeps east-west latency low and sends 0.0.0.0/0 through an inspection VPC running Network Firewall before the NAT Gateway. Cloud WAN can do this but routing all egress through one Region adds avoidable latency (B). Full mesh peering at 120 VPCs is operationally infeasible and a hub NAT via peering breaks the transitive routing model (C). Hairpinning internet via on-prem (D) wastes bandwidth and adds latency.",
+    "optionExplanations": [
+      "Correct — per-Region TGWs keep east-west traffic local and steer 0.0.0.0/0 from each spoke through a regional inspection VPC running Network Firewall and a NAT Gateway.",
+      "Cloud WAN itself is fine, but funnelling all three Regions' egress through one inspection VPC adds cross-Region latency that the requirements explicitly rule out.",
+      "VPC peering is not transitive, so a hub-NAT design over peering does not work; full mesh at 120 VPCs is also operationally untenable.",
+      "Sending all internet-bound traffic back to on-prem firewalls hairpins traffic, wastes Direct Connect capacity, and breaks the low-latency goal."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -62,6 +86,12 @@
     ],
     "answer": 0,
     "explanation": "Gateway Load Balancer with GENEVE encapsulation is the AWS-blessed way to insert bump-in-the-wire L3 appliances; GWLBe in each spoke gives transparent steering. NLB doesn't preserve flow context for L7 firewalls and isn't a transparent insertion point (B). PrivateLink terminates connections, breaking transparent inspection (C). Flow logs are metadata only (D).",
+    "optionExplanations": [
+      "Correct — Gateway Load Balancer with GENEVE encapsulation and per-spoke GWLB endpoints is purpose-built for transparent bump-in-the-wire insertion of third-party L3/L7 appliances with autoscaling and AZ-redundant health checking.",
+      "An NLB terminates flows and does not preserve original 5-tuple context to the appliance fleet; it is not a transparent insertion mechanism for in-line firewalls.",
+      "PrivateLink terminates the connection at the endpoint service, breaking the transparent inspection model required for east-west inline filtering.",
+      "VPC/TGW flow logs contain metadata only — no packet payloads — so they cannot be used for stateful firewall inspection."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -75,6 +105,12 @@
     ],
     "answer": 0,
     "explanation": "Org trail plus centralized flow/resolver logs in S3, queried via Athena with partition projection and Glacier Deep Archive lifecycle, is the canonical cheap-and-deep pattern. OpenSearch UltraWarm at seven years is far more expensive (B). Per-account trails plus Batch Replication add operational overhead and cost (C). Timestream is for time-series metrics, not log analytics (D).",
+    "optionExplanations": [
+      "Correct — an organization trail plus centralized flow and resolver logs to a single log-archive bucket, queried by Athena with partition projection and tiered to Glacier Deep Archive, is the cheapest seven-year query pattern.",
+      "OpenSearch UltraWarm is still far more expensive than S3+Athena over a seven-year horizon and adds index management overhead the requirement does not need.",
+      "Per-account trails plus Batch Replication duplicate storage and add operational overhead; Redshift Spectrum adds cluster cost on top of S3 for queries Athena handles natively.",
+      "Timestream is a time-series metrics store; it is not designed for security log archival or seven-year retention with ad-hoc SQL."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -88,19 +124,31 @@
     ],
     "answer": 0,
     "explanation": "Each of these tools natively supports 'auto-enable for new organization accounts' once a delegated administrator is set, eliminating custom code. StackSets with SELF_MANAGED requires roles per account and is more brittle (B). Polling Lambdas race against fast onboarding (C). Manual runbooks always drift (D).",
+    "optionExplanations": [
+      "Correct — Security Hub, GuardDuty, Config, and Access Analyzer all expose native 'auto-enable for new organization accounts' settings once delegated administration is in place, so no custom code is required.",
+      "SELF_MANAGED StackSets require pre-provisioned roles in every target account; SERVICE_MANAGED StackSets would be closer, but the native auto-enable feature is still simpler and faster.",
+      "Polling-based Lambdas race against onboarding events and add a brittle code path that the native auto-enable feature replaces entirely.",
+      "Documentation-driven manual enablement always drifts, especially at hundreds of accounts, and fails the 'no per-account ClickOps' requirement."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
     "id": 8,
-    "question": "A bank's Identity Center (formerly SSO) is connected to its on-prem Active Directory via AWS Managed Microsoft AD with a two-way trust. Users sign in once and assume permission sets across 200 accounts. Auditors now require that privileged 'AdminAccess' permission sets be granted only for time-bound four-hour windows with manager approval. Which solution best meets this?",
+    "question": "A bank's IAM Identity Center is connected to its on-prem Active Directory via AWS Managed Microsoft AD with a two-way trust. Users sign in once and assume permission sets across 200 accounts. Auditors now require that privileged 'AdminAccess' permission sets be granted only for time-bound four-hour windows with manager approval. Which solution best meets this?",
     "options": [
-      "A. Integrate Identity Center with AWS account-assignment APIs via a Step Functions workflow that grants the permission set on approval and revokes after four hours; use SES for manager approval emails.",
+      "A. Build a just-in-time workflow (e.g., Step Functions or a ticketing-system integration) that, on approval, calls Identity Center CreateAccountAssignment to grant the permission set and DeleteAccountAssignment four hours later; route approvals through SES or a chat tool.",
       "B. Replace Identity Center with IAM users and rotate console passwords every four hours via Secrets Manager.",
       "C. Use Identity Center session duration set to four hours; this automatically enforces approval on each login.",
       "D. Configure SCP that denies AdminAccess between business hours; users must request via IAM Access Advisor."
     ],
     "answer": 0,
     "explanation": "Just-in-time elevation via a workflow that calls Identity Center account-assignment APIs (CreateAccountAssignment / DeleteAccountAssignment) plus an approval channel is the standard pattern. Session duration only limits how long a granted session lasts, not whether it was approved (C). SCPs by time of day don't model approval (D). IAM users undo the federation goal (B).",
+    "optionExplanations": [
+      "Correct — a JIT workflow that, on manager approval, calls Identity Center's CreateAccountAssignment and schedules a DeleteAccountAssignment four hours later is the canonical pattern for time-bound privileged access with audit trail.",
+      "IAM users abandon the federation model the bank already has and provide no time-bound or approval semantics on their own.",
+      "Session duration only caps how long an already-granted session lives; it does not require approval per request, which is what the auditor mandates.",
+      "An SCP that denies during business hours has no concept of per-request approval, and IAM Access Advisor is a usage-analysis tool, not a request workflow."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -114,6 +162,12 @@
     ],
     "answer": 1,
     "explanation": "PrivateLink keeps the data plane inside the provider's VPC; customers connect via interface endpoints to an NLB fronting RDS Proxy, and PostgreSQL row-level security plus distinct DB roles enforce isolation. RAM cannot share Aurora clusters cross-account in this manner (A). DMS per-tenant is expensive and copies data out (C). Snapshot sharing copies data into customer hands, violating the constraint (D).",
+    "optionExplanations": [
+      "RAM does not share an Aurora cluster as a directly queryable resource to other accounts; even if access were possible, it would not satisfy the strict tenant isolation the question requires.",
+      "Correct — fronting RDS Proxy with an NLB-backed VPC Endpoint Service lets each tenant connect privately via interface endpoints, while PostgreSQL roles and row-level security keep each tenant scoped to their own data inside the provider's account.",
+      "Per-tenant DMS pipelines copy data into the customer's account, directly violating the 'data must never leave the provider's account' constraint.",
+      "Snapshot sharing also moves data into the customer's account and is a poor fit for ongoing query access."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -127,19 +181,31 @@
     ],
     "answer": 0,
     "explanation": "RAM is built for sharing Resolver rules and Private CA across accounts; TGW peering propagates the AD reachability cross-Region. Snapshots and S3 sync of CA material are insecure and high-effort (B, C). Pinning resolution to on-prem creates a fragile dependency and adds latency (D).",
+    "optionExplanations": [
+      "Correct — Route 53 Resolver rules and AWS Private CA are both first-class RAM-shareable resources, and inter-Region TGW peering carries the AD traffic needed for domain joins and Kerberos.",
+      "Snapshotting domain controllers and CA material into every account is insecure, expensive, and produces fragmented infrastructure that diverges over time.",
+      "Per-account hosted zone delegation does not solve internal resolver rule sharing, and S3-syncing a private CA's key material is a serious security anti-pattern.",
+      "Routing all internal DNS through on-prem creates a hard dependency on the corporate network and adds round-trip latency every workload would have to absorb."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
     "id": 11,
     "question": "A media company merges four AWS Organizations into one. They must consolidate AWS Backup vaults and policies, prevent member accounts from deleting vaults, and ensure cross-Region copies of every database backup. Which approach is most appropriate?",
     "options": [
-      "A. Enable AWS Backup with delegated administrator, define an organization-wide backup policy that includes copy-to-Region rules, attach Backup Vault Lock in compliance mode, and use SCPs to deny backup:DeleteBackupVault.",
+      "A. Enable AWS Backup with delegated administrator, define an organization-wide backup policy that includes copy-to-Region rules, attach AWS Backup Vault Lock in compliance mode, and use SCPs to deny backup:DeleteBackupVault.",
       "B. Use per-account custom Lambdas to call CreateBackupVault and CopySnapshot daily.",
       "C. Set every database to take native engine snapshots with no centralized policy; rely on RDS automated backups.",
       "D. Disable AWS Backup and use S3 Cross-Region Replication for database files mounted on EFS."
     ],
     "answer": 0,
     "explanation": "Org backup policies, Vault Lock in compliance mode (which is non-revocable for the lock period), and SCPs together are the canonical hardened pattern. Custom Lambdas don't scale and lack vault lock semantics (B). Native engine snapshots leave coverage gaps (C). EFS-on-S3-CRR is not a real architecture (D).",
+    "optionExplanations": [
+      "Correct — delegated AWS Backup administration plus organization backup policies with copy-to-Region rules, Vault Lock in compliance mode (which is non-revocable for the lock duration), and an SCP denying backup:DeleteBackupVault layers preventative and immutable controls.",
+      "Per-account custom Lambdas drift across hundreds of accounts and lack the WORM semantics that Vault Lock provides.",
+      "Native engine snapshots leave coverage gaps (e.g., non-RDS workloads) and provide no centralized policy or vault locking.",
+      "EFS does not host typical relational database files in the way the option suggests, and S3 CRR is not a substitute for AWS Backup."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -152,7 +218,13 @@
       "D. AWS CloudHSM clusters peered across all three Regions with manual key import."
     ],
     "answer": 0,
-    "explanation": "Multi-Region keys are designed exactly for this: one logical key, one key material, replicated to each Region for local crypto. Cross-Region calls to a single us-east-1 key would fail latency and availability goals (B). Independent same-alias keys don't share key material so ciphertext is not portable (C). CloudHSM is heavier and has no native cross-Region peering (D).",
+    "explanation": "Multi-Region keys share key material across primary and replicas, so each Region can encrypt and decrypt locally and ciphertexts produced in one Region are decryptable in another without cross-Region calls. Cross-Region calls to a single us-east-1 key would fail latency and availability goals (B). Independent same-alias keys don't share key material so ciphertext is not portable (C). CloudHSM is heavier and has no native cross-Region peering (D).",
+    "optionExplanations": [
+      "Correct — multi-Region keys share key material between a primary and replicas in each Region, letting every Region encrypt and decrypt locally while keeping ciphertexts portable across Regions.",
+      "Single-Region keys force cross-Region API calls, which fails both the latency and availability requirements and creates a regional dependency.",
+      "Same-alias keys created independently do not share key material; ciphertext from one Region cannot be decrypted by the key in another.",
+      "CloudHSM clusters do not natively peer cross-Region; manual key import would be heavy and lacks the multi-Region key's transparent semantics."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -165,7 +237,13 @@
       "D. Use S3 cross-account replication of AMI .vhd files and a Git submodule for templates."
     ],
     "answer": 0,
-    "explanation": "AMIs can be shared at the organization level natively, and Service Catalog portfolios are designed to be shared via RAM with versioned products. Nightly AMI copies waste storage and break governance (B). A public GitHub repo violates least privilege and Marketplace adds friction (C). AMIs aren't files in S3 (D).",
+    "explanation": "AMIs can be shared at the organization or OU level natively, and Service Catalog portfolios are designed to be shared via RAM with versioned products. Nightly AMI copies waste storage and break governance (B). A public GitHub repo violates least privilege and Marketplace adds friction (C). AMIs aren't files in S3 (D).",
+    "optionExplanations": [
+      "Correct — AMIs can be shared at the organization or OU level via launch permissions, and Service Catalog portfolios are RAM-shareable with versioned CloudFormation products that the platform team controls centrally.",
+      "Nightly cross-account AMI copies waste storage, lose central governance, and provide no version control over which AMI is current; emailing templates is unmanaged.",
+      "Marketplace private offers introduce billing friction unnecessary here, and a public GitHub repo violates least-privilege intent for internal templates.",
+      "AMIs are not stored as user-accessible files in S3, and Git submodules are not a managed lifecycle mechanism for approved templates."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -179,6 +257,12 @@
     ],
     "answer": 0,
     "explanation": "Commercial and GovCloud are isolated partitions with their own IAM, Organizations, and tooling. There is no cross-partition organization. The only practical 'single pane' is to forward findings to a third system (e.g., a SIEM) yourself. The other options describe AWS capabilities that do not exist.",
+    "optionExplanations": [
+      "Correct — GovCloud (US) and the commercial partition are isolated control planes with separate IAM, Organizations, Identity Center, and Security Hub; aggregating to a third tool (SIEM/data lake) is the only practical single-pane approach.",
+      "There is no 'cross-partition Organizations' feature; each partition has its own organization, and SCPs/Identity Center do not span partitions.",
+      "Control Tower in one partition cannot govern accounts in the other; each partition operates independently.",
+      "A shared SAML IdP can federate users to both partitions, but Security Hub still cannot aggregate cross-partition findings natively."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -192,19 +276,31 @@
     ],
     "answer": 0,
     "explanation": "AFT-driven Service Catalog vending plus Budgets actions and EventBridge-based account closure cleanly automates the lifecycle and cost cap. Manual creation and emails (B) won't enforce closure. StackSets-based wipe leaves the account around forever and may miss un-templated resources (C). Shared accounts (D) violate isolation requirements.",
+    "optionExplanations": [
+      "Correct — AFT vending via a Service Catalog product, Budgets actions to stop spend at $180, an EventBridge-driven CloseAccount on day 14, and an SCP scoping the sandbox OU together automate the full lifecycle and enforce the cost cap.",
+      "Manual account creation does not scale and email-only notifications do not enforce shutdown when the budget is breached.",
+      "StackSets resource deletion misses anything not provisioned by the template and leaves the empty account lingering in the org, defeating the auto-expire intent.",
+      "A single shared sandbox account loses per-developer blast-radius isolation and makes the $200/account cap meaningless."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
     "id": 16,
     "question": "An organization has just enabled the new Resource Control Policies (RCPs) feature. A platform engineer asks how RCPs differ from Service Control Policies in the threat model they address. What is the correct distinction?",
     "options": [
-      "A. RCPs apply to identities outside your organization that try to access your resources, restricting what those external principals can do; SCPs apply to principals inside your organization.",
+      "A. RCPs apply maximum-permissions guardrails to your own resources for any principal — including external principals — accessing them; SCPs apply to principals inside your organization regardless of which resource they touch.",
       "B. RCPs replace SCPs and offer the same functionality with a new name.",
       "C. RCPs are evaluated only at resource creation time; SCPs are evaluated on every API call.",
       "D. RCPs are scoped to a single account; SCPs are scoped to OUs."
     ],
     "answer": 0,
-    "explanation": "Resource Control Policies set the maximum permissions for principals outside your org accessing your resources (e.g., cross-account roles), complementing SCPs which constrain your own principals. The other answers misstate the feature.",
+    "explanation": "RCPs set the maximum permissions for resources in your organization — they constrain what any principal (including principals outside your organization) can do to those resources. SCPs constrain your own principals' actions across any resource. They complement each other along resource vs principal axes.",
+    "optionExplanations": [
+      "Correct — RCPs are resource-side guardrails: they cap what any principal (internal or external) can do to your resources, complementing SCPs, which cap what your principals can do to any resource.",
+      "RCPs do not replace SCPs; they are a separate, complementary policy type targeting the resource side of the access equation.",
+      "Both RCPs and SCPs are evaluated on every relevant API call, not just at creation time.",
+      "Both RCPs and SCPs can be attached at the root, OU, or account level within an organization; the distinction is principal-side vs resource-side, not scope."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -218,6 +314,12 @@
     ],
     "answer": 0,
     "explanation": "Resource Explorer offers an organization-wide aggregator index with cross-account, cross-Region search. Config aggregators answer compliance questions via Advanced Queries but aren't a search UX (B). Tag Editor and Resource Groups are per-account (C, D).",
+    "optionExplanations": [
+      "Correct — Resource Explorer with an organization-wide aggregator index supports cross-account, cross-Region tag and resource search from a single view.",
+      "Config aggregators with Advanced Queries can return cross-account data but are designed for compliance/configuration queries, not as an ad-hoc resource search tool.",
+      "Tag Editor only searches within the account/Regions of the current session and does not aggregate across the organization.",
+      "Resource Groups are per-account constructs and do not provide an organization-wide multi-Region search experience."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -231,6 +333,12 @@
     ],
     "answer": 0,
     "explanation": "Lake Formation's cross-account grants over RAM are the supported pattern with fine-grained access at the table/column/row level. Replicating Catalog or data via custom code (B, D) defeats the purpose. Federated Query is for non-Athena data sources, not S3-on-Glue (C).",
+    "optionExplanations": [
+      "Correct — Lake Formation cross-account grants over RAM expose named resources with table/column/row-level filters, and the consuming account queries via Athena without copying data.",
+      "Bucket policies and custom Catalog replication recreate functionality Lake Formation provides natively and miss fine-grained access controls.",
+      "Athena Federated Query is for non-Glue/non-S3 sources (RDS, JDBC); it is the wrong tool for a Lake Formation governed dataset.",
+      "Nightly data replication duplicates storage, breaks lineage, and is the antithesis of in-place data sharing."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -244,6 +352,12 @@
     ],
     "answer": 0,
     "explanation": "Cloud WAN provides a single global control plane with declarative segment policies, simpler than maintaining per-Region TGWs and route tables. Multi-region peered TGWs work but require manual route management (B). Hub VPC + OpenVPN is a single point of failure (C). Per-VPC VPNs don't scale to many VPCs and lack central policy (D).",
+    "optionExplanations": [
+      "Correct — Cloud WAN gives a single global control plane with declarative segment policies and a centrally managed Direct Connect gateway attachment, matching the 'central routing, single policy' goal.",
+      "Multi-Region peered TGWs work but route tables must be managed per-TGW per-account, missing the central policy goal.",
+      "A hub VPC with self-managed OpenVPN is a single point of failure and adds undifferentiated operational load.",
+      "Per-VPC site-to-site VPNs do not scale to many VPCs and provide no shared routing policy."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -257,6 +371,12 @@
     ],
     "answer": 0,
     "explanation": "SAML federation with a tightly scoped role is the standard cross-org partner pattern. IAM users with shared keys violate the constraint (B). Athena workgroups can't be 'public' (C). Cognito works for OIDC but here you'd still need a least-privilege role, not 'admin' (D).",
+    "optionExplanations": [
+      "Correct — federating the partner's corporate IdP via SAML to a role with read-only Athena/Glue permissions on the specific workgroup is the standard cross-org partner pattern.",
+      "Creating an IAM user with shared keys violates the 'no IAM user' constraint and is a poor security practice for third parties.",
+      "Athena workgroups are not internet-facing services and cannot be made 'public' with IP allow-lists.",
+      "Using Cognito would technically work for OIDC, but the option binds the partner to an admin role — violating least privilege; the partner has its own IdP, so federating that directly is simpler."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -270,6 +390,12 @@
     ],
     "answer": 0,
     "explanation": "Tag policies plus Cost Categories and CUR analysis are the AWS-native chargeback pattern; Cost Categories handle untaggable scopes by mapping accounts/OUs/services. Manual spreadsheets are unsustainable (B). Bypassing native tooling is wasteful (C). Tagging every PutObject API call is brittle and breaks many SDKs (D).",
+    "optionExplanations": [
+      "Correct — activated cost allocation tags, organization tag policies, and Cost Categories that map account/OU/service combinations to applications handle both taggable and untaggable scopes, with CUR+Athena for SKU-level slicing.",
+      "Monthly spreadsheet uploads do not scale and create immediate drift between reported and actual usage.",
+      "Discarding native AWS billing tooling is wasteful when the building blocks already exist; a CMDB cannot replace billing-grade attribution.",
+      "Requiring tags on every S3 PutObject breaks many SDKs and tools and is brittle in practice; Cost Categories handle this case without IAM contortions."
+    ],
     "domain": "Design Solutions for Organizational Complexity"
   },
   {
@@ -282,7 +408,13 @@
       "D. A single-Region Amazon Redshift cluster fronted by CloudFront."
     ],
     "answer": 0,
-    "explanation": "Global Tables provide multi-Region active-active writes with built-in last-writer-wins replication and local single-digit-ms latency. Aurora Global has only one writer Region (B). RDS read replicas aren't writable until promoted (C). Redshift is OLAP, not OLTP (D).",
+    "explanation": "Global Tables provide multi-Region active-active writes with built-in last-writer-wins replication and local single-digit-ms latency. Aurora Global Database has only one true writer Region (write forwarding from secondaries proxies writes back to the primary, which adds cross-Region latency) (B). RDS read replicas aren't writable until promoted (C). Redshift is OLAP, not OLTP (D).",
+    "optionExplanations": [
+      "Correct — DynamoDB Global Tables provide multi-Region active-active writes with local single-digit-ms write latency and last-writer-wins conflict resolution.",
+      "Aurora Global has one writer Region; write forwarding from secondaries proxies writes back to the primary, so secondary-Region writes still incur cross-Region latency.",
+      "RDS for PostgreSQL cross-Region read replicas are read-only until promoted, so they do not provide active-active writes.",
+      "Redshift is an OLAP warehouse, not an OLTP store, and CloudFront does not accelerate database writes."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -296,6 +428,12 @@
     ],
     "answer": 0,
     "explanation": "Streams plus Flink plus Firehose-to-Parquet is the canonical serverless analytics pipeline at this scale; lifecycle to Glacier reduces 7-year storage cost. DynamoDB-only loses streaming analytics (B). RDS won't sustain 800k/s and per-message Lambdas explode in cost (C). Self-managed Kafka adds undifferentiated heavy lifting (D).",
+    "optionExplanations": [
+      "Correct — Kinesis Data Streams plus Managed Flink plus Firehose-to-Parquet plus lifecycle to Glacier and a nightly Glue->Redshift Serverless load is the canonical serverless analytics pipeline at this scale.",
+      "DynamoDB ingest without a stream-processor loses real-time anomaly detection and is much more expensive than Parquet on S3 for raw retention.",
+      "RDS for MySQL cannot sustain 800k writes/sec, and one Lambda per message at that volume is cost-prohibitive.",
+      "Self-managed Kafka and Spark add operational overhead that the question explicitly wants to avoid."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -309,6 +447,12 @@
     ],
     "answer": 0,
     "explanation": "MediaLive plus MediaPackage's low-latency HLS plus CloudFront with origin shield is the AWS reference architecture for live at scale. Lambda packaging and S3-only stacks aren't real-time (B, C). IVS supports low-latency but the question is about HLS to general players at this scale; relying on a single regional endpoint without CloudFront is wrong for 2M global viewers (D).",
+    "optionExplanations": [
+      "Correct — MediaLive (encode) plus MediaPackage low-latency HLS plus CloudFront with origin shield is the AWS reference architecture for global live streaming at this scale.",
+      "Lambda packaging cannot meet a 3-second end-to-end latency budget and S3 static hosting does not provide segment-aware live origin behavior.",
+      "Athena-driven manifests are batch-oriented and far too slow for live HLS playback windows.",
+      "IVS supports low-latency streaming, but a single regional endpoint without a CDN does not scale efficiently to 2M global viewers."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -322,24 +466,36 @@
     ],
     "answer": 0,
     "explanation": "EKS with Karpenter (mixed-arch, just-in-time nodes), KEDA (event-driven scale-to-zero), and PrivateLink/NLB over Direct Connect satisfies all requirements. ECS on Fargate doesn't run Kubernetes (B). Self-managed Kubernetes adds heavy ops (C). App Runner doesn't expose Kubernetes APIs and lacks the networking flexibility required (D).",
+    "optionExplanations": [
+      "Correct — EKS with Karpenter for mixed ARM/x86 just-in-time nodes, KEDA for event-driven scale-to-zero, and NLB-fronted PrivateLink endpoints over Direct Connect satisfy every requirement.",
+      "ECS on Fargate is not Kubernetes, and the design adds internet egress where private connectivity is required.",
+      "Self-managed Kubernetes adds heavy undifferentiated operational load and public LBs miss the private connectivity requirement.",
+      "App Runner does not expose Kubernetes APIs and does not offer the networking flexibility required for Direct Connect/private endpoints."
+    ],
     "domain": "Design for New Solutions"
   },
   {
     "id": 26,
     "question": "A data engineering team needs to run Spark on petabyte-scale Parquet in S3, share metadata with Athena and Redshift, and pay only for jobs they run. Throughput should auto-scale with workload size. What is the simplest fit?",
     "options": [
-      "A. AWS Glue 4.0 jobs with auto-scaling DPUs writing/reading the AWS Glue Data Catalog; Athena and Redshift Spectrum query the same catalog directly.",
+      "A. AWS Glue jobs with auto-scaling DPUs writing/reading the AWS Glue Data Catalog; Athena and Redshift Spectrum query the same catalog directly.",
       "B. EMR persistent cluster always-on with autoscaling node groups; Spark Thrift Server for ad-hoc queries.",
       "C. Spark on EKS run via Argo Workflows; manual Glue Catalog sync via Lambda.",
       "D. Redshift Serverless only, ingesting all Parquet via COPY before any analysis."
     ],
     "answer": 0,
     "explanation": "Glue jobs autoscale, charge per DPU-second, and natively use the Glue Catalog shared by Athena and Redshift Spectrum, satisfying every requirement. Persistent EMR (B) and EKS-Spark (C) add ops. COPY-into-Redshift (D) duplicates petabytes of data, defeating S3-as-lake economics.",
+    "optionExplanations": [
+      "Correct — Glue jobs auto-scale DPUs, charge per DPU-second, and natively share the Glue Catalog with Athena and Redshift Spectrum, hitting every requirement with minimal ops.",
+      "A persistent EMR cluster runs (and is billed) continuously even when idle, contradicting the 'pay only for jobs you run' requirement.",
+      "Spark on EKS adds significant operational overhead and requires bespoke Catalog synchronization.",
+      "Loading petabytes into Redshift via COPY duplicates lake storage and removes the benefit of querying S3 in place."
+    ],
     "domain": "Design for New Solutions"
   },
   {
     "id": 27,
-    "question": "A bank is building a regulator-facing API. Requirements: every request must be authenticated via mutual TLS using bank-issued client certs, throttled per client, and traceable end-to-end. Which combination should the architect choose?",
+    "question": "A bank is building a regulator-facing API. Requirements: every request must be authenticated via mutual TLS using bank-issued client certs, throttled per client with usage plans, and traceable end-to-end. Which combination should the architect choose?",
     "options": [
       "A. Amazon API Gateway HTTP API with mTLS enabled (truststore in S3), per-route usage plans on the equivalent REST API for throttling, X-Ray tracing, and AWS Private CA-issued certificates.",
       "B. Amazon API Gateway REST API with mTLS configured (truststore in S3), usage plans for per-client throttling, X-Ray tracing, and AWS Private CA-issued certificates.",
@@ -347,7 +503,13 @@
       "D. CloudFront with mTLS at the edge, Lambda@Edge for throttling, and CloudTrail for tracing."
     ],
     "answer": 1,
-    "explanation": "REST APIs in API Gateway support mTLS with an S3 truststore plus per-key usage plans for throttling — HTTP APIs do not support usage plans, so per-client throttling is harder (A is partially right but B is the precise fit). ALB mTLS passthrough doesn't apply per-client throttling, and CloudFront does not natively throttle per client cert. CloudTrail isn't a request tracer (D).",
+    "explanation": "REST APIs in API Gateway support mTLS with an S3 truststore plus per-API-key usage plans for throttling, plus X-Ray. HTTP APIs support mTLS but do not support usage plans/API keys, so per-client throttling is not native there. ALB mTLS does not provide per-client API-key throttling and CloudWatch RUM is real-user monitoring, not tracing. CloudFront mTLS plus Lambda@Edge throttling and CloudTrail (not a request tracer) misuses each service.",
+    "optionExplanations": [
+      "HTTP APIs do not support API keys or usage plans, so 'per-client throttling' is not native; the answer also conflates HTTP and REST APIs.",
+      "Correct — REST APIs support mTLS with an S3 truststore, usage plans with per-API-key throttling, and X-Ray tracing; Private CA issues the client certs.",
+      "ALB mTLS does not provide per-client API-key throttling, and CloudWatch RUM is real-user monitoring of browsers, not request tracing.",
+      "CloudFront supports mTLS but Lambda@Edge is a poor fit for per-client throttling and CloudTrail is an audit log, not an end-to-end tracer."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -361,6 +523,12 @@
     ],
     "answer": 0,
     "explanation": "Standard workflows can wait up to a year and support .waitForTaskToken for human approval. EventBridge chains aren't real workflows (B). SQS-with-state-machine-in-Lambda reinvents the wheel (C). Express workflows are limited to five minutes and can't wait days (D).",
+    "optionExplanations": [
+      "Correct — Step Functions Standard workflows run up to one year, support .waitForTaskToken for human-in-the-loop approval, and offer built-in retry/catch semantics.",
+      "EventBridge rule chains are event plumbing, not durable workflow orchestration; long-lived waits and structured retries are not native.",
+      "An SQS FIFO + monolithic Lambda state machine reinvents Step Functions with no visibility, retry, or token-wait primitives.",
+      "Express workflows max out at five minutes of execution time and do not support multi-day .waitForTaskToken callbacks."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -374,6 +542,12 @@
     ],
     "answer": 0,
     "explanation": "S3 Intelligent-Tiering (with archive access tier opt-in) automatically moves objects through tiers based on access pattern; S3 is HIPAA-eligible under the AWS BAA. EFS at 200 TB is far costlier and lacks tiering granularity (B). FSx for Lustre with snapshot-to-Glacier is for HPC scratch, not retrieval (C). Self-managed storage adds undifferentiated work (D).",
+    "optionExplanations": [
+      "Correct — S3 Intelligent-Tiering automatically transitions objects between frequent/infrequent/archive access tiers, S3 is HIPAA-eligible under the AWS BAA, and SSE-KMS provides customer-managed encryption.",
+      "EFS Standard at 200 TB is roughly an order of magnitude more expensive than S3 and has limited tiering granularity for imaging workloads.",
+      "FSx for Lustre is for HPC scratch workloads; snapshot-to-Glacier is not a transparent retrieval path for cold patient data.",
+      "Self-managed Ceph adds undifferentiated heavy lifting and is far less cost-effective than S3 tiered storage."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -387,45 +561,69 @@
     ],
     "answer": 0,
     "explanation": "MemoryDB provides Redis-compatible APIs with durable transaction logs and multi-AZ failover with strong consistency — the only AWS-managed option meeting both 'no data loss' and 'multi-AZ' for Redis. ElastiCache Redis without AOF can lose recent writes (B). Memcached lacks persistence and replication (C). DAX caches DynamoDB only (D).",
+    "optionExplanations": [
+      "Correct — MemoryDB for Redis offers Redis-compatible APIs with multi-AZ replication and a durable transaction log, providing strong-consistency primary reads and no data loss on AZ failure.",
+      "ElastiCache for Redis in a single AZ has no failover at all, and without AOF/durable logging can lose in-flight writes during failure.",
+      "Memcached has no replication and no persistence, so it fails both the durability and multi-AZ requirements.",
+      "DAX only caches DynamoDB tables and assumes the truth lives in DynamoDB — it is not a general-purpose key/value store."
+    ],
     "domain": "Design for New Solutions"
   },
   {
     "id": 31,
     "question": "A startup wants a mostly serverless web app with minimal cost during idle periods: a React SPA, an authenticated REST API, a Postgres-compatible database that keeps costs low during off-peak hours, file uploads, and CI/CD. Which composition is most cost-effective while remaining fully managed?",
     "options": [
-      "A. CloudFront + S3 for the SPA, Cognito user pools for auth, API Gateway HTTP API to Lambda, Aurora Serverless v2 with a minimum of 0.5 ACU so the database scales down to near-idle cost during off-peak, S3 with presigned URLs for uploads, and CodePipeline.",
-      "B. CloudFront + S3 for the SPA, Cognito for auth, API Gateway HTTP API to Lambda, Aurora Serverless v2 with a min ACU of 0 for true scale-to-zero, S3 presigned URLs, and CodePipeline.",
+      "A. CloudFront + S3 for the SPA, Cognito user pools for auth, API Gateway HTTP API to Lambda, Aurora Serverless v2 with a minimum capacity that scales down to near-idle during off-peak (currently 0 ACU is supported on newer engine versions; otherwise 0.5 ACU), S3 with presigned URLs for uploads, and CodePipeline.",
+      "B. CloudFront + S3 for the SPA, Cognito for auth, API Gateway HTTP API to Lambda, RDS for PostgreSQL Multi-AZ db.m6g.large always-on, S3 presigned URLs, and CodePipeline.",
       "C. Amplify hosting only; database on a self-managed RDS Multi-AZ db.m5.large provisioned instance.",
       "D. EC2 t3.micro running Nginx and Postgres in a single-instance Auto Scaling group with no managed database."
     ],
     "answer": 0,
-    "explanation": "Aurora Serverless v2 scales down to a minimum of 0.5 ACU (not zero); true scale-to-zero with auto-pause was only available in Aurora Serverless v1, which is deprecated. At 0.5 ACU the database cost is still very low during idle periods, making it the most cost-effective fully managed Postgres option for intermittent workloads. Option B is wrong because Aurora Serverless v2 does not support 0 ACU or scale-to-zero. A self-managed RDS Multi-AZ M5 instance runs 24/7 at fixed cost regardless of load (C). A single EC2 instance with no managed database is neither serverless nor highly available (D).",
+    "explanation": "Aurora Serverless v2 scales down very low during idle (originally 0.5 ACU minimum; newer engine versions support 0 ACU auto-pause), making it the best fully managed Postgres choice for intermittent loads. CloudFront+S3 for the SPA, Cognito for auth, API Gateway HTTP API to Lambda, and presigned S3 for uploads round out a serverless stack. RDS Multi-AZ M6g (B) is always-on with fixed cost regardless of load. Self-managed RDS (C) is contradictory and Amplify alone doesn't supply Postgres. A single EC2 with Postgres on it (D) is neither serverless nor highly available.",
+    "optionExplanations": [
+      "Correct — Aurora Serverless v2 scales capacity down very low during idle (0.5 ACU minimum on classic versions, 0 ACU auto-pause on newer engine versions), while CloudFront+S3, Cognito, API Gateway HTTP API to Lambda, and presigned uploads complete the serverless stack.",
+      "An always-on Multi-AZ RDS instance costs the same at idle as under load, violating the 'minimal cost during idle' requirement.",
+      "Amplify hosting alone does not provide a Postgres database, and a Multi-AZ M5 instance is always-on at fixed cost.",
+      "A single EC2 with self-hosted Postgres is neither serverless nor highly available, so it fails both managed-service and resilience goals."
+    ],
     "domain": "Design for New Solutions"
   },
   {
     "id": 32,
-    "question": "A SaaS provider offers a Postgres-backed API, with per-tenant strict isolation requirements (tenant data must never be in the same table as another tenant). Tenants range from 1 GB to 4 TB. Which strategy balances isolation and cost?",
+    "question": "A SaaS provider offers a Postgres-backed API with per-tenant strict isolation: each tenant's data must live in its own database objects, not co-mingled in shared tables. Tenants range from 1 GB to 4 TB. Which strategy balances isolation and cost?",
     "options": [
-      "A. Pool model with row-level security per tenant in a single Aurora cluster; one schema per tenant for very large customers; bridge model for the largest 5 customers using dedicated Aurora clusters.",
+      "A. Pool tenants into a shared Aurora cluster using a separate schema per tenant for isolation; promote the largest tenants to dedicated Aurora clusters (silo model) once they outgrow the pool.",
       "B. Single Aurora cluster, single schema, single table for everyone; isolation only via API-level filtering.",
       "C. One Aurora cluster per tenant from day one regardless of size.",
       "D. DynamoDB single-table design with composite partition keys; no Postgres."
     ],
     "answer": 0,
-    "explanation": "A bridge / silo-pool hybrid (per-tenant schema or DB for the largest, RLS-pool for the small) is a common SaaS Postgres pattern that meets isolation and cost. Pure pool with shared tables (B) violates the constraint. Per-tenant cluster always (C) is wasteful for tiny tenants. The question says Postgres, so DynamoDB redesign is out of scope (D).",
+    "explanation": "A schema-per-tenant pool (small tenants share an Aurora cluster but each gets its own schema and objects) combined with a silo model (dedicated cluster) for the largest tenants is the canonical SaaS Postgres pattern that meets per-tenant isolation without paying for a cluster per tiny tenant. A shared-table pool with API filtering (B) violates the constraint. Per-tenant clusters for every tenant (C) wastes money for small tenants. The question requires Postgres, so a DynamoDB redesign is out of scope (D).",
+    "optionExplanations": [
+      "Correct — schema-per-tenant inside a shared cluster keeps each tenant's data in its own objects (not in shared tables), and migrating the largest tenants to dedicated clusters (silo) caps blast radius for noisy neighbors.",
+      "Shared tables with API-level filtering co-mingles tenant data in the same physical tables, directly violating the stated isolation requirement.",
+      "Per-tenant clusters from day one wastes substantial fixed cost for the 1-GB tenants.",
+      "A DynamoDB redesign is out of scope; the question explicitly requires a Postgres-backed API."
+    ],
     "domain": "Design for New Solutions"
   },
   {
     "id": 33,
     "question": "A new global SaaS needs a CDN that supports request authentication, custom header injection, signed cookies, A/B testing, and the ability to run JavaScript at the edge for 50ms-budget personalization. Which choice is correct?",
     "options": [
-      "A. CloudFront with CloudFront Functions for header manipulation and small JS at viewer-request, plus Lambda@Edge for heavier compute, signed cookies for auth, and KeyValueStore for A/B configuration.",
+      "A. CloudFront with CloudFront Functions for header manipulation and small JS at viewer-request, plus Lambda@Edge for heavier compute, signed cookies for auth, and CloudFront KeyValueStore for A/B configuration.",
       "B. Application Load Balancer with sticky sessions and host-header rules in every Region.",
       "C. AWS Global Accelerator with TCP listeners and Route 53 weighted routing.",
       "D. API Gateway edge-optimized endpoints with custom authorizers."
     ],
     "answer": 0,
-    "explanation": "CloudFront Functions plus Lambda@Edge plus signed cookies plus KeyValueStore covers all stated needs. ALB isn't a global CDN (B). Global Accelerator is L4 acceleration, not a CDN with edge compute (C). API Gateway edge-optimized routes through CloudFront but doesn't provide the same edge compute model alone (D).",
+    "explanation": "CloudFront Functions plus Lambda@Edge plus signed cookies plus CloudFront KeyValueStore covers all stated needs. ALB isn't a global CDN (B). Global Accelerator is L4 acceleration, not a CDN with edge compute (C). API Gateway edge-optimized routes through CloudFront but doesn't provide the same edge compute model alone (D).",
+    "optionExplanations": [
+      "Correct — CloudFront Functions handle ultralight viewer-request logic within a sub-millisecond budget, Lambda@Edge covers heavier compute, signed cookies authenticate sessions, and CloudFront KeyValueStore stores A/B configuration.",
+      "ALB is regional, not a global CDN, and provides no edge compute or signed cookie/cache primitives.",
+      "Global Accelerator accelerates L4 connections but is not a CDN, has no caching, and does not run code at the edge.",
+      "API Gateway edge-optimized endpoints route through CloudFront but do not expose edge-compute primitives like Functions/Lambda@Edge directly."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -439,6 +637,12 @@
     ],
     "answer": 0,
     "explanation": "Flink on Kinesis is purpose-built for tumbling/sliding windows; Timestream's time-series storage and QuickSight integration make a low-latency dashboard simple. Counting per event in Lambda+DynamoDB at 1M/s is expensive and lossy (B). EventBridge isn't a stream processor (C). Athena polling is not a real-time dashboard (D).",
+    "optionExplanations": [
+      "Correct — Kinesis Data Streams plus Managed Flink is purpose-built for tumbling/sliding-window aggregation at this scale, and Timestream gives low-latency time-series reads for QuickSight.",
+      "Counting individual events in Lambda+DynamoDB at 1M/sec is cost-prohibitive and lacks native windowing primitives.",
+      "EventBridge is event routing, not a stream-processing windowing engine; per-rule Lambdas do not aggregate streams.",
+      "Firehose-to-S3 plus Athena polling is batch-oriented and cannot produce a low-latency rolling dashboard."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -447,11 +651,17 @@
     "options": [
       "A. Amazon SQS FIFO queue with content-based deduplication and message group ID = customerId; consumer is Lambda with reserved concurrency; visibility timeout 60s.",
       "B. SQS Standard with at-least-once delivery and idempotency in the consumer.",
-      "C. SNS FIFO topic; multiple subscribers; deduplication at SNS.",
+      "C. SNS FIFO topic with SQS Standard subscribers; deduplication only at SNS.",
       "D. EventBridge custom bus with input transformer ensuring exactly-once semantics."
     ],
     "answer": 0,
-    "explanation": "FIFO queues provide exactly-once processing (with dedup) and per-MessageGroupID ordering. SQS Standard is at-least-once and out-of-order (B). SNS FIFO publishes once but downstream subscribers (e.g., Lambda) typically still need an SQS FIFO buffer; the question asks for the primitive that ensures order and exactly-once at the consumer (C is incomplete). EventBridge does not offer exactly-once delivery (D).",
+    "explanation": "FIFO queues provide exactly-once processing (with dedup) and per-MessageGroupID ordering. SQS Standard is at-least-once and out-of-order (B). SNS FIFO must fan out to SQS FIFO (not SQS Standard) to preserve ordering and dedup at the consumer (C). EventBridge does not offer exactly-once delivery (D).",
+    "optionExplanations": [
+      "Correct — SQS FIFO with content-based deduplication and per-customer MessageGroupId gives exactly-once delivery and per-customer ordering; a 60s visibility timeout comfortably covers the 30s SLA with one retry.",
+      "SQS Standard provides at-least-once, unordered delivery, so duplicates and reordering are observable — the application must do all dedup/ordering itself.",
+      "SNS FIFO must fan out to SQS FIFO (not Standard) to preserve ordering and exactly-once semantics at the subscriber.",
+      "EventBridge does not provide exactly-once delivery semantics; input transformers are content shaping, not delivery guarantees."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -465,6 +675,12 @@
     ],
     "answer": 0,
     "explanation": "Neptune is the managed graph DB with Gremlin and openCypher. DocumentDB is MongoDB-compatible documents (B), Keyspaces is Cassandra-compatible (C), QLDB is an immutable ledger (D).",
+    "optionExplanations": [
+      "Correct — Amazon Neptune is the managed property-graph (and RDF) database supporting Gremlin and openCypher (and SPARQL) at scale.",
+      "DocumentDB is MongoDB-compatible document storage, not a graph database.",
+      "Keyspaces is a Cassandra-compatible wide-column store, not a graph database.",
+      "QLDB is an immutable append-only ledger, not a graph database."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -478,11 +694,17 @@
     ],
     "answer": 0,
     "explanation": "GameLift is purpose-built; FlexMatch and queues handle player placement and Region routing. ElastiCache for Redis sustains sub-millisecond session reads. The other options don't match game-server lifecycle requirements (B) or impose cold starts (C, D).",
+    "optionExplanations": [
+      "Correct — GameLift FlexMatch + queues handle stateful matchmaking and Region routing, regional GameLift fleets handle server lifecycle and rolling deploys, and ElastiCache for Redis sustains sub-10ms player session reads.",
+      "Custom matchmaking on plain EC2 ASGs reinvents GameLift and DynamoDB's default consistency does not guarantee sub-10ms multi-Region behavior.",
+      "Lambda + API Gateway introduces cold starts and per-request overhead inappropriate for tight session-state latency.",
+      "RDS MySQL is not designed for sub-10ms session storage at game scale and ALB stickiness is fragile for long-lived game connections."
+    ],
     "domain": "Design for New Solutions"
   },
   {
     "id": 38,
-    "question": "A media transcode pipeline must process 50 hours of source video per minute, with elastic scale, GPU acceleration, and pay-per-job pricing. Which is the simplest fit?",
+    "question": "A media transcode pipeline must process 50 hours of source video per minute, with elastic scale, pay-per-job pricing, and no fleet to manage. Which is the simplest fit?",
     "options": [
       "A. AWS Elemental MediaConvert with output presets and queues; rely on its managed scaling.",
       "B. EC2 g5 spot fleet with custom FFmpeg orchestrator on SQS.",
@@ -491,6 +713,12 @@
     ],
     "answer": 0,
     "explanation": "MediaConvert is the AWS-managed transcoder with per-minute pricing, no fleet to manage, and presets. The other options work but require significant ops (B, C) or hit Lambda's 15-minute / size limits (D).",
+    "optionExplanations": [
+      "Correct — MediaConvert offers managed elastic transcoding with per-minute billing, output presets, and queue-based scheduling, with no fleet to operate.",
+      "An EC2 spot fleet with a custom FFmpeg orchestrator requires significant operational effort and capacity planning.",
+      "AWS Batch on EC2 still requires managing job queues, compute environments, and container images — more ops than MediaConvert.",
+      "Lambda's 15-minute execution and 10-GB ephemeral storage limits make it unsuitable for many transcoding jobs."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -504,6 +732,12 @@
     ],
     "answer": 0,
     "explanation": "OpenSearch supports both kNN and BM25 in hybrid queries at scale with UltraWarm tiering. Kendra is enterprise document search (B) and not ideal for product faceting at this volume. CloudSearch lacks vector search (C). pgvector at 30 TB on RDS strains a single instance (D).",
+    "optionExplanations": [
+      "Correct — OpenSearch combines kNN vector search and BM25 keyword scoring in a single hybrid query, with UltraWarm tiering to keep 30 TB economical.",
+      "Kendra is an enterprise document search service optimized for natural-language Q&A, not for product-catalog faceted search at 30 TB.",
+      "CloudSearch does not support vector similarity and is largely superseded by OpenSearch.",
+      "pgvector + tsvector on a single RDS instance struggles at 30 TB and cannot match OpenSearch's distributed indexing."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -517,6 +751,12 @@
     ],
     "answer": 0,
     "explanation": "CloudFront + Shield Advanced + WAF (CRS, IP rep, Bot Control) + CAPTCHA is the standard internet-facing protection stack. ALB alone has no L7 inspection (B). Lambda rate limiting on API Gateway is not robust DDoS protection (C). NLB+Network Firewall is for east-west and egress, not edge DDoS (D).",
+    "optionExplanations": [
+      "Correct — CloudFront absorbs volumetric attacks at the edge, Shield Advanced gives DDoS response and cost protection, WAF managed rules (CRS, IP Reputation, Bot Control) cover OWASP and bots, and CAPTCHA acts on suspicious traffic.",
+      "ALB alone has no L7 attack mitigation or managed rule support and does not absorb volumetric DDoS the way the edge does.",
+      "A custom authorizer Lambda for rate limiting is brittle, slow, and does not protect against volumetric or sophisticated L7 attacks.",
+      "NLB plus Network Firewall is appropriate for east-west and egress inspection, not for edge DDoS or WAF managed rules."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -530,6 +770,12 @@
     ],
     "answer": 0,
     "explanation": "Cognito user pool plus identity pool is the canonical app-user auth pattern with social IdP federation and AWS-credential issuance. Identity Center is for workforce SSO, not end users, and doesn't directly support social login (B). STS with raw web-identity loses MFA/account features (C). Simple AD is not a social IdP target (D).",
+    "optionExplanations": [
+      "Correct — a Cognito user pool federated to Google/Apple plus a Cognito identity pool issuing role-scoped STS credentials is the canonical pattern for end-user auth that also calls AWS resources.",
+      "IAM Identity Center is for workforce SSO; it does not directly support consumer social IdP login as an end-user identity provider.",
+      "Direct AssumeRoleWithWebIdentity skips Cognito's user pool features (sign-up, MFA, account recovery, password policies).",
+      "Simple AD is a managed AD-compatible directory; it does not federate from consumer social IdPs."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -543,6 +789,12 @@
     ],
     "answer": 0,
     "explanation": "Global Accelerator gives static anycast IPs, fast onboarding to AWS edge, and built-in failover. Partner firewalls often need static IPs, which CloudFront prefix lists don't provide cleanly (B). Route 53 alone has no static-IP guarantee (C). Single-Region NLB doesn't meet failover (D).",
+    "optionExplanations": [
+      "Correct — Global Accelerator gives two static anycast IPs that don't change, accelerates connection setup at the edge, and provides health-check-driven failover between regional endpoint groups.",
+      "CloudFront's published prefix list is large and can change; partner allow-lists usually need stable static IPs that Global Accelerator provides.",
+      "Route 53 latency routing changes IPs as endpoints change, failing the static-IP requirement for partner allow-listing.",
+      "A single-Region NLB has no cross-Region failover and 'keepalive' across Regions is not an AWS-managed failover primitive."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -556,6 +808,12 @@
     ],
     "answer": 0,
     "explanation": "A Region-deny SCP enforces residency at the API surface; per-Region resources, multi-Region keys with permitted replicas, and Region-restricted Backup copies maintain data locality. Tag-only governance (B) is unenforceable. The other options violate residency outright (C, D).",
+    "optionExplanations": [
+      "Correct — a Region-deny SCP enforces residency at the API surface, multi-Region KMS keys replicate only into permitted Regions, and AWS Backup copy rules cap allowed copy targets — defense in depth for data sovereignty.",
+      "Tag-based residency is not enforceable; an SCP is needed to actually prevent API calls to disallowed Regions.",
+      "Forcing every regulated jurisdiction into us-east-1 directly violates the residency requirement.",
+      "Replicating regulated data into us-east-1 for analytics violates residency, regardless of intent."
+    ],
     "domain": "Design for New Solutions"
   },
   {
@@ -569,19 +827,31 @@
     ],
     "answer": 0,
     "explanation": "QLDB provides an immutable, cryptographically verifiable journal with streams for downstream analytics. DynamoDB conditional writes don't prove non-tampering (B). Triggers can be disabled by admins (C). CloudTrail audits AWS API calls, not application-level events (D).",
+    "optionExplanations": [
+      "Correct — QLDB offers an immutable, cryptographically verifiable journal whose history cannot be altered, and QLDB streams plus Firehose-to-S3 in Parquet enable Athena analytics.",
+      "DynamoDB conditional writes do not provide cryptographic proof of non-tampering and admins with table permissions can still mutate data.",
+      "Postgres triggers run only when enabled; an admin can drop or disable them, so this fails the 'even by admins' requirement.",
+      "CloudTrail audits AWS API calls, not application-level events such as business records or transactions."
+    ],
     "domain": "Design for New Solutions"
   },
   {
     "id": 45,
     "question": "A regulated firm has discovered through Access Analyzer that several existing S3 buckets across the org have policies allowing public access. They need to remediate now and prevent recurrence even via a careless ACL or bucket policy. Which is the correct, layered set of controls?",
     "options": [
-      "A. Account-level S3 Block Public Access on every account, an SCP denying s3:PutBucketPublicAccessBlock with disable values, IAM Access Analyzer findings forwarded to Security Hub, and an RCP that prevents external principals from being granted s3:PutObject ACLs.",
+      "A. Account-level S3 Block Public Access on every account, an SCP denying s3:PutBucketPublicAccessBlock with disable values, IAM Access Analyzer findings forwarded to Security Hub, and a Resource Control Policy that prevents bucket policies from granting access to principals outside the organization.",
       "B. A daily Lambda that runs s3:GetBucketAcl and reports public buckets to Slack.",
       "C. S3 Object Lock in compliance mode on every bucket.",
       "D. Cross-Region replication only to a hardened bucket."
     ],
     "answer": 0,
-    "explanation": "Block Public Access at the account, SCPs to prevent disablement, Access Analyzer for detection, and RCPs scoping external principal grants are layered preventative + detective controls. Lambda detection alone is reactive (B). Object Lock prevents deletion, not exposure (C). CRR doesn't address public access (D).",
+    "explanation": "Block Public Access at the account, SCPs to prevent disablement, Access Analyzer for detection, and an RCP to block S3 access by principals outside the organization are layered preventative + detective controls.",
+    "optionExplanations": [
+      "Correct — account-level Block Public Access plus an SCP that prevents disabling it, Access Analyzer findings into Security Hub, and an S3 RCP that constrains who outside the organization can be granted access form layered detective and preventative controls.",
+      "Daily detection is reactive — buckets can be exposed for up to a day before Slack notification, and the control does nothing to prevent recurrence.",
+      "Object Lock in compliance mode prevents deletion/modification of objects but does not prevent public access to those objects.",
+      "Cross-Region replication does not stop a bucket from being public; it only copies the exposure to another Region."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -595,6 +865,12 @@
     ],
     "answer": 0,
     "explanation": "Secrets Manager with custom rotation handles the OAuth refresh; the Parameters and Secrets extension reduces per-invocation overhead. Static envvars (B) defeat rotation. Custom DDB schemes (C) reinvent Secrets Manager. SSM Parameter Store SecureString lacks managed rotation (D).",
+    "optionExplanations": [
+      "Correct — Secrets Manager with a custom rotation Lambda performs the OAuth client_credentials exchange, and the Parameters and Secrets Lambda Extension caches the secret to avoid per-invocation API calls.",
+      "An encrypted env var is still static — it does not rotate and updating it requires a function deployment.",
+      "DynamoDB plus a scheduled Lambda recreates Secrets Manager rotation poorly, with no audit, no rotation metadata, and no Lambda extension.",
+      "SSM Parameter Store SecureString has no managed rotation feature; manual quarterly rotation does not meet the 'automatic rotation' goal."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -608,6 +884,12 @@
     ],
     "answer": 0,
     "explanation": "EKS clusters cannot span Regions, so the right pattern is two clusters with EBS snapshot copies (or AWS Backup cross-Region copy), Velero for K8s manifests, and Route 53 ARC for failover. Velero alone doesn't capture EBS state efficiently (C). Aurora doesn't help non-relational workloads (D).",
+    "optionExplanations": [
+      "Correct — two EKS clusters with cross-Region EBS snapshot copies (DLM or AWS Backup), Velero for Kubernetes resource state, and Route 53 ARC for traffic shift hit a 15-minute RPO / 30-minute RTO realistically.",
+      "EKS clusters cannot span Regions; the control plane and worker nodes are regional, so a single multi-Region cluster is not possible.",
+      "Velero with S3 CRR captures manifests and (depending on plugin) some volume backups, but lacks efficient EBS snapshot lifecycle and Region-aware restore semantics.",
+      "Aurora Global Database addresses relational data only; it does not back up the EBS PersistentVolumes used by StatefulSets."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -621,19 +903,31 @@
     ],
     "answer": 0,
     "explanation": "Warm standby fits ~60s RTO / ~5min RPO and is cheaper than full active/active. Backup-and-restore (B) is hours of RTO. Active/active (C) meets RTO but is more expensive than required. Pilot light (D) typically can't hit 60s RTO due to scale-up time.",
+    "optionExplanations": [
+      "Correct — warm standby keeps a scaled-down replica stack and a cross-Region read replica that can be promoted within minutes, with Route 53 ARC providing fast deterministic traffic shift; this meets ~60s RTO / ~5min RPO at lower cost than active/active.",
+      "Backup-and-restore produces an RTO measured in hours due to snapshot restore time and stack rebuild, missing the 60s target by orders of magnitude.",
+      "Active/active meets the RTO but costs noticeably more than warm standby, conflicting with the 'lowest extra cost' constraint.",
+      "Pilot light keeps only minimal infrastructure warm; rebuilding the application tier on disaster typically takes longer than 60 seconds."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
     "id": 49,
-    "question": "An existing Lambda + DynamoDB system has cold-start latency causing intermittent 3-second p99 spikes. The team can't change languages and the function is JVM-based. Which fix is most effective with least change?",
+    "question": "An existing Lambda + DynamoDB system has cold-start latency causing intermittent 3-second p99 spikes. The function is JVM-based on a supported runtime. The team can't change languages. Which fix is most effective with least change?",
     "options": [
-      "A. Enable Provisioned Concurrency on Lambda for the JVM function, and turn on SnapStart (where supported by runtime/region) to dramatically reduce JVM init time.",
+      "A. Enable Provisioned Concurrency on the function and turn on SnapStart, which on supported JVM, Python, and .NET runtimes restores a pre-initialized snapshot to dramatically reduce cold-start time.",
       "B. Add CloudFront in front to cache responses; the cold start will not be visible.",
       "C. Move to Lambda@Edge so the function runs at all edges; cold starts disappear.",
       "D. Switch to a Kinesis-driven trigger to avoid cold starts."
     ],
     "answer": 0,
-    "explanation": "Provisioned Concurrency keeps init'd workers ready; SnapStart further accelerates JVM cold starts on supported runtimes. CloudFront caches don't apply to dynamic per-request data (B). Lambda@Edge has its own cold-start dynamics and stricter limits (C). Trigger type doesn't address JVM init time (D).",
+    "explanation": "Provisioned Concurrency keeps init'd workers ready; SnapStart restores a pre-initialized memory snapshot and is available for Java (managed runtimes), Python, and .NET (Lambda SnapStart was extended beyond Java in 2024). Together they minimize JVM init time. CloudFront caches don't apply to dynamic per-request data (B). Lambda@Edge has its own cold-start dynamics and stricter limits (C). Trigger type doesn't address JVM init time (D).",
+    "optionExplanations": [
+      "Correct — Provisioned Concurrency keeps initialized execution environments warm and SnapStart (now supported for Java, Python, and .NET on managed runtimes) restores a pre-initialized snapshot, dramatically cutting JVM init time.",
+      "CloudFront caching does not apply to dynamic per-request invocations and does not solve cold starts for the underlying compute.",
+      "Lambda@Edge has its own cold-start behavior and tighter execution limits; it is not a general remediation for backend cold starts.",
+      "Changing trigger type does not reduce JVM init time, which is what drives the cold-start latency."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -647,6 +941,12 @@
     ],
     "answer": 0,
     "explanation": "EFS Standard is multi-AZ NFSv4 by default, so this is the lowest-risk swap. s3fs has poor POSIX semantics (B). FSx for Lustre is for HPC scratch and is single-AZ in most options (C). rsync nightly leaves a wide RPO (D).",
+    "optionExplanations": [
+      "Correct — EFS Standard is multi-AZ NFSv4 by default; existing NFS clients mount with no app rewrite, and EFS-IA lifecycle reduces cost for cold files.",
+      "s3fs-fuse offers poor POSIX semantics (no consistent locking/rename) and is unsuitable for shared state that an NFS-aware app expects.",
+      "FSx for Lustre is for HPC scratch and most deployment types are single-AZ; failover and persistence semantics differ from EFS.",
+      "Nightly rsync to a hot-spare NFS instance leaves a 24-hour RPO and does not provide AZ-level resilience for live data."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -660,6 +960,12 @@
     ],
     "answer": 0,
     "explanation": "Glacier Instant Retrieval supports millisecond access for infrequent reads and is queryable directly by Athena/Spectrum. Deep Archive cannot be queried by Athena directly (B). Migrating to Redshift adds ingest cost and locks the data (C). Compaction alone doesn't shift storage class (D).",
+    "optionExplanations": [
+      "Correct — Glacier Instant Retrieval keeps millisecond read latency, is queryable in place by Athena/Spectrum, and slashes per-GB cost for partitions queried only quarterly.",
+      "Glacier Deep Archive requires a restore that takes hours; Athena cannot query it in place.",
+      "Migrating to Redshift adds ingestion cost and removes the data from the lake, locking it behind Redshift compute.",
+      "Compaction with Snappy improves query performance but does not change storage class or per-GB pricing."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -673,6 +979,12 @@
     ],
     "answer": 0,
     "explanation": "Least outstanding requests routes new connections to less-loaded targets, evening tail latency; correct keepalive timeouts avoid 502s on idle connections. NLBs at L4 don't queue but they also don't help with slow targets (B). API Gateway throttle reduces success rate, not latency (C). CloudFront caches don't help dynamic latency (D).",
+    "optionExplanations": [
+      "Correct — Least Outstanding Requests sends new connections to less-loaded targets, evening out tail latency; matching keepalive timeouts (target > ALB) avoids 502s on connection close races.",
+      "NLB operates at L4 and does not queue at the load balancer, but it also does not solve the root cause — slow targets — and removes useful L7 features.",
+      "API Gateway with 100 RPS caps would protect upstream but at the cost of dropped requests, not reduced latency.",
+      "CloudFront caches only help cacheable responses; it does nothing for dynamic per-request latency at the targets."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -685,7 +997,13 @@
       "D. Replace Aurora with self-managed MySQL on i4i instances."
     ],
     "answer": 0,
-    "explanation": "RDS Proxy multiplexes connections, drastically lowering open connections to the DB; Aurora reader auto scaling adds replicas under load. Serverless v1 has its own connection ceilings (B). Bigger writer alone doesn't fix read saturation (C). Self-managed loses Aurora benefits (D).",
+    "explanation": "RDS Proxy multiplexes connections, drastically lowering open connections to the DB; Aurora reader auto scaling adds replicas under load. Serverless v1 has its own connection ceilings and is being deprecated (B). Bigger writer alone doesn't fix read saturation (C). Self-managed loses Aurora benefits (D).",
+    "optionExplanations": [
+      "Correct — RDS Proxy pools and multiplexes application connections so the writer sees far fewer open connections, and Aurora reader auto scaling adds replicas under read load.",
+      "Aurora Serverless v1 has its own connection limits and is being retired; it does not directly address read saturation.",
+      "Aurora readers do not auto-inherit the writer's instance class, and even if they did, a bigger writer does not solve read-replica CPU saturation.",
+      "Self-managed MySQL on i4i loses Aurora's separated storage layer, auto scaling, and managed operational features."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -699,6 +1017,12 @@
     ],
     "answer": 0,
     "explanation": "Blue/green rotation via SSM is the safest mechanism; ongoing review of Optimizer findings plus Config drift gives continuous improvement. In-place modifications cause restarts and are risky during business hours (B). Disabling Optimizer abandons the optimization (C). Lambda rewrite is out of scope (D).",
+    "optionExplanations": [
+      "Correct — blue/green ASG rotations via SSM Automation avoid outages, weekly Compute Optimizer reviews keep the loop going, and Config drift detection catches future deviations from intended sizes.",
+      "In-place instance type changes require a stop/start and risk in-flight requests during business hours.",
+      "Disabling Compute Optimizer abandons the entire ongoing right-sizing program rather than addressing noise.",
+      "A wholesale rewrite to Lambda is out of scope for a right-sizing exercise on an existing monolith."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -712,6 +1036,12 @@
     ],
     "answer": 0,
     "explanation": "Compute Savings Plans cover EC2, Fargate, and Lambda across families/sizes/Regions and are managed at the org level. Standard RIs are inflexible (B). EC2 Instance SPs lock to a family (C). Spot doesn't fit steady-state workloads (D).",
+    "optionExplanations": [
+      "Correct — Compute Savings Plans cover EC2/Fargate/Lambda across any family, size, OS, and Region, and apply across linked accounts when bought in the management account.",
+      "Standard RIs are bound to a specific family and Region with little flexibility, contradicting the 'maximum flexibility' goal.",
+      "EC2 Instance Savings Plans lock you to one instance family per Region, less flexible than Compute Savings Plans.",
+      "Spot Instances are not appropriate for steady-state production workloads that cannot tolerate interruption."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -724,7 +1054,13 @@
       "D. Move to instance-store ephemeral disks on the same instance class."
     ],
     "answer": 0,
-    "explanation": "io2 Block Express scales to 256k IOPS on supported instances; striping gp3 also helps; offloading cold telemetry to S3 reduces hot working set. gp3 IOPS aren't size-coupled by default (B). st1 is throughput-optimized HDD with low IOPS (C). Instance-store loses durability (D).",
+    "explanation": "io2 Block Express scales to high IOPS on supported instances; striping gp3 also helps; offloading cold telemetry to S3 reduces hot working set. gp3 IOPS are decoupled from size and cap at 16k for a single volume (B). st1 is throughput-optimized HDD with low IOPS (C). Instance-store loses durability (D).",
+    "optionExplanations": [
+      "Correct — io2 Block Express scales to far higher IOPS on supported instance families; alternatively LVM-striping multiple gp3 volumes is a quick win, and shipping cold telemetry to S3 via Firehose shrinks the hot working set.",
+      "gp3 IOPS are not coupled to size and cap at 16k for a single volume; increasing size does not unlock more IOPS.",
+      "st1 is throughput-optimized HDD with low random IOPS and is the wrong direction for an IOPS-bound workload.",
+      "Instance-store loses data on stop/terminate and does not provide durable storage for telemetry."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -738,6 +1074,12 @@
     ],
     "answer": 0,
     "explanation": "Subscriptions to Firehose-to-S3 in Parquet and Athena gives cheap, fast historical analytics; CloudWatch retains short for live tail. Logs Insights doesn't scale to billions of events economically (B, C). X-Ray is for tracing, not log analytics (D).",
+    "optionExplanations": [
+      "Correct — a Firehose subscription delivering Parquet to S3 (with Lambda transform) plus partition projection in Athena gives cheap fast historical queries, while short CloudWatch Logs retention preserves live tail.",
+      "Longer timeouts and parallelism do not change the cost model of Logs Insights at hundreds of millions of events/day.",
+      "Keeping all logs in CloudWatch Logs forever is one of the most expensive log storage choices and scans grow linearly.",
+      "X-Ray is a distributed tracing service, not a log analytics platform; it does not replace structured log search."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -751,6 +1093,12 @@
     ],
     "answer": 0,
     "explanation": "ECR endpoints + S3 gateway endpoint route image pulls inside the VPC, removing NAT pressure entirely; pull-through cache reduces external pulls. More NAT Gateways still pay per-byte and don't fix the data-transfer cost (B). Scheduling shifts the problem (C). Docker Hub adds external dependency and rate limits (D).",
+    "optionExplanations": [
+      "Correct — interface endpoints for ECR API and ECR DKR plus an S3 gateway endpoint keep image pulls on the AWS private network, removing NAT pressure entirely; pull-through cache cuts external pulls.",
+      "Adding NAT Gateways doesn't change per-byte data-processing cost and still routes image traffic through NAT unnecessarily.",
+      "Scheduling deploys overnight just shifts the contention, it doesn't address the root cause.",
+      "Docker Hub adds an external dependency with its own rate limits and increases — not decreases — egress to the internet."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -763,7 +1111,13 @@
       "D. Switch to RDS for PostgreSQL with provisioned IOPS."
     ],
     "answer": 0,
-    "explanation": "Optimized Reads uses local NVMe to satisfy temporary tables and large scans, isolating analytics IO; custom endpoints route specific consumers. Redshift can't run OLTP (B). Aurora has only one writer per cluster unless using Aurora Multi-Master Limited Preview/Aurora MySQL multi-master, which is constrained (C). RDS PIOPS doesn't match Aurora's storage architecture and increases cost (D).",
+    "explanation": "Optimized Reads uses local NVMe to satisfy temporary tables and large scans, isolating analytics IO; custom endpoints route specific consumers. Redshift can't run OLTP (B). Aurora has a single writer per cluster (Aurora MySQL multi-master was a limited-preview feature and Aurora PostgreSQL does not offer it) (C). RDS PIOPS doesn't match Aurora's storage architecture and increases cost (D).",
+    "optionExplanations": [
+      "Correct — Aurora Optimized Reads on r6id-class instances uses local NVMe to satisfy temp tables and large scans, isolating analytics IO from OLTP; custom endpoint groups route those queries to the right readers.",
+      "Redshift is not an OLTP engine; running OLTP through Spectrum is not a workable architecture.",
+      "Aurora PostgreSQL has a single writer per cluster; multi-writer is not a generally available option on PostgreSQL.",
+      "RDS Provisioned IOPS uses a different storage architecture and does not give Aurora-equivalent performance; it also increases cost without solving the analytics isolation problem."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -777,6 +1131,12 @@
     ],
     "answer": 0,
     "explanation": "Fault Injection Service is purpose-built; templates and stop conditions provide safety. Trusted Advisor flags configuration issues, not failure injection (B). Canaries test from outside but don't inject failure (C). Resilience Hub assesses, but FIS is what runs the experiments (D).",
+    "optionExplanations": [
+      "Correct — AWS Fault Injection Service runs designed chaos experiments with templates that target specific resources (e.g., an AZ's subnets) and CloudWatch alarm-based stop conditions for safety.",
+      "Trusted Advisor flags configuration issues; it does not inject failures.",
+      "CloudWatch Synthetics generates traffic from outside; it cannot inject infrastructure faults.",
+      "Resilience Hub assesses target RTO/RPO and policy; FIS is what actually runs the experiments."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -790,6 +1150,12 @@
     ],
     "answer": 0,
     "explanation": "Cross-account CodePipeline + CodeDeploy blue/green + alarm-driven rollbacks is the AWS reference pattern. Manual approvals every stage destroy lead time (B). Direct kubectl from laptops is anti-pattern (C). Mono-pipeline is risky (D).",
+    "optionExplanations": [
+      "Correct — cross-account CodePipeline, CodeDeploy blue/green (Lambda/ECS), and CloudWatch alarm-driven rollback give fast deploys with safe automated rollback.",
+      "Manual approvals at every stage in every account destroys lead time and adds inconsistent human variance.",
+      "kubectl-from-laptop direct to prod has no audit, no review, and no automated rollback — an explicit anti-pattern.",
+      "A single mega-monolith pipeline lacks environment separation and risk-isolates poorly."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -803,6 +1169,12 @@
     ],
     "answer": 0,
     "explanation": "Quota increase plus Reserved Concurrency for critical workloads plus an SQS buffer is the standard pattern. CloudFront caches don't help dynamic non-cacheable APIs (B). Larger memory might shorten duration but doesn't add concurrency slots (C). Lambda@Edge has stricter concurrency limits and isn't a fit for backend APIs (D).",
+    "optionExplanations": [
+      "Correct — raising the Service Quotas concurrency limit addresses the root cause, Reserved Concurrency guarantees a slice for the critical function, and an SQS buffer plus async destinations smooths bursts without losing events.",
+      "CloudFront caching does not help dynamic, per-user API responses and does nothing to relieve concurrency exhaustion.",
+      "More memory makes invocations finish faster but does not add concurrency slots — the limit is on concurrent executions, not duration.",
+      "Lambda@Edge has stricter concurrency caps and runtime limits and is not appropriate for backend APIs that need this much capacity."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -816,6 +1188,12 @@
     ],
     "answer": 0,
     "explanation": "Redshift Serverless bills only for compute used and matches the SQL surface; data sharing lets you migrate without copying. Pause/resume helps but provisioned still has minimums (B). Athena replacement may not match Redshift's perf/feature surface (C). Reservation locks in over-provisioning (D).",
+    "optionExplanations": [
+      "Correct — Redshift Serverless bills only for compute used (RPU-seconds), matches the Redshift SQL surface, and Redshift data sharing makes the migration low-risk; per-workgroup usage limits cap spend.",
+      "Pause/resume nightly still keeps the cluster provisioned during business hours at 12% utilization, leaving substantial waste.",
+      "Athena's SQL surface and concurrency profile differ from Redshift; not a like-for-like swap for a warehouse.",
+      "Reserving over-provisioned dc2 nodes locks in waste and dc2 is an older generation."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -829,6 +1207,12 @@
     ],
     "answer": 0,
     "explanation": "Tiering plus EMF (which charges via Logs ingestion, often cheaper for high-cardinality dimensions) plus AMP for Prometheus-style time series is the standard cost pattern. Disabling all metrics breaks ops (B). X-Ray is tracing, not metrics (C). Negotiated rates don't fix the architecture (D).",
+    "optionExplanations": [
+      "Correct — tiering metrics (essential alarms/dashboards in CloudWatch, high-cardinality via EMF that bills as Logs, bulk metrics into AMP/Timestream) cuts cost while preserving observability.",
+      "Disabling all CloudWatch metrics removes alarms, dashboards, and detection — breaking operations.",
+      "X-Ray is a tracing service and does not store metrics; it cannot replace CloudWatch metrics.",
+      "A pricing discount may help marginally but does not change the architecture-level cost driver."
+    ],
     "domain": "Continuous Improvement for Existing Solutions"
   },
   {
@@ -842,6 +1226,12 @@
     ],
     "answer": 0,
     "explanation": "EventBridge offers content-based filtering, archive/replay, and a schema registry — purpose-built for this. SNS+SQS lacks filtering as expressive as EventBridge and there's no managed schema registry there (B). Kinesis is for stream processing, not pub/sub fan-out with filters (C). Direct SQS fan-out scales poorly and lacks schema/replay (D).",
+    "optionExplanations": [
+      "Correct — EventBridge offers content-based rule filtering, an archive+replay feature, and a Schema Registry with code-binding generation, all of which directly match the requirements.",
+      "SNS supports basic message filtering but lacks EventBridge's expressive content-based rules; Confluence is not a managed schema registry.",
+      "Kinesis Data Streams is a stream-processing primitive, not a pub/sub fan-out service with rule-based filtering and replay.",
+      "Per-consumer SQS Standard queues with producer fan-out scales poorly, lacks schema management, and provides no replay or filtering."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -855,6 +1245,12 @@
     ],
     "answer": 0,
     "explanation": "AppFlow + Transfer Family + EventBridge Pipes + Step Functions is the AWS-native suite for B2B integration. Per-partner Lambdas (B) eschew managed connectors. DataSync is for storage migration (C). Glue Studio is for ETL, not SOAP integrations (D).",
+    "optionExplanations": [
+      "Correct — AppFlow covers many SaaS connectors, Transfer Family handles SFTP, EventBridge Pipes does filtered point-to-point plumbing with transforms, and Step Functions orchestrates end-to-end.",
+      "Hand-rolled Lambdas per partner abandon the goal of using managed connectors and slow the migration.",
+      "DataSync is for storage-to-storage data movement, not for B2B partner API integration.",
+      "Glue Studio is for ETL pipelines; it is not a SOAP integration platform."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -868,19 +1264,31 @@
     ],
     "answer": 0,
     "explanation": "MGN post-launch actions exist exactly for this; combine with custom integration tests for confidence. Trust-without-validation is unsafe (B, C). Re-creating defeats lift-and-shift (D).",
+    "optionExplanations": [
+      "Correct — MGN post-launch actions run SSM-driven validation scripts after each test/cutover; combine with CodeBuild/Step Functions integration tests and re-sync if needed.",
+      "Booting is necessary but not sufficient for application-level correctness; many app-layer failures still occur post-boot.",
+      "AWS hardware and drivers differ from on-prem; this assumption is exactly why post-launch validation exists.",
+      "Re-creating from scratch defeats the lift-and-shift premise of MGN and discards captured server state."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
     "id": 68,
     "question": "An enterprise needs to migrate a 4 PB on-prem object store to S3. They have a 1 Gbps internet connection and a 30-day deadline. Which approach is feasible?",
     "options": [
-      "A. AWS Snowball Edge devices (or Snowmobile if available in-Region) for the bulk move, with ongoing changes shipped via DataSync over a temporary Direct Connect or VPN; perform post-cutover delta validation.",
+      "A. AWS Snowball Edge devices (in parallel) for the bulk move, with ongoing changes shipped via DataSync over a temporary Direct Connect or VPN; perform post-cutover delta validation.",
       "B. Use AWS Storage Gateway file mode and let it sync over 1 Gbps for 30 days.",
       "C. Compress all data and ship via FTP to S3.",
       "D. Use S3 Multi-Region Access Points to import-from-on-prem natively."
     ],
     "answer": 0,
-    "explanation": "At 1 Gbps you cannot transfer 4 PB online in 30 days; physical Snow devices plus a delta sync is the standard. Storage Gateway over 1 Gbps will fail the deadline (B). FTP to S3 isn't a thing (C). Multi-Region Access Points don't import from on-prem (D).",
+    "explanation": "At 1 Gbps you cannot transfer 4 PB online in 30 days; physical Snow devices (Snowball Edge in parallel; Snowmobile has been retired for new customers but the concept of physical shipping applies) plus a delta sync is the standard. Storage Gateway over 1 Gbps will fail the deadline (B). FTP to S3 isn't a thing (C). Multi-Region Access Points don't import from on-prem (D).",
+    "optionExplanations": [
+      "Correct — at 1 Gbps you cannot transfer 4 PB online in 30 days (theoretical max ~324 TB/30 days), so multiple Snowball Edge devices ship the bulk and DataSync replicates the deltas during cutover.",
+      "Storage Gateway file mode over a 1 Gbps link cannot move 4 PB in 30 days even at line rate.",
+      "FTP is not a supported S3 ingest mechanism; compression alone does not solve a fundamental bandwidth shortfall.",
+      "S3 Multi-Region Access Points route requests across Regions; they do not import data from on-prem."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -894,6 +1302,12 @@
     ],
     "answer": 0,
     "explanation": "SCT + DMS + DMS validation is the AWS-canonical heterogeneous migration. SQL Server native backups don't restore to a different engine (B). AWS Backup doesn't change engines (C). Manual rewrite skips automation that SCT provides (D).",
+    "optionExplanations": [
+      "Correct — SCT converts schema and T-SQL with action items for incompatible objects, DMS performs full-load + CDC to minimize downtime, and DMS data validation tasks verify row-level fidelity.",
+      "SQL Server native backups can only be restored to SQL Server, not to a Postgres engine.",
+      "AWS Backup is for AWS-resource backup; it does not transform schemas across engines.",
+      "Manually rewriting schemas and re-importing CSVs skips all the conversion and validation tooling SCT and DMS provide."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -907,6 +1321,12 @@
     ],
     "answer": 0,
     "explanation": "App2Container analyzes Java/.NET apps and packages them as containers with Kubernetes/ECS deployment artifacts. Beanstalk is a PaaS but doesn't analyze and package monoliths the same way (B). Proton is platform templates (C). CodeArtifact is package management (D).",
+    "optionExplanations": [
+      "Correct — App2Container inspects existing Java/.NET applications, packages them as Docker images, and produces ECS/EKS deployment artifacts and IaC.",
+      "Elastic Beanstalk is a PaaS for deploying applications, but it does not analyze existing monoliths and emit container artifacts.",
+      "Proton publishes platform templates for self-service environments; it is not an analyzer/packager.",
+      "CodeArtifact is a package repository for dependencies, not an application containerization tool."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -920,6 +1340,12 @@
     ],
     "answer": 1,
     "explanation": "ALB path-based routing is the simplest, lowest-latency Strangler Fig pattern within a VPC; you swap legacy paths to new target groups gradually. API Gateway works too (A) but adds latency and is best when you need API features such as auth/throttling/transformations; for a pure routing strangler, ALB is more efficient. App Mesh handles east-west service mesh, not external routing (C). CloudFront splits at the edge but is overkill if traffic is internal (D).",
+    "optionExplanations": [
+      "API Gateway works but adds per-request overhead and is overkill when the requirement is purely path-based routing between a monolith and new microservices.",
+      "Correct — ALB path-based routing rules let you redirect specific URL paths from the monolith target group to new microservice target groups one at a time, with the lowest latency overhead.",
+      "App Mesh provides east-west service-mesh features; it does not perform external Strangler-style routing.",
+      "CloudFront behaviors can split paths at the edge but are overkill and add edge round-trips when traffic is largely internal."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -933,6 +1359,12 @@
     ],
     "answer": 0,
     "explanation": "Application Discovery Service is purpose-built for pre-migration discovery and Migration Hub aggregates findings. Trusted Advisor inspects existing AWS, not on-prem (B). Compute Optimizer needs AWS workloads (C). SSM Inventory is for already-managed instances, not pre-migration discovery at scale (D).",
+    "optionExplanations": [
+      "Correct — Application Discovery Service (agentless or agent-based) is purpose-built for pre-migration discovery of on-prem dependencies, performance, and license posture, with Migration Hub for portfolio analysis.",
+      "Trusted Advisor inspects existing AWS accounts; it does not discover on-prem servers.",
+      "Compute Optimizer operates on AWS workloads to recommend sizes; it is not an on-prem discovery tool.",
+      "SSM Inventory works on already-managed nodes and isn't designed for pre-migration on-prem fleet discovery at scale."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -946,6 +1378,12 @@
     ],
     "answer": 0,
     "explanation": "FSx for Windows File Server (multi-AZ) is the SMB-native managed offering and supports DFS Namespaces. EFS is NFS, not SMB (B). S3 has no SMB (C). FSx for Lustre is HPC, not SMB file shares (D).",
+    "optionExplanations": [
+      "Correct — FSx for Windows File Server is SMB-native, supports multi-AZ deployments, and integrates with DFS Namespaces for federated names.",
+      "EFS is NFSv4 (no native SMB) and is not the right fit for Windows file-server workloads.",
+      "S3 does not natively expose SMB; you would need a gateway, which adds latency and breaks DFS-style semantics.",
+      "FSx for Lustre is a high-performance parallel filesystem for HPC scratch, not Windows SMB workloads."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -959,19 +1397,31 @@
     ],
     "answer": 0,
     "explanation": "Mainframe Modernization explicitly offers Micro Focus (replatform) and Blu Age (refactor) engines, with DMS for mainframe data and Refactor Spaces for incremental API extraction. The other answers don't address mainframe artifacts (B, C, D).",
+    "optionExplanations": [
+      "Correct — AWS Mainframe Modernization offers Micro Focus (replatform) for re-hosting COBOL and Blu Age (refactor) for automated transformation; DMS handles VSAM/IMS data and Refactor Spaces extracts APIs incrementally.",
+      "App Runner runs containerized web apps; it does not host or migrate mainframe COBOL batch.",
+      "Lambda custom runtimes do not address mainframe transaction monitors, JCL, or batch job semantics.",
+      "Elastic Beanstalk Node.js is unrelated to COBOL/mainframe migration."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
     "id": 75,
     "question": "An organization wants to migrate VMware on-prem VMs as-is to AWS, retaining VMware management tooling for a transition period. Which AWS option is best?",
     "options": [
-      "A. VMware Cloud on AWS (or its successor offering) for VMware-native infrastructure on AWS bare metal, then incremental migration to native EC2 via HCX or AWS MGN.",
+      "A. A VMware-on-AWS dedicated SDDC offering (e.g., VMware Cloud on AWS or its current successor service) for VMware-native infrastructure on AWS bare metal, then incremental migration to native EC2 via HCX or AWS MGN.",
       "B. Convert every VM to a Lambda function.",
       "C. Lift VMs to Amazon WorkSpaces.",
       "D. Run vSphere on EC2 t3.medium instances."
     ],
     "answer": 0,
-    "explanation": "VMware on AWS keeps existing tooling and SDDC; HCX or MGN then move to native AWS over time. Lambda doesn't run VMs (B). WorkSpaces is for end-user desktops (C). vSphere on shared-tenant EC2 isn't supported the way bare-metal SDDC is (D).",
+    "explanation": "A VMware-on-AWS SDDC offering keeps existing tooling and SDDC; HCX or MGN then move to native AWS over time. Lambda doesn't run VMs (B). WorkSpaces is for end-user desktops (C). vSphere on shared-tenant EC2 isn't supported the way bare-metal SDDC is (D).",
+    "optionExplanations": [
+      "Correct — a VMware-on-AWS SDDC (e.g., VMware Cloud on AWS or its current successor) keeps existing vSphere tooling; HCX or AWS MGN then migrate workloads to native EC2 incrementally.",
+      "Lambda does not run VMs; conversion of arbitrary on-prem VMs to Lambda functions is not feasible.",
+      "WorkSpaces provides managed virtual desktops to end users, not a VM migration target for server workloads.",
+      "vSphere is not supported on shared-tenant EC2 t3 instances; the supported offering uses dedicated bare-metal SDDC."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -984,20 +1434,32 @@
       "D. Amazon CloudFront."
     ],
     "answer": 0,
-    "explanation": "Outposts brings AWS infrastructure on-premises. Wavelength embeds compute at telco 5G edge sites (B). Local Zones are AWS-managed metro extensions (C). CloudFront is a CDN (D).",
+    "explanation": "Outposts brings AWS infrastructure on-premises. Wavelength embeds compute at telco 5G edge sites (B). Local Zones are AWS-managed metros (C). CloudFront is a CDN (D).",
+    "optionExplanations": [
+      "Correct — AWS Outposts (rack or 1U/2U servers) installs in the customer datacenter and exposes a subset of AWS services with the same APIs as Regions.",
+      "Wavelength embeds compute at telecom 5G edge sites, not in customer datacenters.",
+      "Local Zones are AWS-operated metro extensions of a Region, not on customer premises.",
+      "CloudFront is a CDN delivered from AWS edge locations; it is not on-premises infrastructure."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
     "id": 77,
     "question": "A company runs Kubernetes in a corporate datacenter and wants AWS to manage the control plane while they keep workers on-prem. Which AWS service is appropriate?",
     "options": [
-      "A. Amazon EKS Anywhere with a connected cluster registered to EKS for visibility.",
+      "A. Amazon EKS Hybrid Nodes (the AWS-managed control plane in-Region with worker nodes joined from on-premises), or EKS Anywhere for a fully on-prem distribution registered to EKS for visibility.",
       "B. Amazon ECS Anywhere only.",
       "C. AWS Fargate on Outposts only.",
       "D. EKS Distro deployed manually with no AWS control plane."
     ],
     "answer": 0,
-    "explanation": "EKS Anywhere lets you run Kubernetes on customer infrastructure with the same EKS distribution; clusters can be registered to EKS for visibility. ECS Anywhere is for ECS, not Kubernetes (B). Fargate on Outposts is one offering but doesn't fit 'on-prem datacenter' generally (C). EKS Distro is the open-source distribution but not a managed service (D).",
+    "explanation": "Where the requirement is specifically 'AWS manages the control plane, workers stay on-prem', EKS Hybrid Nodes (announced in 2024) joins on-prem worker nodes to an AWS-managed EKS control plane. EKS Anywhere runs Kubernetes entirely on customer infrastructure (control plane on-prem). ECS Anywhere is for ECS, not Kubernetes (B). Fargate on Outposts uses Outpost hardware in the customer datacenter (C). EKS Distro is just the open-source distribution with no managed service (D).",
+    "optionExplanations": [
+      "Correct — EKS Hybrid Nodes pairs an AWS-managed EKS control plane with worker nodes running in the customer datacenter, fitting the stated requirement; EKS Anywhere is a related option for fully on-prem operation.",
+      "ECS Anywhere is for ECS, not Kubernetes.",
+      "Fargate on Outposts requires AWS Outpost hardware, not arbitrary customer datacenters, and is for ECS/EKS workers on the Outpost.",
+      "EKS Distro is the open-source upstream distribution with no managed control plane from AWS."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -1011,6 +1473,12 @@
     ],
     "answer": 0,
     "explanation": "DataSync is purpose-built with throttling, scheduling, integrity checks, and resume. rsync over Windows is brittle (B). File Gateway is for NFS/SMB-fronted access not bulk migration (C). Transfer Family is SFTP for inbound transfer use cases, not large NAS sync (D).",
+    "optionExplanations": [
+      "Correct — DataSync supports bandwidth throttling, scheduling, resume, and built-in checksum verification — designed exactly for periodic NAS-to-S3 migrations.",
+      "rsync over SSH from Windows is brittle, manually managed, and lacks AWS-side integrity verification.",
+      "Storage Gateway file mode is for ongoing NFS/SMB-fronted access from on-prem, not weekly bulk migrations of hundreds of TB.",
+      "Transfer Family provides managed SFTP/FTP/FTPS endpoints; it is not a NAS-to-S3 migration tool."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -1024,6 +1492,12 @@
     ],
     "answer": 0,
     "explanation": "PrivateLink (Endpoint Services) is the AWS-blessed SaaS connectivity pattern: customers privately connect via interface endpoints with no cross-customer reachability. Sharing a VPC is anti-pattern for tenant isolation (B). Public + allow-list traverses the internet (C). CloudFront also uses the internet (D).",
+    "optionExplanations": [
+      "Correct — PrivateLink with an NLB-backed VPC Endpoint Service gives each customer a private interface endpoint to the SaaS, with no cross-customer reachability and no public internet exposure.",
+      "Sharing the SaaS VPC across customer accounts breaks tenant isolation and is an anti-pattern.",
+      "A public ALB with IP allow-listing still traverses the internet, missing the 'without internet' requirement.",
+      "CloudFront also routes traffic over the public internet from the viewer to the edge; it doesn't satisfy private connectivity."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   },
   {
@@ -1037,6 +1511,12 @@
     ],
     "answer": 0,
     "explanation": "Wavelength puts compute at the carrier 5G aggregation site, giving the lowest mobile-to-cloud latency. Local Zones are metros but not in the carrier RAN (B). Outposts is on-prem hardware that you operate (C). Lambda@Edge serves HTTP at CloudFront edges, not 5G mobile compute (D).",
+    "optionExplanations": [
+      "Correct — Wavelength Zones embed AWS compute and storage inside the telecom carrier's 5G network, giving single-digit-millisecond round-trip latency to mobile devices on that network.",
+      "Local Zones extend a Region into a metro but do not sit inside the carrier's RAN, so latency to a 5G mobile device is higher than Wavelength.",
+      "Outposts is customer-operated on-prem hardware; it does not natively provide low-latency access from cellular devices on a carrier network.",
+      "CloudFront/Lambda@Edge serve HTTP from CloudFront edges; they are not optimized for 5G mobile compute or AR workloads."
+    ],
     "domain": "Accelerate Workload Migration and Modernization"
   }
 ]

@@ -58,7 +58,7 @@
   },
   {
     "id": 4,
-    "question": "A healthcare ISV builds container images in CodeBuild and pushes to ECR. Compliance requires a signed attestation that the image was built from a specific commit hash, that no high or critical CVEs were detected, and that the artifact was reviewed by a second engineer before the image tag becomes mutable in production. Which combination is the most maintainable?",
+    "question": "A healthcare ISV builds container images in CodeBuild and pushes to ECR. Compliance requires a signed attestation that the image was built from a specific commit hash, that no high or critical CVEs were detected, and that the artifact was reviewed by a second engineer before the image is promoted to production with an immutable tag. Which combination is the most maintainable?",
     "options": [
       "A. Use ECR image scanning on push, IAM Access Analyzer for review, and pipeline manual approval.",
       "B. Use CodeBuild to produce an in-toto attestation, push the image to ECR with immutable tags, run Inspector v2 enhanced scanning, gate promotion with a CodePipeline manual approval that records the reviewer ARN, and use a Lambda action to attach a Signer signature on success.",
@@ -85,7 +85,7 @@
       "D. Use AWS CodeBuild webhooks against GitHub and skip CodePipeline entirely."
     ],
     "answer": 1,
-    "explanation": "CodeStar Connections handle source events without static tokens, and GitHub Actions can assume a short-lived role through GitHub OIDC to upload to S3. EventBridge on S3 object create then triggers the pipeline source action that polls the bucket. (A) ignores the requirement to feed artifacts into the pipeline. (C) uses long-lived credentials, exactly what the requirement forbids. (D) drops the pipeline orchestration the team already uses.",
+    "explanation": "CodeStar Connections handle source events without static tokens, and GitHub Actions can assume a short-lived role through GitHub OIDC to upload to S3. An EventBridge rule on the S3 object-create event then triggers the pipeline whose S3 source action ingests the artifact. (A) relies on a custom source action and skips the native S3 source pattern. (C) uses long-lived credentials, exactly what the requirement forbids. (D) drops the pipeline orchestration the team already uses.",
     "domain": "SDLC Automation",
     "optionExplanations": [
       "Custom source actions to ingest GitHub Actions output add complexity, and although OIDC removes static keys for the upload, this design bypasses the native V2 GitHub source and EventBridge pattern.",
@@ -194,7 +194,7 @@
     "question": "A fintech wants every CodeCommit commit to main to trigger a Lambda that validates the commit author is a member of a specific IAM Identity Center group. Which integration is correct?",
     "options": [
       "A. Use a CodeCommit trigger that calls Lambda directly with the commit metadata.",
-      "B. EventBridge rule on the CodeCommit referenceUpdated event that targets a Lambda which calls GetCommit, then queries Identity Center via the IdentityStore API to check group membership; reject by force-pushing a revert if the check fails is unsafe so instead log to Security Hub.",
+      "B. EventBridge rule on the CodeCommit referenceUpdated event that targets a Lambda which calls GetCommit to obtain the author ARN, queries Identity Center via the IdentityStore API to verify group membership, and publishes a Security Hub finding when the author is not authorized rather than rewriting history.",
       "C. Lambda subscribes to CloudTrail data events on CodeCommit and rewrites history if the author is not authorized.",
       "D. Use IAM Access Analyzer findings to detect unauthorized commits."
     ],
@@ -611,13 +611,13 @@
     "id": 33,
     "question": "An e-commerce site needs zero-RPO database failover across two Regions for an Aurora PostgreSQL cluster, with automatic failover triggered by Region-level alarms and a published DNS endpoint that does not change after failover. Which architecture meets the requirement?",
     "options": [
-      "A. Aurora Global Database with the secondary Region as a read replica; use Route 53 ARC routing controls in conjunction with a managed DNS endpoint and orchestrate failover via a Lambda invoked on a Region health alarm. Note RPO is typically under one second but not strictly zero; for RPO=0 use Aurora write forwarding or accept synchronous limitations.",
+      "A. Aurora Global Database with the secondary Region as a read replica; use Route 53 ARC routing controls bound to a stable hosted-zone endpoint and orchestrate managed unplanned failover on a Region health alarm. Note RPO is typically sub-second but not strictly zero given asynchronous cross-Region replication.",
       "B. RDS Multi-AZ across Regions.",
       "C. DynamoDB Global Tables.",
       "D. S3 Cross-Region Replication."
     ],
     "answer": 0,
-    "explanation": "Aurora Global Database provides cross-Region replication with sub-second RPO (not strictly zero, but the closest available); Route 53 ARC routing controls let you flip a stable hosted-zone endpoint without DNS races. (B) RDS Multi-AZ is single-Region only. (C) different engine and constraints. (D) is for object storage, not transactional DB.",
+    "explanation": "Aurora Global Database provides cross-Region replication with typically sub-second RPO (the closest to zero available for Aurora PostgreSQL, since cross-Region replication is asynchronous); Route 53 ARC routing controls let you flip a stable hosted-zone endpoint without DNS races. (B) RDS Multi-AZ is single-Region only. (C) different engine and consistency model. (D) is for object storage, not transactional DB.",
     "domain": "Resilient Cloud Solutions",
     "optionExplanations": [
       "Correct - Aurora Global Database replicates cross-Region with typically sub-second RPO (the closest available, not strictly zero), and Route 53 ARC routing controls flip a stable hosted-zone endpoint without DNS race risk.",
@@ -763,7 +763,7 @@
     "id": 41,
     "question": "A team operating CloudFront with a custom origin needs to maintain availability when the primary origin returns 5xx. Which configuration is appropriate?",
     "options": [
-      "A. CloudFront origin group with primary and secondary origins, Origin Failover Criteria including 500/502/503/504, and origin shield enabled in a Region close to most viewers; combine with custom error pages for last-resort UX.",
+      "A. CloudFront origin group with primary and secondary origins, Origin Failover Criteria including 500/502/503/504, and origin shield enabled in a Region close to the origin to consolidate cache hits; combine with custom error pages for last-resort UX.",
       "B. Increase CloudFront cache TTL to 24 hours and ignore origin health.",
       "C. Use Lambda@Edge to retry the same origin five times.",
       "D. Disable origin shield to reduce coupling."
@@ -772,7 +772,7 @@
     "explanation": "Origin failover with the right error codes plus origin shield improves cache efficiency and resilience. (B) trades freshness for availability and breaks dynamic content. (C) compounds load on the failing origin. (D) origin shield is generally beneficial; disabling it does not improve resilience.",
     "domain": "Resilient Cloud Solutions",
     "optionExplanations": [
-      "Correct - CloudFront origin groups failover between primary and secondary on configured 5xx codes, origin shield improves cache efficiency for the backing origins, and custom error pages give last-resort UX.",
+      "Correct - CloudFront origin groups failover between primary and secondary on configured 5xx codes; origin shield placed close to the origin consolidates cache fills and shields the backing origin, and custom error pages give last-resort UX.",
       "Increasing TTL to 24 hours sacrifices freshness, breaks dynamic content, and still fails for cache-miss paths.",
       "Lambda@Edge retrying the same failing origin five times compounds load on the failure rather than failing over.",
       "Disabling origin shield reduces cache efficiency and does not improve resilience; the question's stem implies leaving shield on."
@@ -1257,16 +1257,16 @@
     "id": 67,
     "question": "A team noticed anomalous EC2 launches in a development account by a long-dormant access key. They want to prevent any future unfamiliar-region API call by that account globally and automatically. Which control fits?",
     "options": [
-      "A. Apply an SCP that denies actions outside an allowed Region list (aws:RequestedRegion), and an IAM permission boundary on the dev account roles; pair with GuardDuty UnusualBehavior findings and an EventBridge rule that auto-disables the offending key on detection.",
+      "A. Apply an SCP that denies actions outside an allowed Region list using aws:RequestedRegion, and an IAM permission boundary on the dev account roles; pair with GuardDuty Behavior findings such as Behavior:IAMUser/InstanceLaunchUnusual and an EventBridge rule that auto-disables the offending key on detection.",
       "B. Remove all IAM users from the account.",
       "C. Use CloudFront geo-blocking.",
       "D. Use VPC NACLs to restrict egress to specific regions."
     ],
     "answer": 0,
-    "explanation": "Region restriction is enforced via aws:RequestedRegion in SCP/IAM, not network-layer ACLs. GuardDuty Unusual* findings detect the behavior and an EventBridge rule + SSM disables the key fast. (B) is overkill. (C) is for HTTP. (D) NACLs do not understand AWS Regions.",
+    "explanation": "Region restriction is enforced via aws:RequestedRegion in SCPs and IAM, not at the network layer. GuardDuty Behavior findings (such as Behavior:IAMUser/InstanceLaunchUnusual) detect anomalous launches and an EventBridge rule plus SSM Automation disables the offending key fast. (B) is overkill. (C) CloudFront geo-blocking restricts HTTP viewers, not API calls. (D) NACLs do not understand AWS Regions.",
     "domain": "Incident and Event Response",
     "optionExplanations": [
-      "Correct - aws:RequestedRegion in SCPs and IAM permission boundaries restricts API actions outside an allowed Region list, GuardDuty UnusualBehavior findings detect anomalous launches, and an EventBridge rule plus SSM Automation auto-disables the offending key fast.",
+      "Correct - aws:RequestedRegion in SCPs and IAM permission boundaries restricts API actions outside an allowed Region list, GuardDuty Behavior findings (such as Behavior:IAMUser/InstanceLaunchUnusual) detect anomalous launches, and an EventBridge rule plus SSM Automation auto-disables the offending key fast.",
       "Removing all IAM users from the account is disproportionate and breaks legitimate use cases.",
       "CloudFront geo-blocking restricts HTTP viewer traffic and does not constrain AWS API calls by Region.",
       "VPC NACLs operate on IP traffic at the subnet level and have no concept of AWS Regions or AWS API actions."
