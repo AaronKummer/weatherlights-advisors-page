@@ -377,6 +377,8 @@
             allQuestions = await res.json();
             // Normalize: new banks use array options + numeric answer;
             // legacy banks use object options + array-of-letter answer.
+            // Also normalize optionExplanations (when present, agents emit
+            // it as an array indexed identically to the original options).
             allQuestions = allQuestions.map(function (q) {
                 if (Array.isArray(q.options)) {
                     var obj = {};
@@ -385,6 +387,13 @@
                         obj[letter] = v;
                     });
                     q.options = obj;
+                }
+                if (Array.isArray(q.optionExplanations)) {
+                    var expObj = {};
+                    q.optionExplanations.forEach(function (v, i) {
+                        expObj[String.fromCharCode(65 + i)] = v;
+                    });
+                    q.optionExplanations = expObj;
                 }
                 if (!Array.isArray(q.answer)) {
                     var letter = String.fromCharCode(65 + q.answer);
@@ -416,6 +425,24 @@
 
         // Set title from bank name
         var BANK_NAMES = {'saa-c03':'AWS Solutions Architect Associate','dop-c02':'AWS DevOps Engineer Professional','scs-c02':'AWS Security Specialty','ans-c01':'AWS Advanced Networking Specialty','clf-c02':'AWS Cloud Practitioner','sap-c02':'AWS Solutions Architect Professional','dea-c01':'AWS Data Engineer Associate'};
+        // Mirrors the real AWS exam length per cert: question count + time limit.
+        var EXAM_CONFIG = {
+            'clf-c02': { count: 65, mins: 90  },
+            'saa-c03': { count: 65, mins: 130 },
+            'dea-c01': { count: 65, mins: 130 },
+            'dop-c02': { count: 75, mins: 180 },
+            'sap-c02': { count: 75, mins: 180 },
+            'ans-c01': { count: 65, mins: 170 },
+            'scs-c02': { count: 65, mins: 170 },
+        };
+        // Per-cert pass mark (AWS uses scaled scoring; these are the
+        // commonly-cited "raw" approximate pass percentages for prep tools).
+        var PASS_PCT = {
+            'clf-c02': 70, 'saa-c03': 72, 'dea-c01': 72, 'dop-c02': 75,
+            'sap-c02': 75, 'ans-c01': 75, 'scs-c02': 75,
+        };
+        var examCfg = EXAM_CONFIG[bank] || { count: 65, mins: 130 };
+        var passPct = PASS_PCT[bank] || 72;
         var bankTitle = BANK_NAMES[bank] || bank.toUpperCase();
         document.title = bankTitle + ' Quiz';
         document.getElementById('quiz-title').innerHTML = '<span class="prefix">&gt;</span> ' + bankTitle;
@@ -442,15 +469,27 @@
                 ? '<div class="quiz-score" style="margin-bottom:24px">LIFETIME: <span>' + correct + '</span>/' + answered + ' (' + Math.round(correct / answered * 100) + '%)</div>'
                 : '';
 
+            // Compute weak-domain hint for adaptive mode label
+            var domainStrength = computeDomainStrength();
+            var weakest = domainStrength.length ? domainStrength[0] : null;
+            var weakLabel = weakest && weakest.attempted >= 3
+                ? '(' + weakest.domain.split(' ')[0] + ' is your weakest)'
+                : 'Auto-targets weakest domain after a few questions';
+            var examCount = Math.min(examCfg.count, allQuestions.length);
+
             container.innerHTML = statsHtml +
                 '<div class="quiz-modes">' +
                     '<button class="quiz-mode-btn" data-mode="quick">' +
                         '<div class="mode-title">QUICK QUIZ</div>' +
                         '<div class="mode-desc">10 random questions</div>' +
                     '</button>' +
+                    '<button class="quiz-mode-btn" data-mode="adaptive">' +
+                        '<div class="mode-title">ADAPTIVE PRACTICE</div>' +
+                        '<div class="mode-desc">' + weakLabel + '</div>' +
+                    '</button>' +
                     '<button class="quiz-mode-btn" data-mode="exam">' +
-                        '<div class="mode-title">EXAM SIMULATION</div>' +
-                        '<div class="mode-desc">65 questions (mirrors real exam)</div>' +
+                        '<div class="mode-title">MOCK EXAM</div>' +
+                        '<div class="mode-desc">' + examCount + ' questions · ' + examCfg.mins + ' min · pass at ' + passPct + '%</div>' +
                     '</button>' +
                     '<button class="quiz-mode-btn" data-mode="missed">' +
                         '<div class="mode-title">REVIEW MISSED</div>' +
@@ -469,26 +508,87 @@
             container.querySelectorAll('.quiz-mode-btn').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     var mode = btn.getAttribute('data-mode');
-                    if (mode === 'quick') startQuiz(shuffle(allQuestions).slice(0, 10));
-                    else if (mode === 'exam') startQuiz(shuffle(allQuestions).slice(0, 65));
+                    if (mode === 'quick') startQuiz({ questions: shuffle(allQuestions).slice(0, 10) });
+                    else if (mode === 'adaptive') startQuiz({ questions: adaptiveQuestions(20), mode: 'adaptive' });
+                    else if (mode === 'exam') startQuiz({
+                        questions: shuffle(allQuestions).slice(0, examCount),
+                        mode: 'exam',
+                        durationMs: examCfg.mins * 60 * 1000,
+                    });
                     else if (mode === 'missed') {
                         var missed = allQuestions.filter(function (q) { return state[q.id] === false; });
                         if (missed.length === 0) {
                             alert('No missed questions. Nice!');
                             return;
                         }
-                        startQuiz(shuffle(missed).slice(0, 20));
+                        startQuiz({ questions: shuffle(missed).slice(0, 20) });
                     }
                     else if (mode === 'domain') showDomainSelect();
                     else if (mode === 'reset') {
                         if (confirm('Reset all quiz progress?')) {
-                            state = {};
+                            state = { _fp: bankFp };
                             saveState();
                             showModeSelect();
                         }
                     }
                 });
             });
+        }
+
+        // ---- Domain strength tracking ----
+        // Returns array of { domain, correct, attempted, rate } sorted weak→strong.
+        function computeDomainStrength() {
+            var stats = {};
+            allQuestions.forEach(function (q) {
+                var d = q.domain;
+                if (!stats[d]) stats[d] = { domain: d, correct: 0, attempted: 0, rate: 1 };
+                if (q.id in state && state[q.id] !== undefined) {
+                    stats[d].attempted++;
+                    if (state[q.id]) stats[d].correct++;
+                }
+            });
+            return Object.keys(stats).map(function (d) {
+                var s = stats[d];
+                s.rate = s.attempted ? s.correct / s.attempted : 1;
+                return s;
+            }).sort(function (a, b) {
+                // unattempted (rate=1, attempted=0) sorts after attempted-weak
+                if (a.attempted === 0 && b.attempted === 0) return 0;
+                if (a.attempted === 0) return 1;
+                if (b.attempted === 0) return -1;
+                return a.rate - b.rate;
+            });
+        }
+
+        // Weighted random sample favoring weak domains.
+        function adaptiveQuestions(n) {
+            var strength = computeDomainStrength();
+            // Score per question: lower domain rate = higher weight, with a floor.
+            var pool = allQuestions.map(function (q) {
+                var d = strength.find(function (s) { return s.domain === q.domain; });
+                var rate = d ? d.rate : 0.6;
+                // Strongly prefer weak domains; missed questions get extra weight.
+                var w = (1.05 - rate) + (state[q.id] === false ? 0.5 : 0);
+                return { q: q, w: Math.max(0.05, w) };
+            });
+            var out = [];
+            var taken = {};
+            for (var i = 0; i < n && pool.length > 0; i++) {
+                var total = pool.reduce(function (a, p) { return a + p.w; }, 0);
+                var r = Math.random() * total;
+                for (var j = 0; j < pool.length; j++) {
+                    r -= pool[j].w;
+                    if (r <= 0) {
+                        if (!taken[pool[j].q.id]) {
+                            out.push(pool[j].q);
+                            taken[pool[j].q.id] = true;
+                        }
+                        pool.splice(j, 1);
+                        break;
+                    }
+                }
+            }
+            return out;
         }
 
         // ---- Domain select ----
@@ -517,10 +617,50 @@
         }
 
         // ---- Run quiz ----
-        function startQuiz(questions) {
+        function startQuiz(config) {
+            // Backwards-compat: also accept a plain array
+            if (Array.isArray(config)) config = { questions: config };
+            var questions = config.questions;
+            var examMode = config.mode === 'exam';
+            var adaptiveMode = config.mode === 'adaptive';
+            var durationMs = config.durationMs || 0;
+            var examStart = examMode ? Date.now() : 0;
+            var examDeadline = examMode ? examStart + durationMs : 0;
+            var timerInterval = null;
+
             var idx = 0;
             var sessionCorrect = 0;
             var sessionTotal = questions.length;
+            var perDomain = {}; // domain -> {correct, total}
+
+            function fmtTimeLeft() {
+                if (!examMode) return '';
+                var left = Math.max(0, examDeadline - Date.now());
+                var mm = Math.floor(left / 60000);
+                var ss = Math.floor((left % 60000) / 1000);
+                return mm + ':' + (ss < 10 ? '0' : '') + ss;
+            }
+
+            function startTimer() {
+                if (!examMode) return;
+                var el = document.getElementById('quiz-timer');
+                if (!el) return;
+                el.textContent = fmtTimeLeft();
+                timerInterval = setInterval(function () {
+                    var left = examDeadline - Date.now();
+                    if (left <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        // Force-end the exam
+                        showSummary(sessionCorrect, idx, true);
+                        return;
+                    }
+                    el.textContent = fmtTimeLeft();
+                    // Last 5 minutes — warn color
+                    if (left < 5 * 60 * 1000) el.style.color = 'var(--warn)';
+                    if (left < 60 * 1000) el.style.color = 'var(--error)';
+                }, 1000);
+            }
 
             function showQuestion() {
                 var q = questions[idx];
@@ -529,7 +669,9 @@
 
                 var html = '<div class="quiz-header">' +
                     '<div class="quiz-progress">QUESTION ' + (idx + 1) + ' / ' + sessionTotal + '</div>' +
-                    '<div class="quiz-score">SESSION: <span>' + sessionCorrect + '</span> CORRECT</div>' +
+                    (examMode ? '<div class="quiz-score" style="color:var(--accent-bright);font-weight:800"><span id="quiz-timer">' + fmtTimeLeft() + '</span></div>' : '') +
+                    (adaptiveMode ? '<div class="quiz-score" style="color:var(--secondary);font-size:10px">ADAPTIVE · ' + q.domain.split(' ')[0].toUpperCase() + '</div>' : '') +
+                    (!examMode && !adaptiveMode ? '<div class="quiz-score">SESSION: <span>' + sessionCorrect + '</span> CORRECT</div>' : '') +
                 '</div>';
 
                 html += '<div class="quiz-domain-tag">' + q.domain.toUpperCase() + '</div>';
@@ -577,6 +719,8 @@
 
                 submitBtn.addEventListener('click', function () { checkAnswer(q, selected, options); });
                 skipBtn.addEventListener('click', function () { advance(); });
+                // Start exam timer once (on first showQuestion call)
+                if (examMode && !timerInterval) startTimer();
             }
 
             function checkAnswer(q, selected, options) {
@@ -587,8 +731,13 @@
                 if (isCorrect) sessionCorrect++;
                 state[q.id] = isCorrect;
                 saveState();
+                // Track per-domain for the summary screen
+                var d = q.domain || 'Unspecified';
+                if (!perDomain[d]) perDomain[d] = { correct: 0, total: 0 };
+                perDomain[d].total++;
+                if (isCorrect) perDomain[d].correct++;
 
-                // Disable all options
+                // Disable all options + inject per-option explanations when present
                 options.forEach(function (opt) {
                     opt.disabled = true;
                     var letter = opt.getAttribute('data-letter');
@@ -596,6 +745,14 @@
                         opt.classList.add('correct');
                     } else if (selected.indexOf(letter) > -1) {
                         opt.classList.add('wrong');
+                    }
+                    // Per-option explanation (when the bank ships it)
+                    if (q.optionExplanations && q.optionExplanations[letter]) {
+                        var expEl = document.createElement('div');
+                        expEl.className = 'quiz-option-exp';
+                        expEl.style.cssText = 'font-family:Inter,system-ui,sans-serif;font-size:0.82rem;color:var(--text-dim);padding:0.5rem 0.75rem 0.1rem;line-height:1.5;border-top:1px dashed var(--card-border);margin-top:0.35rem;';
+                        expEl.textContent = q.optionExplanations[letter];
+                        opt.appendChild(expEl);
                     }
                 });
 
@@ -614,33 +771,66 @@
 
                 document.getElementById('quiz-next').addEventListener('click', advance);
 
-                // Update score display
-                container.querySelector('.quiz-score').innerHTML = 'SESSION: <span>' + sessionCorrect + '</span> CORRECT';
+                // Update score display (skip on exam mode — the timer lives there)
+                if (!examMode) {
+                    var scoreEl = container.querySelector('.quiz-score');
+                    if (scoreEl && !adaptiveMode) scoreEl.innerHTML = 'SESSION: <span>' + sessionCorrect + '</span> CORRECT';
+                }
             }
 
             function advance() {
                 idx++;
                 if (idx < sessionTotal) showQuestion();
-                else showSummary(sessionCorrect, sessionTotal);
+                else {
+                    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                    showSummary(sessionCorrect, sessionTotal, false);
+                }
+            }
+
+            function showSummary(correct, total, timedOut) {
+                var pct = total > 0 ? Math.round(correct / total * 100) : 0;
+                var pass = pct >= passPct;
+
+                // Per-domain breakdown
+                var domainHtml = '';
+                var domainKeys = Object.keys(perDomain);
+                if (domainKeys.length > 0) {
+                    domainHtml = '<div style="text-align:left;max-width:480px;margin:24px auto 0;">' +
+                        '<div class="quiz-summary-label" style="margin-bottom:12px">BY DOMAIN</div>';
+                    domainKeys.sort().forEach(function (d) {
+                        var s = perDomain[d];
+                        var dpct = Math.round(s.correct / s.total * 100);
+                        var barColor = dpct >= passPct ? 'var(--success)' : (dpct >= 50 ? 'var(--warn)' : 'var(--error)');
+                        domainHtml +=
+                            '<div style="margin-bottom:10px;font-family:Inter,system-ui,sans-serif;">' +
+                                '<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">' +
+                                    '<span style="color:var(--text);">' + escapeHtml(d) + '</span>' +
+                                    '<span style="color:var(--text-dim);font-family:var(--mono);font-size:0.75rem;">' +
+                                        s.correct + '/' + s.total + ' · ' + dpct + '%' +
+                                    '</span>' +
+                                '</div>' +
+                                '<div style="height:6px;background:var(--card-border);border-radius:100px;overflow:hidden;">' +
+                                    '<div style="height:100%;width:' + dpct + '%;background:' + barColor + ';border-radius:100px;transition:width 0.4s ease;"></div>' +
+                                '</div>' +
+                            '</div>';
+                    });
+                    domainHtml += '</div>';
+                }
+
+                var headline = timedOut ? 'TIME EXPIRED' : (pass ? 'PASSING SCORE' : 'NEED ' + passPct + '% TO PASS');
+
+                container.innerHTML = '<div class="quiz-summary">' +
+                    '<div class="quiz-summary-score ' + (pass ? 'quiz-summary-pass' : 'quiz-summary-fail') + '">' + pct + '%</div>' +
+                    '<div class="quiz-summary-label">' + correct + ' / ' + total + ' CORRECT' + (examMode ? ' · ' + examCfg.mins + ' MIN EXAM' : '') + '</div>' +
+                    '<div class="quiz-summary-label">' + headline + '</div>' +
+                    domainHtml +
+                    '<div style="margin-top:24px">' +
+                        '<button class="quiz-btn quiz-btn-next" onclick="location.reload()">NEW QUIZ</button>' +
+                    '</div>' +
+                '</div>';
             }
 
             showQuestion();
-        }
-
-        // ---- Summary ----
-        function showSummary(correct, total) {
-            var pct = Math.round(correct / total * 100);
-            var pass = pct >= 72;
-
-            container.innerHTML = '<div class="quiz-summary">' +
-                '<div class="quiz-summary-score ' + (pass ? 'quiz-summary-pass' : 'quiz-summary-fail') + '">' + pct + '%</div>' +
-                '<div class="quiz-summary-label">' + correct + ' / ' + total + ' CORRECT</div>' +
-                '<div class="quiz-summary-label">' + (pass ? 'PASSING SCORE' : 'NEED 72% TO PASS') + '</div>' +
-                '<div style="margin-top:24px">' +
-                    '<button class="quiz-btn quiz-btn-next" onclick="location.reload()">NEW QUIZ</button>' +
-                    ' <a href="lab.html" class="quiz-btn quiz-btn-submit" style="text-decoration:none;display:inline-block">&larr; LAB</a>' +
-                '</div>' +
-            '</div>';
         }
 
         function escapeHtml(s) {

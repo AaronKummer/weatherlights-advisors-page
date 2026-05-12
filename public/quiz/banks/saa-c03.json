@@ -10,7 +10,13 @@
     ],
     "answer": 1,
     "explanation": "Session Manager tunnels through the SSM agent over outbound HTTPS, so no inbound 22/3389 is needed, and it natively streams full session transcripts to CloudWatch Logs or S3 with optional KMS encryption. A bastion still requires open 22 ingress somewhere. Client VPN avoids the internet but does not record keystrokes. EC2 Instance Connect logs the API call but not in-session keystrokes — CloudTrail data events do not capture shell IO.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "A bastion host still requires inbound TCP/22 to be open from somewhere (the office CIDR), and VPC Flow Logs capture connection metadata, not keystrokes.",
+      "Correct — Session Manager tunnels over the SSM agent's outbound HTTPS so no inbound 22/3389 is needed, and it streams full keystroke transcripts to a KMS-encrypted CloudWatch Logs group.",
+      "Client VPN avoids exposing 22/3389 to the public internet, but Client VPN connection logs only record connection events, not in-session keystrokes.",
+      "EC2 Instance Connect logs the SendSSHPublicKey API call in CloudTrail, but CloudTrail data events do not capture shell IO — keystrokes inside the session are not recorded."
+    ]
   },
   {
     "id": 2,
@@ -23,7 +29,13 @@
     ],
     "answer": 2,
     "explanation": "Control Tower automates enrolment of new accounts, deploys the CloudTrail/Config baseline, and its preventative SCP guardrails block disabling those services without writing custom Lambda. A StackSet plus SCP is workable but Control Tower already wraps that pattern and handles new-account drift. Config conformance packs detect/remediate but don't prevent disablement at API-call time. The Lambda sweeper is reactive and brittle.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "A nightly sweeper Lambda is reactive — it lets misconfigurations exist for up to 24 hours and has to be re-coded every time AWS adds a service to the baseline.",
+      "A StackSet plus SCP works, but Control Tower wraps exactly that pattern and additionally handles new-account drift detection and enrolment automatically.",
+      "Correct — Control Tower automates new-account enrolment, deploys the CloudTrail/Config/GuardDuty baseline, and its preventative SCP guardrails block disabling those services with no custom code.",
+      "Config conformance packs with auto-remediation detect and re-enable disabled services after the fact, but they cannot block the disable API call at the moment it is made."
+    ]
   },
   {
     "id": 3,
@@ -36,7 +48,13 @@
     ],
     "answer": 1,
     "explanation": "Disabling the CMK is a single API call that immediately makes every encrypted object unreadable, regardless of which principal holds s3:GetObject. SSE-S3 removes the kill-switch. Object Lock prevents deletion/overwrite, not reads. Time-condition bucket policies don't override IAM identity-based grants and are easily bypassed by principals with broader policies.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Switching to SSE-S3 removes the kill-switch entirely — there's no customer-controlled key to disable, and rotating the bucket policy doesn't affect IAM principals with broader identity-policy grants.",
+      "Correct — disabling the CMK is a single API call that immediately makes every encrypted object unreadable, regardless of which principal holds s3:GetObject permission.",
+      "Object Lock in compliance mode prevents deletion or overwrite of objects, but it does not block read access — a breached principal could still GetObject.",
+      "A bucket policy with aws:CurrentTime applies only to that bucket policy; principals with broader identity-based s3:GetObject permissions can bypass it entirely."
+    ]
   },
   {
     "id": 4,
@@ -49,7 +67,13 @@
     ],
     "answer": 1,
     "explanation": "ACM Private CA can issue per-instance certs, and the ACM agent (or Systems Manager-managed renewal) handles automatic rotation while the private key stays on the instance. The wildcard-cert approach requires manual rotation and the key is shared. Self-signed certs aren't trusted by ACM at all. Nitro Enclaves are for sensitive in-memory processing, not for ALB-to-EC2 cert management.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "A wildcard cert distributed via SSM Parameter Store requires a custom cron job to rotate, and the same private key sits on every instance — shared keys violate the requirement.",
+      "Correct — ACM Private CA can issue per-instance certs and the ACM agent (installed via SSM) handles automatic rotation while the private key never leaves the instance.",
+      "Self-signed certs aren't trusted by ACM and you cannot 'import the public key into ACM' — ACM expects valid CA-signed certificates, not self-signed material.",
+      "Nitro Enclaves are for sensitive in-memory processing isolated from the parent instance; they don't address ALB-to-EC2 certificate management or rotation at all."
+    ]
   },
   {
     "id": 5,
@@ -62,7 +86,13 @@
     ],
     "answer": 0,
     "explanation": "Cognito User Pools support multiple SAML/OIDC IdPs per pool and the Identity Pool can map a group claim to an IAM role, returning short-lived STS credentials per request. Long-term IAM-user keys are exactly what AWS recommends against. IAM Identity Center is for workforce SSO into AWS consoles, not for end-user customer identities at scale. Simple AD doesn't federate to external IdPs.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — Cognito User Pools support multiple SAML/OIDC IdPs per pool, and the Identity Pool maps group claims to per-tenant IAM roles, returning short-lived STS credentials.",
+      "Long-term IAM access keys are exactly what AWS recommends against, and an OAuth bridge to vend them does not produce short-lived credentials.",
+      "IAM Identity Center is designed for workforce SSO into AWS consoles and CLIs, not for thousands of end-user customer identities at multi-tenant scale.",
+      "Simple AD is a basic managed Active Directory that does not federate to external IdPs like Okta, Entra ID, or Google Workspace."
+    ]
   },
   {
     "id": 6,
@@ -75,7 +105,13 @@
     ],
     "answer": 1,
     "explanation": "IoT Core supports per-device X.509 certs registered against a CA; deactivating a cert takes effect on the next connection attempt and existing sessions are dropped, so revocation is fast and granular. A shared cert means OTA-rotating the entire fleet on a single compromise. IAM users at 200k scale exceeds account quotas and is operationally insane. Cognito Identity Pools are designed for human end-users, not embedded device fleets.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "A single shared certificate baked into firmware means one compromise forces OTA-rotating the entire 200,000-device fleet — exactly what the requirement forbids.",
+      "Correct — IoT Core supports per-device X.509 certs registered against a CA; UpdateCertificate to INACTIVE blocks new connections immediately and existing sessions are dropped.",
+      "SigV4 with one IAM user per device exceeds IAM user quotas at 200k scale and is operationally unmanageable as a device-identity mechanism.",
+      "Cognito Identity Pools are designed for human end-users with federated logins, not for embedded device fleets authenticating with X.509 certificates."
+    ]
   },
   {
     "id": 7,
@@ -88,7 +124,13 @@
     ],
     "answer": 1,
     "explanation": "Compliance-mode Object Lock cannot be shortened or removed even by the root user; governance mode permits override by privileged principals (s3:BypassGovernanceRetention), so it doesn't meet the requirement. KMS key-policy timing tricks don't prevent overwrite/delete operations. Cross-account replication is useful for resilience but doesn't lock the source.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Governance-mode Object Lock allows privileged principals holding s3:BypassGovernanceRetention to override the retention, so it does not meet the 'no principal can delete' requirement.",
+      "Correct — compliance-mode Object Lock with a 7-year retention cannot be shortened or removed even by the root user, and a default bucket retention applies the lock automatically.",
+      "KMS key-policy timing tricks block decrypt but do not prevent overwrite or delete operations on the objects themselves, so the underlying objects can still be destroyed.",
+      "Cross-account replication is useful for resilience but does nothing to lock the source bucket — principals in the source account can still delete the originals."
+    ]
   },
   {
     "id": 8,
@@ -101,7 +143,13 @@
     ],
     "answer": 1,
     "explanation": "Interface endpoints expose AWS services privately inside the VPC over PrivateLink — Comprehend Medical supports this. NAT gateway sends traffic over the public internet (and adds an internet gateway requirement). You cannot peer with an AWS service VPC. S3 gateway endpoints route only to S3/DynamoDB and aren't transit paths.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "A NAT gateway routes traffic through the public internet (and requires an internet gateway), which violates the 'no traffic ever traverses the public internet' constraint.",
+      "Correct — an interface VPC endpoint powered by PrivateLink exposes Comprehend Medical privately inside the VPC; Comprehend Medical supports this and it's the cheapest no-NAT option.",
+      "You cannot establish a VPC peering connection with an AWS-managed service VPC — peering is for VPCs you own.",
+      "S3 gateway endpoints route only to S3 and DynamoDB; they are not transit paths and cannot reach Comprehend Medical."
+    ]
   },
   {
     "id": 9,
@@ -114,7 +162,13 @@
     ],
     "answer": 1,
     "explanation": "SCPs filter the effective permissions of every account in the OU EXCEPT the Organization's management (payer) account, which is unaffected. Inline allow policies do not override SCP denies — SCPs are a permissions ceiling, not a floor. Public buckets don't bypass the SCP attached to the calling principal. SCPs apply to identity policies as well as resource policies.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Inline allow policies do not override SCP denies — SCPs act as a permissions ceiling, so an explicit allow in an identity policy cannot bypass an SCP deny.",
+      "Correct — SCPs filter the effective permissions of every account in the OU except the Organization's management (payer) account, which is unaffected by SCPs.",
+      "A public-access bucket policy does not bypass an SCP attached to the calling principal — SCPs apply to the caller regardless of resource policy.",
+      "SCPs apply to identity policies as well as resource policies; they are not limited to resource-policy enforcement."
+    ]
   },
   {
     "id": 10,
@@ -127,7 +181,13 @@
     ],
     "answer": 1,
     "explanation": "Secrets Manager natively rotates Aurora credentials via AWS-provided Lambda templates and updates the secret atomically; clients fetch the latest version, so there's no downtime. SSM Parameter Store has no native rotation for RDS. IAM DB auth uses 15-minute tokens — not really 'rotation' of stored credentials, and many drivers still pin a connection. EBS snapshots aren't a credential-storage mechanism.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "SSM Parameter Store SecureString has no native RDS-rotation logic, so you'd write the Lambda yourself and risk downtime if the rotation isn't atomic with the DB password change.",
+      "Correct — Secrets Manager natively rotates Aurora credentials via AWS-provided Lambda templates and updates the secret atomically, so clients fetching the latest version experience no downtime.",
+      "IAM database authentication uses 15-minute STS tokens, which isn't the kind of stored-credential rotation the auditors are asking for, and many DB drivers pin connections that the token rotation breaks.",
+      "EBS snapshots are a block-storage mechanism, not a credential-storage mechanism — baking credentials into a snapshot is neither rotatable nor secure."
+    ]
   },
   {
     "id": 11,
@@ -140,7 +200,13 @@
     ],
     "answer": 1,
     "explanation": "WAF Bot Control fingerprints clients beyond IP/UA — it can validate that a 'Googlebot' really resolves back to a Google range, and the Targeted set adds challenge interstitials and TLS fingerprinting against IP-rotating bots. Shield Advanced is for DDoS, not scrapers. The S3 bucket policy fires after CloudFront and only matches the literal UA string. A Lambda@Edge reverse-DNS check is reinventing what Bot Control already does, and adds latency on every request.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Shield Advanced protects against DDoS volumetric attacks, not low-and-slow scrapers rotating across many IP ranges with forged user-agent strings.",
+      "Correct — WAF Bot Control validates that a 'Googlebot' UA actually resolves back to a Google range, and the Targeted feature set adds TLS fingerprinting and challenge interstitials against rotating bots.",
+      "An S3 bucket policy denying the literal 'Googlebot' UA fires after CloudFront and is trivially bypassed by changing the UA string — it doesn't fingerprint the client at all.",
+      "A Lambda@Edge reverse-DNS check reinvents what Bot Control already does and adds latency on every viewer request, making it slower and more expensive."
+    ]
   },
   {
     "id": 12,
@@ -153,7 +219,13 @@
     ],
     "answer": 1,
     "explanation": "Lake Formation is the only AWS-native control plane that supports column-level (and row-level) authorization on S3-backed tables, with LF-Tag conditions that can incorporate session tags. Athena workgroup policies operate at query/result level, not column. S3 Object Lambda is intended for object transformation but doesn't natively understand parquet schemas or principal attributes. Skipping columns in the crawler hides them from everyone.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "An Athena workgroup query-results bucket policy operates at the query/result file level — it cannot mask individual columns inside a parquet file based on principal attributes.",
+      "Correct — Lake Formation is the only AWS-native control plane that supports column-level (and row-level) authorization on S3-backed tables, with LF-Tag conditions that evaluate session tags.",
+      "S3 Object Lambda transforms object content but doesn't natively understand parquet schemas or evaluate IAM principal attributes for column-level masking.",
+      "Skipping columns in the Glue crawler hides them from the catalog entirely, which means even cleared users can't see the SSN/DOB columns — too broad."
+    ]
   },
   {
     "id": 13,
@@ -166,7 +238,13 @@
     ],
     "answer": 0,
     "explanation": "AWS WAF rate-based rules combined with the Account Takeover Prevention (ATP) managed rule group detect and block credential-stuffing and email-enumeration attacks at the WAF layer, transparently in front of the ALB, with zero application code changes. Cognito hosted UI with built-in CAPTCHA would address enumeration, but adopting it requires rewriting the signup flow to delegate registration to Cognito. Moving the ALB behind CloudFront does not change the response body that leaks the information. Disabling HTTP/2 has no relevance to enumeration attacks.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — WAF rate-based rules plus the Account Takeover Prevention managed rule group detect and block enumeration and credential-stuffing at the WAF layer in front of the ALB with no app changes.",
+      "Moving the ALB behind CloudFront doesn't change the response body that leaks whether an email is already registered — the underlying enumeration vector remains.",
+      "Disabling HTTP/2 has no relevance to email-enumeration attacks; the leak is in the application response, not in the protocol.",
+      "Cognito hosted UI with CAPTCHA would help, but adopting it requires rewriting the signup flow to delegate registration to Cognito — the question requires no app rewrite."
+    ]
   },
   {
     "id": 14,
@@ -179,7 +257,13 @@
     ],
     "answer": 2,
     "explanation": "AWS CLI v2 supports IAM Identity Center login that mints short-lived STS credentials per session, and aws s3 cp transparently does multipart uploads with integrity checksums and supports --sse aws:kms for KMS-encrypted PUTs. The console upload caps single-PUT at 5 GB and doesn't fit multi-hundred-GB workflows well. Transfer Family is fine but expensive overkill for a small team. Emailed STS keys are still long-lived enough to be a credential leak risk and operationally awful.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "The S3 console upload caps single-PUT at 5 GB and the multipart console flow is awkward for 200 GB files; federated console roles don't help with that limit.",
+      "Transfer Family SFTP works but is operationally expensive overkill for a small research team where the CLI already handles the use case.",
+      "Correct — AWS CLI v2 supports IAM Identity Center sso login for short-lived STS credentials, and aws s3 cp does multipart with integrity checksums and supports --sse aws:kms.",
+      "Emailed STS keys are still long-lived enough (up to 36 hours) to be a credential-leak risk, and a weekly Excel-macro process is operationally awful."
+    ]
   },
   {
     "id": 15,
@@ -192,7 +276,13 @@
     ],
     "answer": 1,
     "explanation": "RAM lets the owning account share specific subnets with other accounts in the Organization; consumers see those subnets in their own console and can run instances inside them while networking and route tables remain centrally managed. VPC peering creates separate VPCs. PrivateLink is service-to-service connectivity, not subnet sharing. Cross-account roles work but require granting broad EC2 rights in the central account, contradicting the requirement.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "VPC peering creates separate VPCs that route to each other — it doesn't let consumers deploy EC2 into the shared services account's subnets.",
+      "Correct — RAM lets the owning account share specific subnets with other accounts in the Organization; consumers see those subnets in their own consoles and run instances inside them.",
+      "PrivateLink endpoint services expose service-to-service connectivity over a private NLB, not subnet sharing for EC2 deployment.",
+      "Cross-account IAM roles work but require granting consumers ec2:RunInstances in the central account — contradicting the 'no IAM rights in shared services' requirement."
+    ]
   },
   {
     "id": 16,
@@ -205,7 +295,13 @@
     ],
     "answer": 1,
     "explanation": "Already-issued signed URLs/cookies are valid until their expiry — there is no built-in revocation. A Lambda@Edge viewer-request check against a revocation list is the standard pattern for instant revocation. Plain expiry doesn't allow early revocation. Presigned S3 URLs can't go through CloudFront with OAC reliably. Rotating key groups breaks every outstanding URL, not just one user's.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Plain CloudFront signed URLs are valid until their expiry and have no built-in revocation mechanism — you cannot kill an already-issued URL early.",
+      "Correct — a Lambda@Edge viewer-request check against a DynamoDB revocation list is the standard pattern for instant revocation while honoring the 4-hour expiry.",
+      "S3 presigned URLs don't go through CloudFront cleanly with origin access control — the OAC blocks direct S3 access that the presigned URL relies on.",
+      "Rotating CloudFront key groups every 4 hours invalidates every outstanding URL for every user, not just the revoked user's."
+    ]
   },
   {
     "id": 17,
@@ -218,7 +314,13 @@
     ],
     "answer": 0,
     "explanation": "An organization trail with log-file validation produces signed digest files that prove integrity, and Object Lock in compliance mode prevents anyone — including root — from altering objects for the retention period. Per-account trails are not centrally controllable and don't enforce immutability. CloudTrail Lake's default retention is short and would need explicit longer retention plus separate immutability — not the most direct fit. OpenSearch indices are mutable.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — an organization trail with log-file validation produces signed digest files proving integrity, and Object Lock in compliance mode prevents anyone (including root) from altering objects for 7 years.",
+      "Per-account trails delivered to each account's own bucket are not centrally controllable and don't enforce immutability against the account owner.",
+      "CloudTrail Lake's default retention is short and doesn't include the cryptographic-digest validation or Object Lock immutability the question demands.",
+      "OpenSearch indices are mutable — anyone with write access can modify documents, and nightly snapshots don't provide cryptographic proof of non-alteration."
+    ]
   },
   {
     "id": 18,
@@ -231,7 +333,13 @@
     ],
     "answer": 2,
     "explanation": "CloudHSM gives the customer single-tenant FIPS-140-3 Level 3 hardware modules where AWS operators have no access to the keys. KMS with imported material still uses the AWS-managed KMS HSM substrate. AWS-managed keys are by definition under AWS control. SSE-S3 keys are entirely AWS-managed.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "AWS-managed KMS keys are by definition under AWS control — AWS operators with sufficient privilege have access to the underlying material.",
+      "Even with imported key material, the keys still live in the AWS-managed KMS HSM substrate where AWS has operational access; the customer doesn't hold the root of trust.",
+      "Correct — CloudHSM gives the customer single-tenant FIPS-140-3 Level 3 hardware modules where AWS operators have no access to the keys, satisfying the 'AWS cannot decrypt' requirement.",
+      "SSE-S3 keys are entirely AWS-managed with no customer control — the customer doesn't even see the keys, let alone hold the root of trust."
+    ]
   },
   {
     "id": 19,
@@ -244,7 +352,13 @@
     ],
     "answer": 0,
     "explanation": "Site-to-Site VPN attached to a Transit Gateway gives two AWS-managed tunnels per connection (active/active), supports BGP fast failover, and IKEv2 with PFS is configurable; the TGW removes the need for store-by-store concentrators. Client VPN is for individual user devices, not site-to-site. Direct Connect with MACsec at 600 sites is cost-prohibitive and not always physically feasible. StrongSwan on EC2 reintroduces concentrator management exactly opposite to the requirement.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — Site-to-Site VPN attached to a Transit Gateway gives two AWS-managed tunnels per connection with BGP fast failover, supports IKEv2 with PFS, and eliminates store-by-store concentrators.",
+      "Client VPN endpoints are for individual user devices connecting from laptops, not for site-to-site tunnels from 600 store locations.",
+      "Direct Connect with MACsec at 600 retail sites is cost-prohibitive (cross-connects per site) and often not physically feasible in retail locations.",
+      "Self-managed StrongSwan on EC2 reintroduces the VPN-concentrator management burden — the exact opposite of the 'doesn't want to manage 600 concentrators' requirement."
+    ]
   },
   {
     "id": 20,
@@ -257,7 +371,13 @@
     ],
     "answer": 1,
     "explanation": "The cross-account role with ExternalId is the canonical pattern: the customer can revoke by deleting the role, no shared keys, and the ExternalId blocks 'confused deputy' replay attacks where a different SaaS-provider customer tricks the provider into calling the wrong account. Sharing IAM keys violates AWS guidance. A role in the SaaS account doesn't grant access to the customer's data. RAM doesn't share CloudWatch metrics.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Sharing IAM-user access keys violates AWS guidance, can't be revoked atomically by the customer, and offers no defense against the confused-deputy problem.",
+      "Correct — a cross-account role with sts:ExternalId tied to the tenant ID is the canonical pattern: the customer revokes by deleting the role, no shared keys, and ExternalId blocks confused-deputy replay.",
+      "A role in the SaaS provider's own account doesn't grant any access to the customer's resources — the trust direction is backwards.",
+      "RAM doesn't share CloudWatch metrics — RAM shares specific resource types like subnets and Transit Gateways, not CloudWatch namespaces."
+    ]
   },
   {
     "id": 21,
@@ -270,7 +390,13 @@
     ],
     "answer": 1,
     "explanation": "SCPs restrict member-account principals regardless of their identity policies, and conditioning on aws:MultiFactorAuthPresent=false denies sensitive actions for non-MFA sessions account-wide; root-MFA must be attached out-of-band per AWS guidance. IAM password policies don't enforce MFA. An alarm is reactive. Root-only MFA leaves IAM users unprotected.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "An IAM password policy controls password complexity and rotation; it doesn't enforce MFA-presence on API calls.",
+      "Correct — an SCP denying actions when aws:MultiFactorAuthPresent is false restricts every member-account principal regardless of identity policy, and root MFA must be attached out-of-band per AWS guidance.",
+      "A CloudWatch alarm that emails the CFO is reactive — it tells you AFTER MFA was disabled, not before.",
+      "Enabling MFA on the root user only leaves all the IAM users unprotected, which doesn't meet the 'every IAM user' requirement."
+    ]
   },
   {
     "id": 22,
@@ -283,7 +409,13 @@
     ],
     "answer": 2,
     "explanation": "Multi-GB raster tiles should not be streamed through Lambda — Lambda has 6 MB synchronous response limits, and even outside that limit the proxy invocation is wasteful. Returning a CloudFront-signed URL after a tiny auth-check Lambda is the standard 'big binary' pattern, and CloudFront naturally absorbs eclipse-event spikes. HTTP API still streams through Lambda. ALB + WAF doesn't easily implement per-customer API keys. Reserved concurrency doesn't fix the fundamental bandwidth pattern.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "HTTP API still streams every byte through the Lambda invoke envelope and Lambda's 6 MB synchronous response limit applies — moving from REST to HTTP API doesn't fix the fundamental shape.",
+      "ALB + WAF doesn't easily implement per-customer API keys with usage plans and quotas the way API Gateway does — you'd be building that yourself.",
+      "Correct — multi-GB tiles should never stream through Lambda; a tiny auth-check Lambda returning a CloudFront-signed URL is the canonical 'big binary' pattern and CloudFront absorbs eclipse spikes.",
+      "Increasing Lambda reserved concurrency to 10,000 doesn't fix the underlying problem that Lambda is the wrong shape for streaming multi-GB binaries — and Lambda still has the 6 MB response limit."
+    ]
   },
   {
     "id": 23,
@@ -296,7 +428,13 @@
     ],
     "answer": 0,
     "explanation": "Config conformance packs deploy CIS-style rules, support SSM-based auto-remediation per rule, and stream compliance status changes through EventBridge to any SIEM. CloudTrail metric filters don't evaluate configuration state. Trusted Advisor is broad cost/perf/security advice, not deep CIS coverage. Manual Security Hub export skips the auto-remediation requirement.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — Config conformance packs deploy CIS-style rules, support SSM Automation documents as remediation actions, and stream compliance events through EventBridge to any SIEM.",
+      "CloudTrail metric filters surface API-call patterns, but they don't evaluate the configuration state of resources against CIS rules.",
+      "Trusted Advisor is broad cost/perf/security advice; it doesn't provide deep CIS-Benchmark coverage or auto-remediation per rule.",
+      "Manually exporting Security Hub findings each month skips the auto-remediation requirement and isn't the continuous evaluation the regulator wants."
+    ]
   },
   {
     "id": 24,
@@ -309,7 +447,13 @@
     ],
     "answer": 0,
     "explanation": "CloudTrail data events for DynamoDB capture per-item GetItem/Query/Scan calls including the caller's IAM identity, the table, and the key — that's exactly the audit trail required, and it's transparent to the application. DynamoDB Streams emit data changes only, not reads. Flow Logs are network-level, not item-level. Contributor Insights surfaces hot-key patterns, not auditable identity-attributed reads.",
-    "domain": "Design Secure Architectures"
+    "domain": "Design Secure Architectures",
+    "optionExplanations": [
+      "Correct — CloudTrail data events for DynamoDB capture per-item GetItem/Query/Scan calls with the caller's IAM identity, the table, and the key — exactly the audit trail required, transparent to the app.",
+      "DynamoDB Streams emit only data-modification events (NEW_IMAGE/OLD_IMAGE), not read operations, so they can't audit lookups.",
+      "VPC Flow Logs are network-level (source IP, port, bytes), not item-level — they can't record which DynamoDB key was queried by which IAM principal.",
+      "Contributor Insights surfaces hot-key patterns in aggregate, not identity-attributed per-read records suitable for an audit trail."
+    ]
   },
   {
     "id": 25,
@@ -322,7 +466,13 @@
     ],
     "answer": 1,
     "explanation": "A 3-AZ ASG with capacity sized so that the surviving 2 AZs can carry the load is the classic stateless-web-tier pattern; it self-heals AZ failures and target-tracking absorbs bursts. A 2-AZ design with double capacity in one AZ doesn't survive THAT AZ failing. Single instances per AZ have no horizontal scaling. Lambda is fine but a much bigger architectural shift than the question is asking — and Lambda still recommends multi-AZ awareness; the choice between B and D rests on 'cheapest design that survives AZ outage'.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Provisioning twice as many instances in a single AZ doesn't survive THAT AZ failing — cross-zone load balancing has nothing to balance to when the home AZ is gone.",
+      "Correct — a 3-AZ ASG sized so that two surviving AZs carry the load is the classic stateless-web-tier pattern; it self-heals AZ failures and target-tracking absorbs bursts cheaply.",
+      "Single instances per AZ with Elastic IPs have no horizontal scaling and no auto-recovery — losing the instance means the AZ is down for you.",
+      "Moving to Lambda + API Gateway is a much bigger architectural shift than the question is asking for; it's also not strictly cheaper for steady traffic."
+    ]
   },
   {
     "id": 26,
@@ -335,7 +485,13 @@
     ],
     "answer": 0,
     "explanation": "SNS->SQS fanout decouples each consumer; SQS retains messages up to 14 days by default, so a 6-hour downstream outage is absorbed without loss. SNS direct-to-Lambda will retry briefly then DLQ — without an SQS buffer in front, you risk losing or DLQ'ing during long outages. EventBridge has retry/DLQ but the SNS+SQS pattern is the canonical resilience play and is also cheaper for 3 consumers. Kinesis is pull-based with 24h-365d retention but has shard contention between consumers unless using enhanced fan-out, which costs more.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — SNS-to-SQS fanout decouples each consumer; SQS retains messages up to 14 days, so a 6-hour downstream outage is absorbed with zero loss.",
+      "SNS direct-to-Lambda retries briefly then sends to a DLQ — without an SQS buffer in front, a 6-hour outage will overwhelm the retry window and risk losing events.",
+      "EventBridge has retry and DLQ but the SNS+SQS pattern is the canonical resilience play and is cheaper for three fixed consumers.",
+      "Kinesis is pull-based with 24h-365d retention but shard reads are shared between consumers without enhanced fan-out, which adds cost and complexity over SNS+SQS."
+    ]
   },
   {
     "id": 27,
@@ -348,7 +504,13 @@
     ],
     "answer": 1,
     "explanation": "Aurora Global Database is purpose-built for sub-second cross-Region replication and supports managed failover under a minute. A standard cross-Region read replica has higher replication lag and slower promotion. RDS MySQL Multi-AZ is single-Region. Self-managed binlog replication takes weeks of operational tuning to even approach Aurora Global's RPO/RTO and is brittle.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "A cross-Region read replica has replication lag in tens of seconds and slower manual promotion — well above the 5-second RPO and 1-minute RTO targets.",
+      "Correct — Aurora Global Database is purpose-built for sub-second cross-Region replication and supports managed failover in under a minute, hitting both RPO ~5s and RTO under 1 minute.",
+      "RDS MySQL Multi-AZ is single-Region — it protects against AZ failure but doesn't satisfy the cross-Region requirement at all.",
+      "Self-managed binlog replication on EC2 takes weeks of tuning to even approach Aurora Global's RPO/RTO and is operationally brittle."
+    ]
   },
   {
     "id": 28,
@@ -361,7 +523,13 @@
     ],
     "answer": 1,
     "explanation": "Step Functions Standard supports up to 1-year executions, native Lambda and Fargate task integrations, branching/retries/human-approval via task tokens, and visual debugging — purpose-built for this. SQS+Lambda forces you to build retries, branches, and timeouts yourself. Self-hosted Airflow is operational overhead. EventBridge rules don't carry workflow state.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "SQS plus a hand-written controller Lambda forces you to implement retries, branching, timeouts, and human approval yourself — exactly the plumbing the question wants to avoid.",
+      "Correct — Step Functions Standard supports 1-year executions, native Lambda and Fargate integrations, task tokens for the webhook waits, and Map states for fan-out, all with visual debugging.",
+      "Self-hosted Apache Airflow on EC2 is significant operational overhead — you manage the scheduler, workers, metadata DB, and upgrades yourself.",
+      "EventBridge rules chained one to the next don't carry workflow state, retry policies, or branching logic — you'd still need a workflow engine on top."
+    ]
   },
   {
     "id": 29,
@@ -374,7 +542,13 @@
     ],
     "answer": 3,
     "explanation": "RDS Proxy holds the application's connection pool and re-establishes connections to the new primary far faster than letting clients reconnect themselves through DNS — empirically cutting Multi-AZ failover-perceived downtime to single-digit seconds. Multi-AZ Cluster (option B) DOES typically fail over in ~35s but that's still over the 30s target without proxy. Memory class doesn't change failover. A cross-Region replica doesn't help intra-Region failover. The intended best answer is RDS Proxy which addresses the connection-handling delay that dominates failover time.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Memory-optimized instance classes don't change the failover protocol — failover time is dominated by DNS-propagation and client-side reconnect, not instance memory.",
+      "Multi-AZ Cluster typically fails over in around 35 seconds, which is still over the 30-second RTO target without something to shorten client-side reconnect.",
+      "A cross-Region read replica is for cross-Region DR; it doesn't accelerate intra-Region Multi-AZ failover at all.",
+      "Correct — RDS Proxy holds the application's connection pool and re-establishes connections to the new primary far faster than letting clients reconnect via DNS, cutting perceived failover to single-digit seconds."
+    ]
   },
   {
     "id": 30,
@@ -387,7 +561,13 @@
     ],
     "answer": 1,
     "explanation": "S3 RTC is the only feature offering a contractual replication-time SLA (99.99% of objects in 15 minutes). Express One Zone is single-AZ, low-latency storage — not cross-Region replication. AWS Backup can't schedule every 5 minutes for S3 and isn't designed for that pattern. DataSync at hourly granularity has 60-minute RPO at best.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "S3 Express One Zone is a single-AZ low-latency storage class; it has nothing to do with cross-Region replication time.",
+      "Correct — S3 Replication Time Control is the only feature offering a contractual replication-time SLA (99.99% of objects in 15 minutes), which fits within a tight RPO target.",
+      "AWS Backup cannot schedule cross-Region S3 copies every 5 minutes — minimum copy intervals are far longer and AWS Backup isn't designed for this pattern.",
+      "DataSync at hourly granularity gives a 60-minute RPO at best — five times worse than the 5-minute target."
+    ]
   },
   {
     "id": 31,
@@ -400,7 +580,13 @@
     ],
     "answer": 1,
     "explanation": "Spot interruption notices arrive ~2 minutes ahead of termination — checkpointing on a tighter cadence (or on receipt of the notice) lets the workload resume on a replacement instance with minimal lost work, while keeping Spot's cost advantage. All-On-Demand or RIs sacrifice the cost win. There is no 'bid price' in the modern Spot model — and even when there was, it didn't reduce interruptions, only made the user pay more for the same outcome.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Moving the entire fleet to On-Demand eliminates Spot's 60-90% discount, sacrificing the cost win the team is presumably trying to keep.",
+      "Correct — Spot interruption notices arrive ~2 minutes before termination via EventBridge; checkpointing on receipt of the notice lets the job resume on a replacement with minimal lost work.",
+      "There is no 'bid price' in the modern Spot model — that concept was retired years ago and never reduced interruptions in any case.",
+      "Reserved Instances commit you to baseline capacity at On-Demand-like prices, sacrificing Spot's cost advantage without solving the interruption problem."
+    ]
   },
   {
     "id": 32,
@@ -413,7 +599,13 @@
     ],
     "answer": 0,
     "explanation": "EFS Replication is a managed cross-Region replication feature that takes care of the plumbing and offers RPO of around 15 minutes and a quick failover, well within the 1h/4h target. EBS snapshots don't apply to EFS data. DataSync to S3 is a viable but more complex pattern needing restore-back logic on failover. rsync over peering is self-managed and brittle.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — EFS Replication is a managed cross-Region feature with around 15-minute RPO and a quick failover, well within the 1h RPO / 4h RTO target with the simplest tooling.",
+      "EBS snapshots don't apply to EFS data — EFS is a file system, not a block store, and lives outside the EBS snapshot model.",
+      "DataSync to S3 then restore is viable but more complex — you'd need restore-back logic on failover and additional storage cost in S3.",
+      "Self-managed rsync over VPC peering is brittle, requires custom failure handling, and has no built-in monitoring or integrity verification."
+    ]
   },
   {
     "id": 33,
@@ -426,7 +618,13 @@
     ],
     "answer": 2,
     "explanation": "Retry storms are best mitigated with backoff+jitter and a circuit breaker that returns 'service unavailable' immediately when the downstream is failing, so callers don't pile on. Adding more Fargate tasks doesn't help if the downstream is the bottleneck. SQS in front of an inherently synchronous checkout flow is the wrong shape. EC2 launch type doesn't change the pattern.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Adding more Fargate task count and CPU doesn't help if the downstream payment processor is the bottleneck — you're scaling the wrong tier.",
+      "An SQS queue in front of an inherently synchronous checkout flow is the wrong shape — customers expect immediate confirmation, not async processing.",
+      "Correct — retry storms are best mitigated with exponential backoff plus jitter and a circuit breaker that fails fast when the downstream is unhealthy, preventing pile-on.",
+      "Switching launch types from Fargate to EC2 doesn't change the retry-amplification pattern — the problem is in the application's retry logic, not the compute substrate."
+    ]
   },
   {
     "id": 34,
@@ -439,7 +637,13 @@
     ],
     "answer": 1,
     "explanation": "FIFO queues with content-based dedup combined with an idempotency key (object ETag + version) tracked in DynamoDB give end-to-end exactly-once semantics. Lambda's 15-minute max prevents 30-minute jobs. SNS fan-out is at-least-once with no dedup. Express workflows are limited to 5 minutes — too short for a 30-minute analysis.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "SNS fan-out is at-least-once delivery with no built-in deduplication, and multiple Lambdas amplify duplicate processing rather than preventing it.",
+      "Correct — FIFO queues with content-based dedup combined with an idempotency key (object ETag + version) tracked via conditional writes in DynamoDB give end-to-end exactly-once semantics.",
+      "Lambda's 15-minute max execution time prevents the 30-minute analysis from completing in a single invocation.",
+      "Step Functions Express workflows are capped at 5 minutes — far too short for a 30-minute analysis job."
+    ]
   },
   {
     "id": 35,
@@ -452,7 +656,13 @@
     ],
     "answer": 1,
     "explanation": "Failover (or latency/weighted) with associated health checks automatically removes unhealthy records from responses; convergence happens within the TTL plus check interval (often under 60s). Latency routing alone doesn't react to outages. Geolocation has no health awareness. Multivalue answers with longer TTL make it WORSE — clients cache the bad record longer.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Latency-based routing without health checks doesn't react to outages — clients continue receiving the unhealthy stack's IP until manual intervention.",
+      "Correct — failover routing with associated Route 53 health checks automatically removes unhealthy records from responses; convergence happens within TTL plus check interval (often under 60 seconds).",
+      "Geolocation routing has no health awareness — it routes purely on user origin, ignoring whether the target stack is up.",
+      "Multivalue answer with a longer TTL makes outages WORSE — clients cache the bad record for longer before they retry."
+    ]
   },
   {
     "id": 36,
@@ -465,7 +675,13 @@
     ],
     "answer": 0,
     "explanation": "Warm pools keep pre-initialized instances ready (stopped or running-but-unallocated), and predictive scaling spins capacity up before the spike — together they collapse 'sudden demand to ready' to seconds. Raising the CPU target makes scale-out trigger LATER, not sooner. Bigger instances still take minutes to boot. Cluster placement groups are about latency between instances, not scaling time.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — warm pools keep pre-initialized instances ready (in stopped state), and predictive scaling spins capacity up before the spike, collapsing 'sudden demand to ready' to seconds.",
+      "Raising the CPU target makes scale-out trigger LATER, not sooner — the opposite of what's needed for sudden spikes.",
+      "Larger instance types still take roughly the same boot and cache-warm time; a 3-minute warm-up isn't fundamentally about instance size.",
+      "Cluster placement groups optimize inter-instance latency within a placement group, but they don't reduce instance launch or boot time."
+    ]
   },
   {
     "id": 37,
@@ -478,7 +694,13 @@
     ],
     "answer": 1,
     "explanation": "NLB operates at L4 with millions of pps and ultra-low latency, which is what real-time UDP/TCP game servers need; combined with multi-AZ ASG it tolerates instance failure. ALB is L7 and adds latency that hurts game traffic. Classic Load Balancer is legacy and inferior to NLB on every axis. Global Accelerator complements but doesn't replace a load balancer; without one, instance failure isn't handled.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "ALB operates at L7 and adds parsing overhead and latency that hurts real-time game traffic; sticky sessions also pin players to specific instances, hurting failover.",
+      "Correct — NLB operates at L4 with millions of pps and ultra-low latency, exactly what real-time game servers need; combined with multi-AZ ASG it tolerates instance failure.",
+      "Classic Load Balancer is legacy AWS, inferior to NLB on every axis (no static IP, no L4 millions-pps performance, no modern target groups).",
+      "Global Accelerator complements but does not replace a load balancer; without one underneath, single-instance failure isn't handled."
+    ]
   },
   {
     "id": 38,
@@ -491,7 +713,13 @@
     ],
     "answer": 1,
     "explanation": "Iterator age means consumers are falling behind. Standard Kinesis consumers share 2 MB/s/shard read throughput; enhanced fan-out gives each registered consumer its own 2 MB/s/shard pipe with sub-200ms delivery. Reducing shards lowers TOTAL throughput. Switching to MSK requires re-architecting producers AND consumers. Longer retention doesn't help live consumers catch up.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Reducing shards lowers TOTAL stream throughput — when iterator age is growing because consumers can't keep up, you need MORE read capacity per consumer, not less.",
+      "Correct — standard Kinesis consumers share 2 MB/s/shard read throughput; enhanced fan-out gives each registered consumer its own 2 MB/s/shard pipe with sub-200ms delivery.",
+      "Moving producers to MSK without changing consumers doesn't address consumer-side read throughput at all — and a full producer rewrite is large scope.",
+      "Increasing stream retention to 7 days doesn't help live consumers catch up; it just lets them fall further behind without losing data."
+    ]
   },
   {
     "id": 39,
@@ -504,7 +732,13 @@
     ],
     "answer": 0,
     "explanation": "CloudFront Origin Groups are exactly the automated origin-failover feature: primary fails on configured 4xx/5xx, secondary takes over for that request. Route 53 failover at S3 is messy because S3 website endpoints don't health-check well. Manual swap defeats 'automated'. Global Accelerator doesn't front S3.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — CloudFront Origin Groups are the automated origin-failover feature: configured 4xx/5xx response codes from primary trigger a retry to the secondary bucket per request.",
+      "Route 53 failover at the S3 website endpoint is messy because S3 website endpoints don't health-check cleanly and DNS propagation adds tens of seconds.",
+      "Manually swapping the CloudFront distribution's origin during an incident defeats the 'automated origin failover' requirement entirely.",
+      "Global Accelerator doesn't front S3 buckets as origins — it's designed for compute endpoints like EC2, ALB, and NLB."
+    ]
   },
   {
     "id": 40,
@@ -517,7 +751,13 @@
     ],
     "answer": 1,
     "explanation": "Capacity providers + cluster Auto Scaling react to ECS service-level capacity needs and add EC2 hosts in the surviving AZ when one drains, restoring headroom automatically. Disabling cross-zone makes hot-AZ behaviour worse. Fargate Spot may help but is a bigger architecture shift and Spot interruptions hurt resilience. Binpack placement only changes packing density on existing hosts.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Disabling cross-zone load balancing on the ALB makes hot-AZ behavior WORSE — the surviving AZ ends up handling all traffic with only its local task capacity.",
+      "Correct — ECS capacity providers plus cluster Auto Scaling react to service-level capacity needs and add EC2 hosts in the surviving AZ when one drains, restoring headroom automatically.",
+      "Moving all tasks to Fargate Spot is a bigger architectural shift and Spot interruptions actively hurt resilience during AZ stress events.",
+      "Binpack-on-memory placement only changes packing density on existing hosts — it doesn't add capacity when a whole AZ drains."
+    ]
   },
   {
     "id": 41,
@@ -530,7 +770,13 @@
     ],
     "answer": 0,
     "explanation": "DataSync is purpose-built for incremental, resumable, integrity-verified transfers between on-prem and S3 with bandwidth controls and scheduling. Snowball is for one-time bulk migration, not daily 4 TB streaming. aws s3 sync via cron is fine for small jobs but lacks the bandwidth controls, retry semantics, and verification telemetry of DataSync. SFTP doesn't natively chunk and verify multi-TB transfers.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — DataSync is purpose-built for incremental, resumable, integrity-verified transfers between on-prem and S3 with bandwidth controls and scheduling.",
+      "Snowball Edge is for one-time bulk migration on physical hardware shipped weekly — not for daily 4 TB streaming over the network.",
+      "aws s3 sync via cron is fine for small jobs but lacks bandwidth controls, retry semantics, and the verification telemetry of DataSync.",
+      "SFTP via Transfer Family doesn't natively chunk and verify multi-TB transfers with the resumability that DataSync provides."
+    ]
   },
   {
     "id": 42,
@@ -543,7 +789,13 @@
     ],
     "answer": 0,
     "explanation": "Global Tables provide multi-Region active-active replication with sub-second propagation and managed last-writer-wins conflict resolution. Hand-rolling via Streams+Lambda is error-prone and not active-active without lots of additional plumbing. AWS Backup at any cadence has minutes of RPO. DynamoDB doesn't have 'read replicas' per se.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — Global Tables provide multi-Region active-active replication with sub-second propagation and managed last-writer-wins conflict resolution.",
+      "Hand-rolling Streams plus a Lambda replicator across Regions is error-prone and isn't truly active-active without extensive conflict-handling plumbing on both sides.",
+      "AWS Backup at 15-minute cadence has at least 15 minutes of RPO and no active-active write semantics — it's a backup tool, not active replication.",
+      "DynamoDB doesn't have 'read replicas' as a concept — replicas are part of Global Tables or you build them yourself with Streams."
+    ]
   },
   {
     "id": 43,
@@ -556,7 +808,13 @@
     ],
     "answer": 1,
     "explanation": "EFA bypasses the kernel for HPC/MPI workloads and a cluster placement group keeps instances physically close on the same fabric — that's the documented HPC tight-coupling pattern. Spread placement is the opposite — it intentionally separates instances. Lambda and Fargate don't expose EFA or low-microsecond inter-node networking.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "A spread placement type intentionally separates instances across distinct hardware, which is the opposite of what tight-coupled HPC workloads need.",
+      "Correct — EFA bypasses the kernel for HPC/MPI workloads and a cluster placement group keeps instances physically close on the same fabric, delivering sub-100us latency and 100 Gbps.",
+      "Lambda with provisioned concurrency doesn't expose EFA or any low-microsecond inter-node networking — it's not an HPC platform.",
+      "Fargate tasks with awsvpc networking similarly don't expose EFA and aren't designed for tight inter-task latency at MPI scale."
+    ]
   },
   {
     "id": 44,
@@ -569,7 +827,13 @@
     ],
     "answer": 0,
     "explanation": "Step Functions Retry/Catch states give per-error-type backoff with jitter and explicit failure handling — the canonical recipe for rate-limited partner integrations. Fixed sleeps don't react to actual 429s and waste time when not throttled. Bigger Lambda doesn't fix rate-limit logic. More parallelism makes the rate-limit problem worse.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Correct — Step Functions Retry/Catch states give per-error-type backoff with jitter and explicit failure handling, the canonical recipe for rate-limited partner integrations.",
+      "A fixed sleep(5) between requests doesn't react to actual 429s — it wastes time when not throttled and may still be too short during sustained throttling.",
+      "Moving to a larger Lambda memory configuration doesn't change rate-limit handling — the bottleneck is the partner API, not local CPU.",
+      "Running on a c6i.32xlarge for more parallelism makes the rate-limit problem WORSE — more concurrent callers will hit the partner's rate limit faster."
+    ]
   },
   {
     "id": 45,
@@ -582,7 +846,13 @@
     ],
     "answer": 1,
     "explanation": "RDS Multi-AZ Cluster offers a writer plus two readable standbys across three AZs with synchronous-quorum commits — RPO is effectively zero on AZ failure and failover is fast. Single-AZ with daily snapshots violates RPO horribly. Aurora Serverless v1 is end-of-life and not the strict-AZ-failure-survival fit (Aurora itself is good, but the question targets a Postgres user). Self-managed Postgres on one instance has zero AZ resilience.",
-    "domain": "Design Resilient Architectures"
+    "domain": "Design Resilient Architectures",
+    "optionExplanations": [
+      "Single-AZ RDS with daily snapshots violates the AZ-survival requirement entirely and has up to 24 hours of RPO.",
+      "Correct — RDS Multi-AZ Cluster offers a writer plus two readable standbys across three AZs with synchronous-quorum commits; RPO is effectively zero on AZ failure and failover is fast.",
+      "Aurora Serverless v1 is end-of-life and not a strict-AZ-survival fit; the question specifically targets a Postgres user.",
+      "Self-managed PostgreSQL on a single EC2 instance has zero AZ resilience — losing the AZ loses the database entirely."
+    ]
   },
   {
     "id": 46,
@@ -595,7 +865,13 @@
     ],
     "answer": 0,
     "explanation": "DAX is an in-memory write-through cache for DynamoDB that delivers microsecond reads on hot keys, simultaneously cutting RCU consumption (cost) and tail latency. Doubling RCUs raises cost and doesn't help tail latency. On-Demand pricing makes a hot-key, high-volume read workload more expensive, not less. A GSI is for new query patterns, not caching.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — DAX is an in-memory write-through cache for DynamoDB that delivers microsecond reads on hot keys, simultaneously cutting RCU consumption and tail latency.",
+      "Doubling RCUs raises cost and doesn't help tail latency caused by hot-partition contention — DynamoDB latency isn't gated by RCUs but by partition throughput.",
+      "Switching to On-Demand billing makes a hot-key, high-volume read workload MORE expensive per request, not less.",
+      "Adding a GSI enables new query patterns but doesn't cache existing reads — it doesn't address hot-key tail latency."
+    ]
   },
   {
     "id": 47,
@@ -608,7 +884,13 @@
     ],
     "answer": 0,
     "explanation": "Athena is serverless (no idle cost), and partition projection plus parquet's columnar pushdown drastically cut bytes scanned per query — exactly the small-subset pattern. Redshift dc2.large always-on is expensive for ad-hoc, infrequent queries. EMR-Presto is heavier ops. Aurora is OLTP, not for 30 TB analytics scans.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Athena is serverless (no idle cost) and partition projection plus parquet's columnar pushdown drastically cut bytes scanned per query, fitting small-subset ad-hoc queries.",
+      "Redshift dc2.large always-on is expensive for ad-hoc infrequent queries — you pay for the cluster 24/7 even when no one is querying.",
+      "EMR running Presto is much heavier ops than Athena and still costs more when running, even with weekend scale-to-zero.",
+      "Aurora MySQL is an OLTP engine — bad fit for 30 TB analytical scans across parquet files."
+    ]
   },
   {
     "id": 48,
@@ -621,7 +903,13 @@
     ],
     "answer": 0,
     "explanation": "Manifests are tiny and shared across many simultaneous viewers; even a 1-2s edge cache TTL turns thousands of origin GETs into one, slashing per-viewer latency on cache hits. Express One Zone reduces origin latency only on cache misses — it doesn't address the bulk of viewer latency. All-edge price-class doesn't help if requests still go to origin. API Gateway in front of S3 adds latency.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — manifests are tiny and shared across many simultaneous viewers; even a 1-2s edge cache TTL turns thousands of origin GETs into one, slashing per-viewer latency on hits.",
+      "S3 Express One Zone reduces origin latency only on cache misses — it doesn't address the bulk of viewer-perceived latency where edge caching wins.",
+      "All-edge price class enables more edge locations but doesn't help if every request still goes to the origin; the issue is cache strategy, not edge breadth.",
+      "Putting API Gateway in front of S3 adds latency rather than reducing it — it doesn't cache and serves no purpose here."
+    ]
   },
   {
     "id": 49,
@@ -634,7 +922,13 @@
     ],
     "answer": 0,
     "explanation": "Provisioned concurrency keeps initialized Lambda environments warm, so requests hit zero cold-starts; that's the AWS-recommended fix. Switching runtimes can help (Go has fast cold start) but is a bigger code change and isn't always sufficient. 10 GB memory makes invocation faster but doesn't eliminate cold starts. API Gateway response caching helps repeat reads but personalized feeds typically aren't cacheable.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — provisioned concurrency keeps initialized Lambda environments warm, so requests hit zero cold-starts; that's AWS's recommended fix.",
+      "Switching runtimes to Go can help (Go has fast cold start) but is a much bigger code change and isn't always sufficient on its own.",
+      "Increasing function memory to 10 GB makes invocation faster but doesn't eliminate cold starts at the 1.5s p99 — initialization still happens.",
+      "API Gateway response caching helps repeat-read scenarios but personalized social feeds aren't typically cacheable per user."
+    ]
   },
   {
     "id": 50,
@@ -647,7 +941,13 @@
     ],
     "answer": 0,
     "explanation": "Custom endpoints in Aurora let you carve up the reader fleet so reporting traffic hits dedicated readers and end-user reads hit others, isolating noisy-neighbour effects without scaling the writer. Vertically scaling the writer doesn't help reads. Sending more load to the writer makes things worse. RDS for MySQL has no equivalent custom-endpoint feature.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Aurora custom reader endpoints let you carve up the reader fleet so reporting hits dedicated readers and end-user reads hit others, isolating noisy-neighbour effects cheaply.",
+      "Vertically scaling the writer doesn't help reads at all — the contention is on the reader fleet, not the writer.",
+      "Moving reporting queries to the writer endpoint makes things WORSE — you'd add heavy analytical load to the write tier.",
+      "Converting to RDS for MySQL Multi-AZ has no equivalent custom-endpoint feature; standby replicas in standard RDS aren't directly addressable for read traffic in the same way."
+    ]
   },
   {
     "id": 51,
@@ -660,7 +960,13 @@
     ],
     "answer": 0,
     "explanation": "io2 Block Express on Nitro supports up to 4,000 MB/s and sub-millisecond p99 latency on a single volume — exactly the high-throughput, low-latency mixed-IO pattern. st1 is throughput-friendly but only ~500 MB/s and HDDs are bad for random-write. EFS general-purpose maxes at lower throughput and has higher latency. Glacier is archival storage with retrieval latency in seconds-to-hours.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — io2 Block Express on Nitro supports up to 4,000 MB/s and sub-millisecond p99 latency on a single volume, exactly the high-throughput, low-latency mixed-IO pattern needed.",
+      "st1 (throughput-optimized HDD) is throughput-friendly but only ~500 MB/s and HDDs are bad for random-write workloads.",
+      "EFS general-purpose performance mode maxes at lower throughput and has higher latency than block storage — not a fit for 4 GB/s sustained per-instance.",
+      "Glacier Instant Retrieval is archival storage with retrieval latency in seconds-to-hours, and a file gateway doesn't deliver 4 GB/s sustained throughput."
+    ]
   },
   {
     "id": 52,
@@ -673,7 +979,13 @@
     ],
     "answer": 0,
     "explanation": "DAX is purpose-built for DynamoDB sub-millisecond reads with the same access patterns and SDK; both DAX and Redis-in-front-of-DDB hit the latency goal, but DAX requires zero application logic for cache-coherency. Boosting RCUs doesn't lower per-call latency materially. Global tables solve cross-Region availability, not single-Region latency. Between A and B the question targets the AWS-canonical answer (DAX) for DynamoDB acceleration with the smallest code change.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — DAX is purpose-built for DynamoDB sub-millisecond reads with the same access patterns and SDK, requiring zero application logic for cache coherency.",
+      "Redis in front of DynamoDB also hits the latency goal but requires application-managed cache-invalidation logic, more code than DAX.",
+      "Boosting DynamoDB RCUs raises capacity but doesn't materially lower per-call latency below DynamoDB's ~9ms p99 baseline.",
+      "Global tables solve cross-Region availability and read locality for distant users, not single-Region per-call latency for the bidding hot path."
+    ]
   },
   {
     "id": 53,
@@ -686,7 +998,13 @@
     ],
     "answer": 0,
     "explanation": "Origin Shield places a single regional cache layer in front of the origin so when many edges miss for the same hot tile, only ONE request hits S3 — collapsing cache-miss tail latency and origin load. Geo-restriction blocks regions, irrelevant here. S3 Transfer Acceleration is for client uploads/downloads to S3 directly. Field-level encryption is unrelated.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Origin Shield places a single regional cache layer in front of S3 so when many edges miss for the same hot tile, only ONE request hits S3, collapsing cache-miss tail latency.",
+      "Geo-restriction blocks viewers by country — it has nothing to do with cache-miss latency or origin load.",
+      "S3 Transfer Acceleration is for direct client uploads and downloads to S3, not for CloudFront-origin fetches.",
+      "Field-level encryption encrypts specific request fields end-to-end through CloudFront for sensitive PII; it has nothing to do with cache-miss latency on map tiles."
+    ]
   },
   {
     "id": 54,
@@ -699,7 +1017,13 @@
     ],
     "answer": 0,
     "explanation": "Kinesis shards cap at 1 MB/s or 1,000 records/sec ingest each; 25,000 events/sec needs at least 25 shards (or use the on-demand mode that auto-scales). More retries doesn't raise the ceiling. SQS is a different model with different ordering/throughput tradeoffs. Reducing record size from already-small payloads doesn't change the records/sec limit.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Kinesis shards cap at 1 MB/s or 1,000 records/sec ingest each; 25,000 events/sec needs at least 25 shards, or use On-Demand mode that auto-scales.",
+      "Increasing producer maxRetries doesn't raise the per-shard ceiling — retries just push the same throttled requests harder.",
+      "Switching to an SQS standard queue changes the entire model (no ordered partitioning, no replay) — it's a different system, not a fix.",
+      "Decreasing record size below 1 KB doesn't change the 1,000-records/sec limit — that limit is per-shard records, independent of payload size."
+    ]
   },
   {
     "id": 55,
@@ -712,7 +1036,13 @@
     ],
     "answer": 0,
     "explanation": "Sort keys (especially AUTO) let Redshift's zone maps prune blocks outside the scanned timestamp range, transforming full scans into range-restricted scans. Permissions don't affect query time. More nodes give linear speedup but cost more and don't fix the underlying scan-everything-pattern. Aurora MySQL is OLTP and slower for big analytical scans.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — sort keys (especially AUTO) let Redshift's zone maps prune blocks outside the scanned timestamp range, transforming full scans into range-restricted scans.",
+      "Adding a USER role with read-only permissions changes who can run the query but has no effect whatsoever on query execution time.",
+      "Doubling node count from 4 to 8 gives roughly linear speedup but doubles cost and doesn't fix the scan-everything pattern.",
+      "Aurora MySQL is OLTP and is significantly slower than Redshift for large analytical scans against 5 TB."
+    ]
   },
   {
     "id": 56,
@@ -725,7 +1055,13 @@
     ],
     "answer": 0,
     "explanation": "Kinesis with device-id as partition key gives per-device ordering with horizontal scalability via shard count, which matches the workload shape exactly. SQS FIFO with one message-group caps at low throughput and serializes everything. MSK with one partition serializes everything too. EventBridge concurrency targets aren't designed for 200k msg/s ordered.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Kinesis with device-id as partition key gives per-device ordering with horizontal scalability via shard count, matching the workload shape exactly.",
+      "SQS FIFO with a single message group serializes EVERYTHING through that group, capping throughput at 300 msg/s — orders of magnitude below 200k.",
+      "MSK with one partition similarly serializes everything to a single broker, capping throughput far below 200k msg/sec.",
+      "EventBridge concurrency targets aren't designed for 200k msg/sec ordered processing — EventBridge is event routing, not ordered streaming."
+    ]
   },
   {
     "id": 57,
@@ -738,7 +1074,13 @@
     ],
     "answer": 0,
     "explanation": "RDS Proxy's core value is database connection pooling — it absorbs short-lived bursts from many clients and shares far fewer underlying DB connections, eliminating 'too many connections' during pod churn. RDS Proxy doesn't shard, doesn't replicate cross-Region, and doesn't cache results.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — RDS Proxy's core value is database connection pooling; it maintains a pool of warm connections and multiplexes them across many short-lived clients, eliminating 'too many connections' during pod churn.",
+      "RDS Proxy does not shard databases — sharding is an application-level or third-party concern and isn't a feature of the proxy.",
+      "RDS Proxy doesn't perform cross-Region read replication — that capability belongs to Aurora Global Database, not the proxy.",
+      "RDS Proxy doesn't cache query results — it's purely a connection-multiplexing layer in front of the database engine."
+    ]
   },
   {
     "id": 58,
@@ -751,7 +1093,13 @@
     ],
     "answer": 0,
     "explanation": "Disk-saturated reads on a low-shard-count cluster mean queries can't parallelize across nodes. The fix is shard sizing per AWS guidance (10-50 GB per shard) and considering hot/warm tiers for older data. Smaller t3 instances make I/O worse. Disabling replicas hurts availability and read parallelism. JVM heap above 50% (or ~31 GB) of RAM is explicitly NOT recommended.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — disk-saturated reads on a low-shard-count cluster mean queries can't parallelize across nodes; the fix is shard sizing (10-50 GB per shard) and considering hot/warm tiers for older data.",
+      "Moving to t3.small.search instances makes I/O worse — smaller instances have lower EBS throughput limits.",
+      "Disabling replicas hurts both availability and read parallelism — fewer copies of each shard mean less concurrent read capacity, making latency worse.",
+      "Increasing JVM heap to 90% of RAM is explicitly NOT recommended — AWS guidance caps heap at 50% (or ~31 GB) of instance RAM."
+    ]
   },
   {
     "id": 59,
@@ -764,7 +1112,13 @@
     ],
     "answer": 0,
     "explanation": "CloudFront caches at 600+ edge locations worldwide so the request never has to traverse to us-east-1 on a cache hit — that's the lowest TTFB you can get for static content. CRR alone doesn't direct users to the nearest copy and adds storage cost. Prefix-rate is for high-RPS S3 patterns, not latency. Wavelength Zones are for 5G/edge compute, not consumer mobile static delivery globally.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — CloudFront caches at 600+ edge locations worldwide so the request never has to traverse to us-east-1 on a cache hit — that's the lowest TTFB you can get for static content.",
+      "Cross-Region Replication alone doesn't direct users to the nearest copy — you'd still need Route 53 or CloudFront in front of it, and CRR adds storage cost.",
+      "Bucket prefix design is for high-RPS S3 patterns to spread load across partitions, not for reducing global TTFB.",
+      "Wavelength Zones are for 5G/edge compute next to telco infrastructure — not for consumer mobile static content delivery globally."
+    ]
   },
   {
     "id": 60,
@@ -777,7 +1131,13 @@
     ],
     "answer": 0,
     "explanation": "Fargate keeps a serverless billing model (pay per task-second) without Lambda's 15-minute and 10-GB limits, and SQS-backlog-driven scaling matches bursty workloads. Lambda max memory is 10 GB, so 32 GB isn't possible. Provisioned concurrency doesn't extend memory or runtime. API Gateway is a front door, not a compute change.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Fargate keeps a serverless billing model (pay per task-second) without Lambda's 15-minute or 10-GB limits, and SQS-backlog-driven scaling matches bursty workloads.",
+      "Lambda max memory is 10 GB — 32 GB isn't a supported configuration, so this option literally cannot exist.",
+      "Provisioned concurrency reduces cold-start time but does not extend Lambda's memory or runtime limits, which are the actual problems.",
+      "Replacing Lambda with API Gateway HTTP API confuses compute with API frontend — API Gateway isn't a compute change at all."
+    ]
   },
   {
     "id": 61,
@@ -790,7 +1150,13 @@
     ],
     "answer": 0,
     "explanation": "Redis sorted sets do prefix lookups in O(log n) with single-digit-millisecond latency, easily under 25ms p99 even at 1M entries. RDS B-tree indexes are slower than in-memory and add network/connection overhead. DynamoDB doesn't allow begins_with on the partition key (only sort key) and the latency target is tighter than DynamoDB without DAX. S3 Select scans the file each query — way too slow.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Redis sorted sets do prefix lookups in O(log n) with single-digit-millisecond latency, easily under 25ms p99 even at 1 M entries.",
+      "RDS MySQL with a B-tree index is slower than in-memory lookups and adds network and connection overhead per query.",
+      "DynamoDB doesn't allow begins_with on the partition key (only on the sort key), and DynamoDB's ~9ms p99 without DAX is above the 25ms target only marginally — Redis is the canonical fit.",
+      "S3 Select scans the file each query — far too slow for sub-25ms p99 lookups against 1 M records."
+    ]
   },
   {
     "id": 62,
@@ -803,7 +1169,13 @@
     ],
     "answer": 0,
     "explanation": "Sequential I/O is a code-level inefficiency; running the 12 calls concurrently turns wall-time into roughly the slowest single call instead of the sum. Increasing timeout doesn't make it faster, just allows MORE waiting. API Gateway type doesn't matter. Provisioned concurrency reduces cold-start, not steady-state latency dominated by sequential I/O.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — sequential I/O is a code-level inefficiency; running the 12 calls concurrently with async I/O or Promise.all reduces wall-time to roughly the slowest single call instead of the sum.",
+      "Increasing Lambda timeout to 30s doesn't make execution faster — it just allows more time before timing out, which isn't the problem.",
+      "API Gateway type (REST vs HTTP) doesn't affect the wall-time of downstream HTTP calls made from within Lambda.",
+      "Provisioned concurrency reduces cold-start latency, not steady-state wall-time — the 3.2s is dominated by sequential downstream I/O, not initialization."
+    ]
   },
   {
     "id": 63,
@@ -816,7 +1188,13 @@
     ],
     "answer": 0,
     "explanation": "Aurora cloning is copy-on-write, near-instant, and doesn't impact the source — perfect for hourly ML-training snapshots. mysqldump locks/loads the source; for big DBs it's slow and impactful. Cross-Region replicas aren't really a 'fresh hourly cut.' DMS continuous replication is also viable but is a much bigger setup with ongoing costs versus a one-API-call clone.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — Aurora cloning is copy-on-write, near-instant, and doesn't impact the source — perfect for hourly ML-training snapshots with minimal production impact.",
+      "mysqldump locks and loads the source, and for big databases it's slow with significant performance impact on production.",
+      "Cross-Region read replicas aren't really a 'fresh hourly cut' — they're continuous replicas, not point-in-time training snapshots.",
+      "DMS continuous replication is viable but is a much bigger setup with ongoing costs versus a one-API-call Aurora clone."
+    ]
   },
   {
     "id": 64,
@@ -829,7 +1207,13 @@
     ],
     "answer": 0,
     "explanation": "Static content + CloudFront with sane TTLs handles 50,000 RPS at the edge with virtually no origin load and minimal cost — the textbook spike pattern. ASG/ECS-Fargate add cost AND scale latency. Lambda@Edge per page is needlessly expensive when the content is static.",
-    "domain": "Design High-Performing Architectures"
+    "domain": "Design High-Performing Architectures",
+    "optionExplanations": [
+      "Correct — static content plus CloudFront with sane TTLs handles 50,000 RPS at the edge with virtually no origin load and minimal cost — the textbook spike pattern.",
+      "EC2 Auto Scaling Group plus ALB adds cost AND scale latency — instances take minutes to boot, well after the 10-minute spike has begun.",
+      "ECS Fargate service with target-tracking still has scaling latency and ongoing per-task cost compared to free CloudFront cache hits on a static site.",
+      "Lambda@Edge generating each page on demand is needlessly expensive when the content is static and can be cached."
+    ]
   },
   {
     "id": 65,
@@ -842,7 +1226,13 @@
     ],
     "answer": 0,
     "explanation": "3-year all-upfront Compute Savings Plans give the deepest discount (up to ~66% off On-Demand) and are flexible across instance family/Region — exactly the fit for predictable 24/7 use. 1-year no-upfront Convertible RIs save less. Spot is unsuitable for stable production workloads requiring 100% uptime. Right-sizing helps but doesn't substitute for committed pricing.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — 3-year all-upfront Compute Savings Plans give the deepest discount (up to ~66% off On-Demand) and are flexible across instance family and Region — perfect for predictable 24/7 use.",
+      "1-year no-upfront Convertible RIs save less than 3-year all-upfront Savings Plans on every axis (shorter term, less prepayment, narrower scope).",
+      "Spot Instances are unsuitable for stable production workloads requiring 100% uptime — they can be interrupted at any time.",
+      "On-Demand with Trusted Advisor right-sizing helps avoid waste but doesn't substitute for the committed-use discount of Savings Plans."
+    ]
   },
   {
     "id": 66,
@@ -855,7 +1245,13 @@
     ],
     "answer": 0,
     "explanation": "Glacier Deep Archive has the lowest storage cost (around $0.00099/GB-month) and a 12-hour standard retrieval matches the access SLA. Standard-IA is cheaper than Standard but still ~6x Deep Archive. Intelligent-Tiering caps savings unless objects are rarely accessed AND it costs monitoring fees. One Zone-IA is for non-critical data and still costs more than Deep Archive.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Glacier Deep Archive has the lowest S3 storage cost (~$0.00099/GB-month) and a standard 12-hour retrieval matches the access SLA.",
+      "Standard-IA is cheaper than Standard but still around 6x more expensive than Deep Archive — wasteful for data accessed once or twice a year.",
+      "Intelligent-Tiering caps savings unless objects sit untouched long enough to reach Archive tiers, AND it costs monthly monitoring fees per object.",
+      "One Zone-IA is for non-critical data with reduced AZ resilience and still costs significantly more than Deep Archive."
+    ]
   },
   {
     "id": 67,
@@ -868,7 +1264,13 @@
     ],
     "answer": 0,
     "explanation": "Spot offers 60-90% discount; restartable, checkpointable training jobs are the canonical fit. RIs save less than Spot and require predictable shape commitments — wasteful at 6h/day. Resizing only matters if the smaller instance can complete training in the window (probably not on a memory-bound model). Time-of-day doesn't change EC2 pricing.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Spot offers a 60-90% discount and restartable, checkpointable training jobs are the canonical fit for Spot interruption tolerance.",
+      "On-Demand Reserved Instances for 1 year save less than Spot and require predictable shape commitments — wasteful at only 6 hours/day utilization.",
+      "Resizing to g5.xlarge only helps if the smaller GPU instance can complete training in the window, which probably isn't true for a memory-bound model.",
+      "Time-of-day doesn't change EC2 pricing — running training during the day instead of at night saves nothing at all on the GPU bill."
+    ]
   },
   {
     "id": 68,
@@ -881,7 +1283,13 @@
     ],
     "answer": 0,
     "explanation": "Gateway endpoints for S3/DynamoDB are FREE and route those services' traffic without traversing NAT, eliminating the data-processing charge entirely for that traffic. NAT Instances reintroduce ops burden and aren't necessarily cheaper at modest scale. Single-AZ NAT cuts redundancy, not data-processing cost. VPC peering doesn't apply to AWS-service traffic.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Gateway endpoints for S3 and DynamoDB are FREE and route service traffic without traversing the NAT gateway, eliminating the data-processing charge entirely for that traffic.",
+      "NAT Instances on t3.small reintroduce ops burden (patching, scaling, HA) and aren't necessarily cheaper at modest scale.",
+      "A single NAT Gateway across all AZs cuts redundancy (introducing cross-AZ data charges) but doesn't reduce data-processing cost for the traffic itself.",
+      "VPC peering doesn't apply to AWS-service traffic — peering is between VPCs, and S3/DynamoDB endpoints aren't reachable via peering."
+    ]
   },
   {
     "id": 69,
@@ -894,7 +1302,13 @@
     ],
     "answer": 0,
     "explanation": "Aurora Serverless v2 scales capacity in fine-grained ACUs and bills only what's used, ideal for highly-variable utilization with rare spikes. Year-round reservation of peak capacity is the opposite of cost-aware. Stopping at night may hurt availability and only saves a fraction. RDS MySQL doesn't have the same elastic scaling.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Aurora Serverless v2 scales capacity in fine-grained ACUs and bills only for what's used, ideal for highly variable utilization with rare spikes.",
+      "Reserving max-size Aurora capacity for the year is the OPPOSITE of cost-aware — you'd pay peak prices year-round.",
+      "Stopping clusters every night may hurt availability for global users and only saves a fraction (RDS billing continues for storage during the stop).",
+      "Moving to RDS for MySQL Multi-AZ doesn't provide the same elastic auto-scaling and is a significant migration with its own costs."
+    ]
   },
   {
     "id": 70,
@@ -907,7 +1321,13 @@
     ],
     "answer": 0,
     "explanation": "Cost in CloudWatch Logs is dominated by ingestion volume; log-level INFO + shorter retention + selective sampling to cheap S3 directly reduces ingest. Logs Insights ADDS query cost. OpenSearch is more expensive than CloudWatch Logs at this scale. There is no CloudWatch Logs Savings Plan.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — CloudWatch Logs cost is dominated by ingestion volume; INFO log levels plus shorter retention plus selective S3 sampling directly reduces ingest.",
+      "Enabling CloudWatch Logs Insights ADDS query cost — it doesn't reduce ingestion or storage cost.",
+      "OpenSearch Service is more expensive than CloudWatch Logs at this scale, both for ingestion and for the always-on cluster.",
+      "There is no CloudWatch Logs Savings Plan — Savings Plans cover EC2, Lambda, Fargate, and SageMaker but not CloudWatch."
+    ]
   },
   {
     "id": 71,
@@ -920,7 +1340,13 @@
     ],
     "answer": 0,
     "explanation": "Redshift Serverless auto-scales compute capacity and bills per second of use; idle time costs nothing. Reserving peak nodes for 3 years makes the over-provisioning permanent. Spectrum queries S3 from Redshift, not a substitute for the cluster. EMR is a different engine with different operational and cost characteristics, not a drop-in replacement.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Redshift Serverless auto-scales compute capacity and bills per second of use; idle nights and weekends cost nothing.",
+      "Buying 3-year Reserved Nodes at peak size makes the over-provisioning permanent and even more expensive.",
+      "Spectrum lets Redshift query S3 from a cluster — it's not a substitute for the cluster compute itself.",
+      "EMR is a different engine (Hadoop/Spark) with different operational characteristics, not a drop-in replacement for Redshift."
+    ]
   },
   {
     "id": 72,
@@ -933,7 +1359,13 @@
     ],
     "answer": 0,
     "explanation": "CloudFront's per-GB egress price is lower than S3's, AND cache hits don't incur S3 GET fees or S3-to-CloudFront-Origin transfer cost — double savings on hot content. One Zone-IA reduces storage cost, not egress. Transfer Acceleration RAISES egress cost. Region change moves the source closer but doesn't beat edge caching.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — CloudFront's per-GB egress price is lower than S3's, AND cache hits don't incur S3 GET fees or S3-to-CloudFront origin transfer cost, giving double savings on hot content.",
+      "S3 One Zone-IA reduces STORAGE cost, not egress cost — the bill problem is egress, so this doesn't help.",
+      "S3 Transfer Acceleration RAISES egress cost (it's an upcharged feature for client-perceived speed), making the problem worse.",
+      "Moving the bucket to a closer Region moves the source closer but doesn't beat edge caching for cost or latency."
+    ]
   },
   {
     "id": 73,
@@ -946,7 +1378,13 @@
     ],
     "answer": 0,
     "explanation": "Lambda CPU scales with memory; if 4x memory yields 70% less wall-time, GB-seconds drops to ~1.2x memory * 0.3x time = ~0.36x cost — a clear win. Provisioned concurrency adds idle-billing cost without speeding up the job. Step Functions adds per-state-transition cost. t3.micro is too underpowered for CPU-bound batch and removes Lambda's pay-per-use shape.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Lambda CPU scales with memory; if 4x memory yields 70% less wall-time, GB-seconds drops to ~1.2x memory × 0.3x time = ~0.36x cost — a clear win.",
+      "Staying at 512 MB with provisioned concurrency adds idle-billing cost without speeding up the job — wrong tool for a CPU-bound batch.",
+      "Step Functions Standard adds per-state-transition cost on top of the same Lambda invocations without addressing the underlying CPU-bound execution time.",
+      "A t3.micro EC2 instance is far too underpowered for CPU-bound batch and removes Lambda's pay-per-use shape — you'd pay 24/7."
+    ]
   },
   {
     "id": 74,
@@ -959,7 +1397,13 @@
     ],
     "answer": 0,
     "explanation": "Trusted Advisor's cost-optimization checks specifically flag idle load balancers, underutilized EC2, unattached EBS volumes, low-utilization RDS, and idle Elastic IPs. WAF is security. AWS Backup manages backups, doesn't surface waste. Detective is for security investigation.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Trusted Advisor's cost-optimization checks specifically flag idle load balancers, underutilized EC2, unattached EBS volumes, low-utilization RDS, and idle Elastic IPs.",
+      "WAF is a web-application firewall focused on filtering HTTP traffic for security; it has no view of idle EBS volumes or unattached Elastic IPs.",
+      "AWS Backup manages backups and recovery points — it doesn't surface resource waste or idle resources.",
+      "Amazon Detective is for security investigation and root-cause analysis of GuardDuty findings, not cost optimization or idle-resource detection."
+    ]
   },
   {
     "id": 75,
@@ -972,7 +1416,13 @@
     ],
     "answer": 0,
     "explanation": "Cost Explorer is the analysis tool; with cost-allocation tags activated you can pivot by account, service, and tag — which is the question being asked. EstimatedCharges metrics give a single-account total without breakdown. Budgets actions are for thresholds/alerts, not investigation. Trusted Advisor surfaces waste, not detailed cost attribution.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Cost Explorer is the analysis tool; with cost-allocation tags activated you can pivot by linked account, service, and tag to attribute the spike.",
+      "CloudWatch EstimatedCharges metrics give a single-account total without service or tag breakdown — too coarse.",
+      "AWS Budgets actions are for thresholds and automated responses, not for investigating where a spike came from.",
+      "Trusted Advisor surfaces idle/waste recommendations across the org, but it doesn't provide the service-by-account-by-tag attribution needed to explain a bill spike."
+    ]
   },
   {
     "id": 76,
@@ -985,7 +1435,13 @@
     ],
     "answer": 0,
     "explanation": "gp3 is roughly 20% cheaper than gp2 at the same size and decouples IOPS/throughput from size, so you don't pay for unneeded IOPS that gp2 bundles by capacity. io2 Block Express is more expensive. EFS is a different access pattern and pricing model. Magnetic standard is end-of-life for new volumes.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — gp3 is roughly 20% cheaper than gp2 at the same size and decouples IOPS/throughput from size, so you don't pay for unneeded IOPS that gp2 bundles by capacity.",
+      "io2 Block Express is more expensive than gp3 — it's optimized for high IOPS and sub-ms latency, neither of which the workload needs.",
+      "Moving data to EFS is a different access pattern (shared file system) and pricing model — not a drop-in cost saving for block storage.",
+      "Magnetic 'standard' volumes are end-of-life (Previous Generation) for new volumes and aren't generally cheaper than gp3 at modern price points."
+    ]
   },
   {
     "id": 77,
@@ -998,7 +1454,13 @@
     ],
     "answer": 0,
     "explanation": "For a stable, predictable workload committed over three years, a 3-year All Upfront Reserved Instance provides the deepest discount (up to 62% off On-Demand). A 1-year Partial Upfront RI renewed annually costs more because 1-year terms carry a smaller discount and Partial Upfront is less discounted than All Upfront. Compute Savings Plans apply to EC2, Lambda, and Fargate but do not cover RDS. A 3-year No Upfront RI still saves significantly over On-Demand but less than All Upfront because AWS prices in the financing cost of deferred payments.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — for a stable 3-year workload, a 3-year All Upfront Reserved Instance provides the deepest discount (up to 62% off On-Demand) and minimizes total cost of ownership.",
+      "1-year Partial Upfront RIs renewed annually carry smaller per-term discounts than 3-year terms and Partial Upfront is less discounted than All Upfront.",
+      "Compute Savings Plans apply to EC2, Lambda, and Fargate but do NOT cover RDS — so they wouldn't apply to this Postgres workload.",
+      "3-year No Upfront RIs still save versus On-Demand but less than All Upfront because AWS prices in the financing cost of deferred payment."
+    ]
   },
   {
     "id": 78,
@@ -1011,7 +1473,13 @@
     ],
     "answer": 0,
     "explanation": "Savings Plans discount sharing (default ON, but worth verifying) lets unused commitment in any account be applied to eligible usage in any other account in the Organization, maximizing utilization. Disabling consolidated billing breaks pooling entirely. Per-account purchases waste idle commitment. Concentrating workloads in the management account is operationally bad.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Savings Plans discount sharing (default ON in AWS Organizations) lets unused commitment in any account be applied to eligible usage in any other account, maximizing utilization.",
+      "Disabling consolidated billing breaks pooling entirely — each account would be billed and discounted in isolation.",
+      "Buying Savings Plans separately in each member account wastes idle commitment that could have applied to other accounts' usage.",
+      "Concentrating all workloads in the management account is operationally bad (blast radius, IAM coupling) and not the right answer to a billing question."
+    ]
   },
   {
     "id": 79,
@@ -1024,7 +1492,13 @@
     ],
     "answer": 0,
     "explanation": "Intelligent-Tiering automatically moves objects between Frequent, Infrequent, Archive, and Deep Archive tiers based on observed access — perfect for unpredictable mixed patterns and removes lifecycle-rule maintenance. Standard wastes money on idle data. Standard-IA charges retrieval fees on the hot 30% which would be expensive. Glacier Flexible has minute-to-hour retrieval — bad for the hot subset.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Intelligent-Tiering automatically moves objects between Frequent, Infrequent, Archive, and Deep Archive tiers based on observed access, perfect for unpredictable mixed patterns with no lifecycle rules.",
+      "S3 Standard for all 4 PB wastes money on the 70% that's accessed monthly or rarely — overpaying for active-tier storage.",
+      "S3 Standard-IA for all 4 PB charges retrieval fees on the hot 30%, which would be expensive given hourly access.",
+      "S3 Glacier Flexible Retrieval has minute-to-hour retrieval latency, which is unacceptable for the hot 30% accessed hourly."
+    ]
   },
   {
     "id": 80,
@@ -1037,6 +1511,12 @@
     ],
     "answer": 0,
     "explanation": "Kinesis On-Demand mode auto-scales and only charges for actual throughput plus a base fee, ideal for low-average / occasional-peak workloads. 5 shards permanently removes spike headroom. MSK is a different engine and brokers carry their own minimums. SQS doesn't preserve ordered partitioning by key like Kinesis.",
-    "domain": "Design Cost-Optimized Architectures"
+    "domain": "Design Cost-Optimized Architectures",
+    "optionExplanations": [
+      "Correct — Kinesis On-Demand mode auto-scales and only charges for actual throughput plus a base fee, ideal for low-average and occasional-peak workloads like 15% average / 40% spike.",
+      "Reducing to 5 shards permanently removes spike headroom — the 40% peak (= 20 shards equivalent) would throttle producers.",
+      "MSK is a different engine (Kafka) and brokers carry their own minimums — not a drop-in cost improvement for variable Kinesis workloads.",
+      "SQS standard doesn't preserve ordered partitioning by key like Kinesis does — it's a different model, not a cost optimization."
+    ]
   }
 ]
