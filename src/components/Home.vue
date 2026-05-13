@@ -100,55 +100,6 @@
       </svg>
     </section>
 
-    <section v-if="currentUser" id="members" class="content-section members-section">
-      <div class="container">
-        <div class="eyebrow">Members</div>
-        <h2 class="section-title">Welcome aboard, {{ displayHandle }}.</h2>
-        <p class="section-lede">
-          Your training range is open: practice exams for every AWS certification, hands-on AWS lessons,
-          spaced-repetition flashcards, and a 25-level hacking wargame.
-        </p>
-
-        <div class="member-grid">
-          <a :href="toolUrl('/lessons/index.html')" class="member-card">
-            <div class="member-card-tag">Interactive</div>
-            <div class="member-card-title">AWS Lessons</div>
-            <p>38 services across compute, storage, database, networking, security, and serverless. Drag-and-drop architecture builder with inline quizzes.</p>
-            <div class="member-card-cta">Start Learning <span aria-hidden>→</span></div>
-          </a>
-          <a :href="toolUrl('/flashcards/index.html')" class="member-card">
-            <div class="member-card-tag">Spaced Repetition</div>
-            <div class="member-card-title">Flashcards</div>
-            <p>180 cards across AWS services and Linux commands. SM-2 spaced-repetition algorithm — review what you're forgetting before you forget it.</p>
-            <div class="member-card-cta">Open Deck <span aria-hidden>→</span></div>
-          </a>
-          <a :href="toolUrl('/wargame/index.html')" class="member-card">
-            <div class="member-card-tag">CTF Range</div>
-            <div class="member-card-title">Wargame</div>
-            <p>25 hands-on terminal challenges in 5 chapters — Linux basics, text processing, recon, crypto, lateral movement. XP, ranks, achievements.</p>
-            <div class="member-card-cta">Launch Range <span aria-hidden>→</span></div>
-          </a>
-          <a href="#certs-picker" class="member-card">
-            <div class="member-card-tag">Practice Exams</div>
-            <div class="member-card-title">Certification Quizzes</div>
-            <p>700+ questions across 7 AWS certs — Cloud Practitioner, SAA, DOP, Security, Networking, Data Engineer, SAP. Timed mode + per-domain breakdown.</p>
-            <div class="member-card-cta">Pick a Cert <span aria-hidden>↓</span></div>
-          </a>
-        </div>
-
-        <div id="certs-picker" class="cert-picker">
-          <h3 class="cert-picker-title">Choose your certification</h3>
-          <div class="cert-picker-grid">
-            <a v-for="b in quizBanks" :key="b.code" :href="toolUrl('/quiz/index.html', { bank: b.code })" class="cert-pill">
-              <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
-              <div class="cert-pill-name">{{ b.name }}</div>
-              <div class="cert-pill-meta">{{ b.questions }} questions</div>
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section id="services" class="content-section">
       <div class="container">
         <div class="eyebrow">Services</div>
@@ -251,33 +202,9 @@
         </div>
       </nav>
 
-      <!-- When a tool is open, it takes over the portal-page area inline.
-           Nav + tabs stay visible above; the iframe lives in a window
-           contained within the page. -->
       <!-- ===== Internal (admin) view ===== -->
       <template v-if="viewAs === 'internal'">
-      <section v-if="embedOpen" class="portal-page embed-page">
-        <div class="embed-window">
-          <div class="embed-bar">
-            <button class="embed-back" @click="closeTool" aria-label="Back">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-              </svg>
-              <span>Back</span>
-            </button>
-            <div class="embed-title">{{ embedTitle }}</div>
-            <button class="embed-close" @click="closeTool" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-          <iframe v-if="embedSrcdoc" :srcdoc="embedSrcdoc" class="embed-frame" :title="embedTitle"></iframe>
-          <iframe v-else :src="embedSrc" class="embed-frame" :title="embedTitle"></iframe>
-        </div>
-      </section>
-
-      <section v-show="!embedOpen && activeTab === 'overview'" class="portal-page">
+      <section v-show="activeTab === 'overview'" class="portal-page">
         <div class="container">
           <h1 class="portal-title">Good {{ greeting }}, {{ displayHandle }}.</h1>
           <p class="portal-sub">Here's where the business stands today.</p>
@@ -301,7 +228,7 @@
         </div>
       </section>
 
-      <section v-show="!embedOpen && activeTab === 'clients'" id="clientele" class="portal-page">
+      <section v-show="activeTab === 'clients'" id="clientele" class="portal-page">
         <div class="container">
           <div class="eyebrow">Clientele</div>
           <h2 class="section-title">Active engagements</h2>
@@ -318,7 +245,7 @@
         </div>
       </section>
 
-      <section v-show="!embedOpen && activeTab === 'financials'" id="revenue" class="portal-page">
+      <section v-show="activeTab === 'financials'" id="revenue" class="portal-page">
         <div class="container">
           <div class="eyebrow">Financials</div>
           <h2 class="section-title">Revenue &amp; AWS spend</h2>
@@ -351,127 +278,7 @@
         </div>
       </section>
 
-      <section v-show="!embedOpen && activeTab === 'training'" id="training" class="portal-page">
-        <div class="container">
-          <a @click.prevent="openTool('/training-ground/index.html', 'AWS Training Ground')" href="#" class="tg-hero-card">
-            <div class="tg-hero-content">
-              <div class="tg-hero-tag">Featured · Interactive</div>
-              <div class="tg-hero-title">AWS Training Ground</div>
-              <p class="tg-hero-desc">
-                Drag AWS services onto a canvas. Wire them together. Watch data flow through your
-                architecture in real time. Four scenarios to start: static site, serverless API,
-                three-tier web app, event-driven pipeline.
-              </p>
-              <div class="tg-hero-cta">Launch the Ground <span aria-hidden>→</span></div>
-            </div>
-            <svg class="tg-hero-preview" viewBox="0 0 320 180" aria-hidden="true">
-              <defs>
-                <linearGradient id="tgGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stop-color="#5b9bd5" stop-opacity="0.3"/>
-                  <stop offset="100%" stop-color="#1a3a6e" stop-opacity="0.15"/>
-                </linearGradient>
-              </defs>
-              <!-- background grid -->
-              <pattern id="tgGrid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(91,155,213,0.15)" stroke-width="0.5"/>
-              </pattern>
-              <rect width="320" height="180" fill="url(#tgGrid)"/>
-
-              <!-- animated connection lines -->
-              <path d="M 60 40 C 110 40 130 90 180 90" fill="none" stroke="#5b9bd5" stroke-width="2" stroke-dasharray="5 6">
-                <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="1.2s" repeatCount="indefinite"/>
-              </path>
-              <path d="M 180 90 C 230 90 220 140 270 140" fill="none" stroke="#5b9bd5" stroke-width="2" stroke-dasharray="5 6">
-                <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="1.2s" repeatCount="indefinite"/>
-              </path>
-
-              <!-- nodes -->
-              <g transform="translate(20 22)">
-                <rect width="80" height="36" rx="6" fill="#ffffff" stroke="#d8e6f3"/>
-                <rect x="6" y="8" width="22" height="20" rx="4" fill="#bf2b2b"/>
-                <text x="17" y="22" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">API</text>
-                <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">API GW</text>
-              </g>
-              <g transform="translate(140 72)">
-                <rect width="80" height="36" rx="6" fill="#ffffff" stroke="#d8e6f3"/>
-                <rect x="6" y="8" width="22" height="20" rx="4" fill="#fa7e14"/>
-                <text x="17" y="22" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">λ</text>
-                <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">Lambda</text>
-              </g>
-              <g transform="translate(230 122)">
-                <rect width="80" height="36" rx="6" fill="#ffffff" stroke="#d8e6f3"/>
-                <rect x="6" y="8" width="22" height="20" rx="4" fill="#3148c6"/>
-                <text x="17" y="22" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">DDB</text>
-                <text x="36" y="24" font-family="Inter, sans-serif" font-size="9" font-weight="600" fill="#1a3a6e">DynamoDB</text>
-              </g>
-
-              <!-- traveling particles -->
-              <circle r="3" fill="#5b9bd5">
-                <animateMotion dur="2.4s" repeatCount="indefinite"
-                  path="M 60 40 C 110 40 130 90 180 90 C 230 90 220 140 270 140"/>
-              </circle>
-            </svg>
-          </a>
-
-          <div class="path-picker">
-            <div class="path-picker-head">
-              <span class="path-picker-label">Your path</span>
-              <span class="path-picker-tagline">{{ paths.find(p => p.id === selectedPath)?.tagline }}</span>
-            </div>
-            <div class="path-pills">
-              <button v-for="p in paths" :key="p.id"
-                      :class="['path-pill', { active: selectedPath === p.id }]"
-                      @click="setPath(p.id)">
-                {{ p.label }}
-              </button>
-            </div>
-          </div>
-
-          <h3 class="finance-card-title training-h3">Practice Exams</h3>
-          <div class="cert-picker-grid">
-            <a v-for="b in quizBanks" :key="b.code"
-               @click.prevent="openStudyGuide(b)" href="#"
-               :class="['cert-pill', { 'off-path': !isPathCert(b.code) }]">
-              <div class="cert-pill-row">
-                <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
-                <span v-if="isPathCert(b.code) && selectedPath !== 'explorer'" class="cert-pill-tag">On path</span>
-              </div>
-              <div class="cert-pill-name">{{ b.name }}</div>
-              <div class="cert-pill-meta">{{ b.questions }} questions</div>
-            </a>
-          </div>
-
-          <h3 class="finance-card-title training-h3">More Tools</h3>
-          <div class="training-tools-grid">
-            <a @click.prevent="openTool('/cheatsheets/index.html', 'AWS Cheat Sheets')" href="#" class="member-card">
-              <div class="member-card-tag">Reference</div>
-              <div class="member-card-title">Cheat Sheets</div>
-              <p>20 quick-reference cards. S3 classes, EC2 families, IAM, KMS, deploy strategies, Well-Architected.</p>
-              <div class="member-card-cta">Open Library <span aria-hidden>→</span></div>
-            </a>
-            <a @click.prevent="openTool('/wargame/index.html', 'WeatherLight Wargame')" href="#" class="member-card">
-              <div class="member-card-tag">CTF Range</div>
-              <div class="member-card-title">Wargame</div>
-              <p>25-level terminal hacking game. Linux, recon, crypto, lateral movement.</p>
-              <div class="member-card-cta">Launch <span aria-hidden>→</span></div>
-            </a>
-            <a @click.prevent="openTool('/lessons/index.html', 'AWS Lessons')" href="#" class="member-card">
-              <div class="member-card-tag">Lessons</div>
-              <div class="member-card-title">AWS Lessons</div>
-              <p>38 services across 6 categories with inline notes and quizzes.</p>
-              <div class="member-card-cta">Browse <span aria-hidden>→</span></div>
-            </a>
-            <a @click.prevent="openTool('/flashcards/index.html', 'Flashcards')" href="#" class="member-card">
-              <div class="member-card-tag">SM-2</div>
-              <div class="member-card-title">Flashcards</div>
-              <p>180 cards across AWS services and Linux. Spaced repetition.</p>
-              <div class="member-card-cta">Open <span aria-hidden>→</span></div>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section v-show="!embedOpen && activeTab === 'ops' && isAdmin" id="ops" class="portal-page ops-section">
+      <section v-show="activeTab === 'ops' && isAdmin" id="ops" class="portal-page ops-section">
         <div class="container">
           <div class="eyebrow ops-eyebrow">Admin · Ops Tools</div>
           <h2 class="section-title">Business analytics</h2>
@@ -501,7 +308,7 @@
         </div>
       </section>
 
-      <section v-show="!embedOpen && activeTab === 'users' && isAdmin" id="users" class="portal-page">
+      <section v-show="activeTab === 'users' && isAdmin" id="users" class="portal-page">
         <div class="container">
           <div class="users-panel-head" style="margin-bottom: 2rem;">
             <div>
@@ -574,20 +381,6 @@
                 <li class="feed-item"><span class="feed-tag">Module Released</span><span class="feed-text">VPC Architecture · Module 7 now available</span><span class="feed-when">yesterday</span></li>
                 <li class="feed-item"><span class="feed-tag">Office Hours</span><span class="feed-text">Next session: Thursday 1pm PT — Aaron K.</span><span class="feed-when">2d ago</span></li>
               </ul>
-            </div>
-          </div>
-        </section>
-        <section v-show="activeTab === 'training'" class="portal-page">
-          <div class="container">
-            <h2 class="section-title">Your training</h2>
-            <p class="section-lede">Practice exams + hands-on labs assigned to your team.</p>
-            <h3 class="finance-card-title training-h3">Practice Exams</h3>
-            <div class="cert-picker-grid">
-              <a v-for="b in quizBanks" :key="b.code" @click.prevent="openTool('/quiz/index.html', b.name, { bank: b.code })" href="#" class="cert-pill">
-                <div class="cert-pill-code">{{ b.code.toUpperCase() }}</div>
-                <div class="cert-pill-name">{{ b.name }}</div>
-                <div class="cert-pill-meta">{{ b.questions }} questions</div>
-              </a>
             </div>
           </div>
         </section>
@@ -726,58 +519,6 @@
       </v-card>
     </v-dialog>
 
-
-    <!-- ───────── Study guide modal ───────── -->
-    <v-dialog v-model="studyGuide.open" max-width="560px">
-      <v-card v-if="studyGuide.bank" class="modal-card auth-card">
-        <v-card-title class="modal-title">
-          <div class="sg-code">{{ studyGuide.bank.code.toUpperCase() }}</div>
-          <div class="sg-name">{{ studyGuide.bank.name }}</div>
-        </v-card-title>
-        <v-card-text class="modal-body">
-          <div class="sg-meta-row" v-if="examConfig[studyGuide.bank.code]">
-            <div class="sg-meta">
-              <div class="sg-meta-label">Question bank</div>
-              <div class="sg-meta-val">{{ studyGuide.bank.questions }} original Qs</div>
-            </div>
-            <div class="sg-meta">
-              <div class="sg-meta-label">Real exam</div>
-              <div class="sg-meta-val">{{ examConfig[studyGuide.bank.code].count }} q · {{ examConfig[studyGuide.bank.code].mins }} min</div>
-            </div>
-            <div class="sg-meta">
-              <div class="sg-meta-label">Pass mark</div>
-              <div class="sg-meta-val">{{ examConfig[studyGuide.bank.code].passPct }}%</div>
-            </div>
-          </div>
-          <p class="sg-progress" v-if="domainStrengthForBank(studyGuide.bank.code).total > 0">
-            You've answered <strong>{{ domainStrengthForBank(studyGuide.bank.code).total }}</strong> in this bank · {{ Math.round(100 * domainStrengthForBank(studyGuide.bank.code).correct / domainStrengthForBank(studyGuide.bank.code).total) }}% correct
-          </p>
-          <p class="sg-hint" v-else>
-            No attempts yet on this bank. Pick a starting mode below — Adaptive learns from your wrong answers and steers you toward weak domains.
-          </p>
-          <div class="sg-modes">
-            <button class="sg-mode" @click="launchFromStudyGuide('quick')">
-              <div class="sg-mode-title">Quick Quiz</div>
-              <div class="sg-mode-desc">10 random questions — warm up</div>
-            </button>
-            <button class="sg-mode sg-mode-primary" @click="launchFromStudyGuide('adaptive')">
-              <div class="sg-mode-title">Adaptive Practice</div>
-              <div class="sg-mode-desc">20 questions, weighted toward your weak domains</div>
-            </button>
-            <button class="sg-mode" @click="launchFromStudyGuide('exam')">
-              <div class="sg-mode-title">Mock Exam</div>
-              <div class="sg-mode-desc">{{ examConfig[studyGuide.bank.code]?.count || 65 }} q · {{ examConfig[studyGuide.bank.code]?.mins || 130 }} min · real-exam conditions</div>
-            </button>
-          </div>
-          <a @click.prevent="closeStudyGuide(); openTool('/cheatsheets/index.html', 'AWS Cheat Sheets')" href="#" class="sg-cheats">
-            ▤ Cheat sheets for {{ studyGuide.bank.name }} →
-          </a>
-        </v-card-text>
-        <v-card-actions class="modal-actions">
-          <v-btn variant="text" @click="closeStudyGuide">Close</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <!-- ───────── Generic confirm modal ───────── -->
     <v-dialog v-model="confirm.open" max-width="440px" persistent>
@@ -982,24 +723,6 @@ export default {
 
       // Manual theme override: null = follow detection, 'light' | 'dark'
       themeOverride: null,
-      // Embedded-tool modal (quiz / wargame / lessons / flashcards iframe)
-      embedOpen: false,
-      embedSrc: "",
-      embedSrcdoc: "",
-      embedTitle: "",
-      embedToolPath: "",
-      embedToolExtra: {},
-      // Study-guide modal (shown before launching a quiz)
-      studyGuide: { open: false, bank: null },
-      examConfig: {
-        "clf-c02": { mins: 90,  count: 65, passPct: 70 },
-        "saa-c03": { mins: 130, count: 65, passPct: 72 },
-        "dea-c01": { mins: 130, count: 65, passPct: 72 },
-        "dop-c02": { mins: 180, count: 75, passPct: 75 },
-        "sap-c02": { mins: 180, count: 75, passPct: 75 },
-        "ans-c01": { mins: 170, count: 65, passPct: 75 },
-        "scs-c02": { mins: 170, count: 65, passPct: 75 },
-      },
       // Active portal tab (post-login navigation)
       activeTab: "overview",
       // "View as" — admin can preview the site as a client or an AWS rep.
@@ -1018,13 +741,11 @@ export default {
           { id: "overview",   label: "Overview" },
           { id: "clients",    label: "Clients" },
           { id: "financials", label: "Financials" },
-          { id: "training",   label: "Training" },
           { id: "users",      label: "Users", adminOnly: true },
           { id: "ops",        label: "Ops",   adminOnly: true },
         ],
         client: [
           { id: "overview",     label: "My Engagement" },
-          { id: "training",     label: "Training" },
           { id: "deliverables", label: "Deliverables" },
           { id: "contact",      label: "Contact Us" },
         ],
@@ -1035,13 +756,8 @@ export default {
           { id: "resources",   label: "Resources" },
         ],
       },
-      // Member portal stats (computed from localStorage in computeStats)
+      // Member portal stats (currently inactive — kept for future use)
       stats: {
-        questionsAnswered: 0,
-        wargameLevel: 0,
-        flashcardsReviewed: 0,
-        lessonsViewed: 0,
-        quizDomains: [],
         activity: [],
       },
       ops: { contacts: "—", users: "—", lastContact: "" },
@@ -1108,30 +824,6 @@ export default {
         { tag: "Verdant Energy",       text: "Saved $14k/mo via RI rightsizing review", when: "4d ago" },
       ],
 
-      // Quiz banks shown in the cert picker
-      quizBanks: [
-        { code: "clf-c02", name: "Cloud Practitioner",            questions: 60  },
-        { code: "saa-c03", name: "Solutions Architect Associate", questions: 80  },
-        { code: "dea-c01", name: "Data Engineer Associate",       questions: 70  },
-        { code: "dop-c02", name: "DevOps Engineer Pro",           questions: 80  },
-        { code: "sap-c02", name: "Solutions Architect Pro",       questions: 80  },
-        { code: "ans-c01", name: "Advanced Networking",           questions: 80  },
-        { code: "scs-c02", name: "Security Specialty",            questions: 80  },
-      ],
-
-      // Certification paths — pick one to highlight relevant certs and tools.
-      // Each path lists certs in study order, the foundational entry point
-      // (always CLF for newcomers), and a description.
-      selectedPath: "explorer",
-      paths: [
-        { id: "explorer",  label: "Explorer",            tagline: "All certs visible — pick as you go", certs: ["clf-c02","saa-c03","dea-c01","dop-c02","sap-c02","ans-c01","scs-c02"] },
-        { id: "architect", label: "Solutions Architect", tagline: "Build resilient, scalable AWS systems",     certs: ["clf-c02","saa-c03","sap-c02"] },
-        { id: "devops",    label: "DevOps Engineer",     tagline: "Automation, CI/CD, observability at scale", certs: ["clf-c02","saa-c03","dop-c02"] },
-        { id: "security",  label: "Security Specialist", tagline: "IAM, threat detection, data protection",    certs: ["clf-c02","saa-c03","scs-c02"] },
-        { id: "data",      label: "Data Engineer",       tagline: "Pipelines, lakehouses, analytics on AWS",   certs: ["clf-c02","dea-c01","sap-c02"] },
-        { id: "networking",label: "Networking Specialist", tagline: "VPC design, hybrid, edge",                certs: ["clf-c02","saa-c03","ans-c01"] },
-      ],
-
       // Auth modals
       loginOpen: false,
       signupOpen: false,
@@ -1177,9 +869,7 @@ export default {
       return "evening";
     },
     portalSub() {
-      if (this.stats.questionsAnswered === 0)
-        return "Welcome to the training range. Pick a tool below to get started.";
-      return `Keep it going — ${this.stats.questionsAnswered} questions in, ${this.stats.wargameLevel} wargame ${this.stats.wargameLevel === 1 ? "level" : "levels"} cleared.`;
+      return "Here's where the business stands today.";
     },
   },
   watch: {
@@ -1190,10 +880,6 @@ export default {
     document.addEventListener('click', this.handleOutsideClick);
     document.addEventListener('keydown', this.handleEsc);
     this.applyStoredThemeOverride();
-    try {
-      const p = localStorage.getItem("wl-path");
-      if (p && this.paths.some(x => x.id === p)) this.selectedPath = p;
-    } catch (_) {}
     await this.loadCurrentUser();
     this.computeStats();
     if (this.currentUser) this.loadOps();
@@ -1206,26 +892,15 @@ export default {
   methods: {
     handleScroll() { this.isScrolled = window.scrollY > 8; },
     handleOutsideClick(e) { if (!e.target.closest('.user-pill')) this.userMenuOpen = false; },
-    handleEsc(e) { if (e.key === "Escape" && this.embedOpen) this.closeTool(); },
+    handleEsc(_e) { /* no-op: previously closed embed tool */ },
     goToTab(id) {
-      // If a tool is open, leaving via a tab click should close it.
-      if (this.embedOpen) this.closeTool();
       this.activeTab = id;
       if (id === "users" && this.isAdmin && !this.userList.length) this.loadUsers();
-    },
-    setPath(id) {
-      this.selectedPath = id;
-      try { localStorage.setItem("wl-path", id); } catch (_) {}
-    },
-    isPathCert(code) {
-      const path = this.paths.find(p => p.id === this.selectedPath);
-      return !path || path.id === "explorer" || path.certs.includes(code);
     },
     setViewAs(id) {
       this.viewAs = id;
       this.activeTab = this.tabsByView[id][0].id;
       this.userMenuOpen = false;
-      if (this.embedOpen) this.closeTool();
     },
     goToUsers() {
       this.viewAs = "internal";
@@ -1242,7 +917,6 @@ export default {
       };
       this.viewAs = roleToView[u.role] || "client";
       this.activeTab = this.tabsByView[this.viewAs][0].id;
-      if (this.embedOpen) this.closeTool();
     },
     stopImpersonation() {
       this.impersonatedAs = null;
@@ -1257,104 +931,6 @@ export default {
       if (v.includes("@")) return v.toLowerCase();
       return `${v.toLowerCase()}@weatherlightadvisors.com`;
     },
-    toolUrl(path, extra = {}) {
-      // Match the tool's theme to the parent site's theme. The tools support
-      // 'weatherlight' (light navy) and 'sapphire' (dark teal) — same look as
-      // the parent in each mode.
-      const isDark = document.documentElement.classList.contains("dark-fallback");
-      const theme = isDark ? "sapphire" : "weatherlight";
-      const params = new URLSearchParams({ theme, brand: "WeatherLight Advisors", ...extra });
-      return `${path}?${params.toString()}`;
-    },
-    async openTool(path, title, extra = {}) {
-      // Load tool HTML at build time via raw imports to avoid Amplify's
-      // SPA rewrite serving the Vue app instead of the static tool page.
-      const toolLoaders = {
-        '/quiz/index.html': () => import('../../public/quiz/index.html?raw'),
-        '/wargame/index.html': () => import('../../public/wargame/index.html?raw'),
-        '/flashcards/index.html': () => import('../../public/flashcards/index.html?raw'),
-        '/lessons/index.html': () => import('../../public/lessons/index.html?raw'),
-        '/training-ground/index.html': () => import('../../public/training-ground/index.html?raw'),
-        '/cheatsheets/index.html': () => import('../../public/cheatsheets/index.html?raw'),
-      };
-      this.embedToolPath = path;
-      this.embedToolExtra = extra;
-      const loader = toolLoaders[path];
-      if (loader) {
-        try {
-          const mod = await loader();
-          this.embedSrcdoc = this.buildSrcdoc(mod.default, path, extra);
-          this.embedSrc = "";
-        } catch (_) {
-          this.embedSrc = this.toolUrl(path, extra);
-          this.embedSrcdoc = "";
-        }
-      } else {
-        this.embedSrc = this.toolUrl(path, extra);
-        this.embedSrcdoc = "";
-      }
-      this.embedTitle = title;
-      this.embedOpen = true;
-    },
-    openStudyGuide(bank) {
-      this.studyGuide = { open: true, bank };
-    },
-    closeStudyGuide() {
-      this.studyGuide = { open: false, bank: null };
-    },
-    async launchFromStudyGuide(mode) {
-      const bank = this.studyGuide.bank;
-      if (!bank) return;
-      this.closeStudyGuide();
-      // The quiz engine reads ?bank=<code> and starts on the mode-select
-      // screen. The user picks Quick / Adaptive / Mock / Missed from there.
-      // We don't pass mode through URL — the engine doesn't deep-link to a
-      // mode yet — but the modal pre-frames the choice for the user.
-      await this.openTool('/quiz/index.html', bank.name, { bank: bank.code });
-    },
-    domainStrengthForBank(bankCode) {
-      // Read the same localStorage shape the quiz engine writes.
-      try {
-        const raw = localStorage.getItem('vv-quiz-' + bankCode);
-        if (!raw) return { total: 0, correct: 0, byDomain: [] };
-        const state = JSON.parse(raw);
-        let total = 0, correct = 0;
-        // We don't have the bank loaded here, so we can only show aggregate.
-        // Per-domain breakdown happens inside the quiz; here we surface "X
-        // attempted, Y correct" so the modal isn't empty.
-        Object.keys(state).forEach(function (k) {
-          if (k === '_fp') return;
-          total++;
-          if (state[k] === true) correct++;
-        });
-        return { total, correct, byDomain: [] };
-      } catch (_) {
-        return { total: 0, correct: 0, byDomain: [] };
-      }
-    },
-    buildSrcdoc(html, path, extra) {
-      const fullUrl = this.toolUrl(path, extra);
-      // <base> sets the correct directory for relative resource fetches
-      // (fetch, CSS, scripts). history.replaceState sets window.location
-      // so tool scripts read the correct pathname and search params.
-      const basePath = path.substring(0, path.lastIndexOf("/") + 1);
-      const baseTag = '<base href="' + basePath + '">';
-      const tag = "script";
-      const code = 'try{history.replaceState(null,"","' +
-        fullUrl.replace(/"/g, '\\"') + '")}catch(e){}';
-      const inject = baseTag + "<" + tag + ">" + code + "</" + tag + ">";
-      return html.replace(/<head([^>]*)>/, "<head$1>" + inject);
-    },
-    closeTool() {
-      this.embedOpen = false;
-      this.embedSrc = "";
-      this.embedSrcdoc = "";
-      this.embedToolPath = "";
-      this.embedToolExtra = {};
-      // Refresh portal stats since the user may have made progress in the iframe.
-      this.computeStats();
-    },
-
     async loadCurrentUser() {
       const tokens = getTokens();
       if (!tokens) return;
@@ -1528,58 +1104,12 @@ export default {
       this.themeOverride = isDark ? "light" : "dark";
       localStorage.setItem("wl-theme", this.themeOverride);
       this.applyThemeClass();
-      // If a tool is currently open, reload it with the new theme.
-      if (this.embedOpen && this.embedToolPath) {
-        this.openTool(this.embedToolPath, this.embedTitle, this.embedToolExtra);
-      } else if (this.embedOpen && this.embedSrc) {
-        try {
-          const url = new URL(this.embedSrc, window.location.origin);
-          url.searchParams.set("theme", this.themeOverride === "dark" ? "sapphire" : "weatherlight");
-          this.embedSrc = url.pathname + url.search;
-        } catch (_) { /* leave as-is on parse error */ }
-      }
     },
 
     // ─────────── Portal stats ───────────
+    // Training tools were removed; nothing to read from localStorage anymore.
     computeStats() {
-      let answered = 0;
-      const quizDomains = [];
-      this.quizBanks.forEach((b) => {
-        try {
-          const raw = localStorage.getItem("vv-quiz-" + b.code);
-          if (!raw) { quizDomains.push({ code: b.code, pct: 0 }); return; }
-          const s = JSON.parse(raw);
-          const a = Object.keys(s.answers || s.history || {}).length || 0;
-          answered += a;
-          quizDomains.push({ code: b.code, pct: Math.min(100, Math.round((a / b.questions) * 100)) });
-        } catch { quizDomains.push({ code: b.code, pct: 0 }); }
-      });
-
-      let wgLevel = 0;
-      try {
-        const wg = JSON.parse(localStorage.getItem("wg-state") || "{}");
-        wgLevel = wg.level || 0;
-      } catch {}
-
-      let flashcardsReviewed = 0;
-      try {
-        const fc = JSON.parse(localStorage.getItem("vv-flashcards-state") || "{}");
-        flashcardsReviewed = fc.reviewed || (Array.isArray(fc.cards) ? fc.cards.filter((c) => c.reps > 0).length : 0);
-      } catch {}
-
-      let lessonsViewed = 0;
-      try {
-        const ls = JSON.parse(localStorage.getItem("vv-lessons-progress") || "{}");
-        lessonsViewed = Object.keys(ls).length;
-      } catch {}
-
-      const activity = [];
-      if (wgLevel > 0) activity.push({ tool: "Wargame", detail: `Cleared level ${wgLevel}` });
-      const topQuiz = quizDomains.slice().sort((a, b) => b.pct - a.pct)[0];
-      if (topQuiz && topQuiz.pct > 0) activity.push({ tool: "Quiz", detail: `${topQuiz.code.toUpperCase()} — ${topQuiz.pct}% answered` });
-      if (flashcardsReviewed > 0) activity.push({ tool: "Flashcards", detail: `${flashcardsReviewed} cards in rotation` });
-
-      this.stats = { questionsAnswered: answered, wargameLevel: wgLevel, flashcardsReviewed, lessonsViewed, quizDomains, activity };
+      this.stats = { activity: [] };
     },
 
     async loadOps() {
